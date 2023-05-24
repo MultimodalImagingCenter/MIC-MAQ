@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.scijava</groupId>
+        <artifactId>pom-scijava</artifactId>
+        <version>33.2.0</version>
+        <relativePath />
+    </parent>
+
+    <groupId>fr.curie.mic-maq</groupId>
+    <artifactId>MIC-MAQ</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <name>MIC-MAQ</name>
+    <description>MIC-MAQ is an ImageJ plugin to segment nuclei/cells and provide measurements on many channels including foci detection</description>
+    <url>https://github.com/MultimodalImagingCenter/MIC-MAQ</url>
+    <inceptionYear>2023</inceptionYear>
+    <organization>
+        <name>Multimodal-Imaging-Center</name>
+        <url>https://institut-curie.org/platform/curiecoretech-multimodal-imaging-center-uar2016-us43</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>GNU General Public License version 2</name>
+            <url>https://opensource.org/license/gpl-2-0/</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>cmessaoudi</id>
+            <name>Cedric Messaoudi</name>
+            <url>https://institut-curie.org/personne/cedric-messaoudi</url>
+            <roles>
+                <role>founder</role>
+                <role>lead</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>reviewer</role>
+                <role>support</role>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+        <developer>
+            <name>Camille Rabier</name>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+    <contributors>
+        <contributor>
+            <name>Laetitia Besse</name>
+            <url>https://curie.fr/personne/laetitia-besse</url>
+            <roles>
+			<role>reviewer</role>
+			</roles>
+            <!--properties><id></id></properties-->
+        </contributor>
+        <contributor>
+            <name>Christine Walczak</name>
+            <url>https://curie.fr/personne/christine-walczak</url>
+            <roles>
+                <role>reviewer</role>
+            </roles>
+            <!--properties><id></id></properties-->
+        </contributor>
+    </contributors>
+
+    <mailingLists>
+        <mailingList>
+            <name>Image.sc Forum</name>
+            <archive>https://forum.image.sc/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <scm>
+        <connection>scm:git:https://github.com/MultimodalImagingCenter/MIC-MAQ</connection>
+        <developerConnection>scm:git:git@github.com:MultimodalImagingCenter/MIC-MAQ</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/MultimodalImagingCenter/MiC</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/Multimodal-Imaging-Center/MIC-MAQ/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>GitHub Actions</system>
+        <url>https://github.com/MultimodalImagingCenter/MIC-MAQ/actions</url>
+    </ciManagement>
+
+    <properties>
+        <package-name>fr.curie.mic_maq</package-name>
+        <main-class>fr.curie.micmaq.gui.MicMaq_plugin</main-class>
+        <license.licenseName>mit</license.licenseName>
+        <license.copyrightOwners>Multimodal-Imaging-Center</license.copyrightOwners>
+        <license.excludes>**/resources/**</license.excludes>
+        <scijava.app.directory>C:/applications/Fiji.app</scijava.app.directory>
+        <scijava.app.subdirectory>plugins</scijava.app.subdirectory>
+        <!-- NB: Deploy releases to the SciJava Maven repository. -->
+        <releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>scijava.public</id>
+            <url>https://maven.scijava.org/content/groups/public</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>imagej-legacy</artifactId>
+        </dependency>
+		
+		<!-- https://mvnrepository.com/artifact/ch.epfl.biop/ijl-utilities-wrappers -->
+		<dependency>
+			<groupId>ch.epfl.biop</groupId>
+			<artifactId>ijl-utilities-wrappers</artifactId>
+			<version>0.7.10</version>
+		</dependency>
+        <!-- https://mvnrepository.com/artifact/ome/pom-bio-formats -->
+        <dependency>
+            <groupId>ome</groupId>
+            <artifactId>pom-bio-formats</artifactId>
+            <version>5.8.0</version>
+            <type>pom</type>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
+        <dependency>
+            <groupId>ome</groupId>
+            <artifactId>bio-formats_plugins</artifactId>
+            <version>6.1.1</version>
+        </dependency>
+    </dependencies>
+</project>
