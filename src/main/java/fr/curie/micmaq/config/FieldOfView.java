@@ -265,6 +265,7 @@ public class FieldOfView {
         System.out.println("FoV getChannelName : channel="+channel+"   original="+originalChannelNb.get(channel-1));
         String tmp=channelsImagePlus.get(channel-1).getOMEMetadata().getChannelName(0,originalChannelNb.get(channel-1)-1);
         //System.out.println("returned name "+tmp);
-        return tmp.replaceAll("/","_");
+        if(tmp!=null) return tmp.replaceAll("/","_");
+        return tmp;
     }
 }
