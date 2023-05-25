@@ -188,7 +188,6 @@
     <orderEntry type="library" name="Maven: net.imglib2:imglib2-realtransform:3.1.2" level="project" />
     <orderEntry type="library" name="Maven: jitk:jitk-tps:3.0.3" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.efficient-java-matrix-library:ejml:0.25" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.32" level="project" />
     <orderEntry type="library" name="Maven: net.imglib2:imglib2-roi:0.12.1" level="project" />
     <orderEntry type="library" name="Maven: org.scijava:scijava-search:1.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.9.0" level="project" />
@@ -217,7 +216,6 @@
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-awt-util:1.14" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-css:1.14" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-dom:1.14" level="project" />
-    <orderEntry type="library" name="Maven: xml-apis:xml-apis:1.4.01" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-parser:1.14" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-script:1.14" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-shared-resources:1.14" level="project" />
@@ -232,7 +230,7 @@
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-ext:1.14" level="project" />
     <orderEntry type="library" name="Maven: org.apache.xmlgraphics:batik-gvt:1.14" level="project" />
     <orderEntry type="library" name="Maven: commons-io:commons-io:2.7" level="project" />
-    <orderEntry type="library" name="Maven: ome:bio-formats_plugins:6.10.1" level="project" />
+    <orderEntry type="library" name="Maven: ome:bio-formats_plugins:6.1.1" level="project" />
     <orderEntry type="library" name="Maven: org.openmicroscopy:ome-common:6.0.13" level="project" />
     <orderEntry type="library" name="Maven: io.minio:minio:5.0.2" level="project" />
     <orderEntry type="library" name="Maven: com.google.http-client:google-http-client-xml:1.40.0" level="project" />
@@ -264,6 +262,7 @@
     <orderEntry type="library" name="Maven: com.adobe.xmp:xmpcore:6.1.11" level="project" />
     <orderEntry type="library" name="Maven: ome:jxrlib-all:0.2.4" level="project" />
     <orderEntry type="library" name="Maven: xerces:xercesImpl:2.12.2" level="project" />
+    <orderEntry type="library" name="Maven: xml-apis:xml-apis:1.4.01" level="project" />
     <orderEntry type="library" name="Maven: org.yaml:snakeyaml:1.29" level="project" />
     <orderEntry type="library" name="Maven: ome:formats-gpl:6.10.1" level="project" />
     <orderEntry type="library" name="Maven: org.openmicroscopy:ome-mdbtools:5.3.2" level="project" />
@@ -279,10 +278,8 @@
     <orderEntry type="library" name="Maven: org.xerial:sqlite-jdbc:3.28.0" level="project" />
     <orderEntry type="library" name="Maven: com.jgoodies:jgoodies-forms:1.7.2" level="project" />
     <orderEntry type="library" name="Maven: com.jgoodies:jgoodies-common:1.7.0" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.32" level="project" />
     <orderEntry type="library" name="Maven: ch.qos.logback:logback-core:1.2.3" level="project" />
     <orderEntry type="library" name="Maven: ch.qos.logback:logback-classic:1.2.3" level="project" />
-    <orderEntry type="library" name="Maven: ome:bio-formats-tools:6.10.1" level="project" />
-    <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
-    <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.7.6" level="project" />
   </component>
 </module>
