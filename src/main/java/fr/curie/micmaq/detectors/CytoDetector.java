@@ -11,6 +11,7 @@ import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 /**
@@ -89,6 +90,14 @@ public class CytoDetector {
      * @return true if everything worked
      */
     public boolean prepare() {
+        if(saveRois){
+            File tmp=new File(resultsDirectory + "/Results/Cyto/ROI/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
+        if (saveBinaryImage){
+            File tmp=new File(resultsDirectory + "/Results/Cyto/Images/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
 //        Associated each cell to a nuclei
         associateNucleiCell();
 //        Subtract nuclei regions from cell to obtain cytoplasm regions
@@ -127,7 +136,7 @@ public class CytoDetector {
                     if (roiManager.save(resultsDirectory + "/Results/Cyto/ROI/" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi.zip")) {
                         IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/Results/Cyto/ROI/");
                     } else {
-                        IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cyto/ROI/");
+                        IJ.log("#########\nThe cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cyto/ROI/\n######");
                     }
                 }
 

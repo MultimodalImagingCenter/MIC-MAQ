@@ -185,7 +185,7 @@ public class Experiment {
                 finalResultsNuclei.addValue("Cell associated",""+association2Cell[nucleusID]);
                 nuclei.measureEachNuclei(nucleusID, finalResultsNuclei,allNuclei[nucleusID]);
                 for (SpotDetector spot : spots) {
-                    spot.analysisPerRegion(nucleusID,allNuclei[nucleusID], finalResultsNuclei,"Nuclei");
+                    if(spot!=null) spot.analysisPerRegion(nucleusID,allNuclei[nucleusID], finalResultsNuclei,"Nuclei");
                 }
                 finalResultsNuclei.incrementCounter();
             }
