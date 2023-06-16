@@ -267,6 +267,10 @@ public class SegmentationParametersGUI {
         params.setSaveROIs(saveROIsCheckBox.isSelected());
         params.setSaveMasks(saveSegmentationMaskCheckBox.isSelected());
         params.setMeasurements(measures);
+
+        if (this.type.equals(CELL_CYTO)) {
+            params.setCytoplasmParameters((double) minOverlapSpinner.getValue(), (double) minCytoSizeSpinner.getValue());
+        }
         setPreferences();
         return params;
     }
@@ -317,6 +321,9 @@ public class SegmentationParametersGUI {
         }
         cellposeDiameterSpinner.setValue((int) Prefs.get("MICMAQ.cellposeDiameter" + type, 100));
 
+        minOverlapSpinner.setValue(Prefs.get("MICMAC.cytoplasmoverlap", 50.0));
+        minCytoSizeSpinner.setValue(Prefs.get("MICMAC.cytoplasmminsize", 25.0));
+
     }
 
     /**
@@ -353,6 +360,10 @@ public class SegmentationParametersGUI {
 //        --> cellpose
         Prefs.set("MICMAQ.cellposeMethods" + type, (String) cellposeModelCB.getSelectedItem());
         Prefs.set("MICMAQ.cellposeDiameter" + type, (int) cellposeDiameterSpinner.getValue());
+
+//        --> cytoplasm
+        Prefs.set("MICMAQ.cytoplasmoverlap", (double) minOverlapSpinner.getValue());
+        Prefs.set("MICMAQ.cytoplasmminsize", (double) minCytoSizeSpinner.getValue());
 
 
     }
