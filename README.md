@@ -11,8 +11,18 @@ MIC-MAQ for Microscopy Images of Cells - Multi Analyses and Quantifications is a
 
 ## Install
 
-download the jar file and copy into plugin Folder of ImageJ
-or use the updater in Fiji:
+First install Cellpose 
+
+installation instruction can be found at 
+https://github.com/MouseLand/cellpose#installation
+
+Then install and configure Cellpose wrapper for Fiji 
+
+installation instruction can be found at 
+https://github.com/BIOP/ijl-utilities-wrappers#ib-fiji---cellpose-wrapper
+
+Finally install MIC-MAQ plugin
+The best is to use the updater in Fiji:
 
 menu >Help>Update...
 
@@ -22,10 +32,11 @@ select MIC-MAQ
 
 if it is not available directly you can add it (button add update site) with the folowing URL https://sites.imagej.net/MIC-MAQ/
 
+
 ## Usage
 
 run >Plugin>MIC-MAQ>MIC-MAQ
 
 ## Licensing
 
- MiC plugin is licensed under the GNU GPL v2 License
+ MIC-MAQ plugin is licensed under the GNU GPL v2 License
