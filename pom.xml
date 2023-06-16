@@ -11,7 +11,7 @@
 
     <groupId>fr.curie.mic-maq</groupId>
     <artifactId>MIC-MAQ</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
 
     <name>MIC-MAQ</name>
     <description>MIC-MAQ is an ImageJ plugin to segment nuclei/cells and provide measurements on many channels including foci detection</description>
@@ -142,6 +142,12 @@
             <groupId>ome</groupId>
             <artifactId>bio-formats_plugins</artifactId>
             <version>6.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.csbdresden</groupId>
+            <artifactId>StarDist_</artifactId>
+            <version>0.3.0</version>
         </dependency>
     </dependencies>
 </project>
