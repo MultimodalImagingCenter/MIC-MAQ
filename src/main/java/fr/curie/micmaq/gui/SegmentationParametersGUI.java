@@ -57,6 +57,8 @@ public class SegmentationParametersGUI {
     private JLabel cellposeDiameterLabel;
     private JLabel minSizeLabel;
     private JPanel measurementsPanel;
+    private JSpinner cellposeCellproba_thresholdSpinner;
+    private JRadioButton starDistRadioButton;
 
     private File cellposeModelPath;
     protected FieldOfViewProvider imageProvider;
@@ -234,6 +236,7 @@ public class SegmentationParametersGUI {
             result += "\n\tCellpose model: " + cellposeModelCB.getSelectedItem();
             if (cellposeModelPath != null) result += "\n\tCellpose model path: " + cellposeModelPath;
             result += "\n\tMinimum diameter: " + cellposeDiameterSpinner.getValue();
+            result += "\n\tcellproba_threshold: " + cellposeCellproba_thresholdSpinner.getValue();
         }
         result += "\n\tExclude on edges: " + (excludeOnEdgesCheckBox.isSelected() ? "yes" : "no");
         result += "\n\tFinal user validation: " + (userValidationCheckBox.isSelected() ? "yes" : "no");
@@ -245,13 +248,19 @@ public class SegmentationParametersGUI {
         SegmentationParameters params;
         if (thresholdingRadioButton.isSelected()) {
             params = SegmentationParameters.createThresholding((String) thresholdMethodsCB.getSelectedItem(), useWatershedCheckBox.isSelected());
-        } else {
-            params = SegmentationParameters.createCellpose((String) cellposeModelCB.getSelectedItem(), (Integer) cellposeDiameterSpinner.getValue());
+        } else if (cellposeRadioButton.isSelected()) {
+            params = SegmentationParameters.createCellpose((String) cellposeModelCB.getSelectedItem(),
+                    (Integer) cellposeDiameterSpinner.getValue(),
+                    (double) cellposeCellproba_thresholdSpinner.getValue());
             if (cellposeModelPath != null) {
                 params.setPathToModel(cellposeModelPath);
                 params.setCellposeModel(cellposeModelPath.getAbsolutePath());
             }
             IJ.log("set cellpose model to " + params.getCellposeModel());
+        } else {
+            params = SegmentationParameters.createStarDist("Versatile (fluorescent nuclei)",
+                    0, 100, 0.5, 0.3, null);
+            IJ.log("set stardist model to " + params.getStardistModel());
         }
         if (isZStackCheckBox.isSelected()) {
             params.setProjection(projectionMethodCB.getSelectedIndex());
@@ -320,6 +329,7 @@ public class SegmentationParametersGUI {
             cellposeOwnModelPanel.setVisible(false);
         }
         cellposeDiameterSpinner.setValue((int) Prefs.get("MICMAQ.cellposeDiameter" + type, 100));
+        cellposeCellproba_thresholdSpinner.setValue((double) Prefs.get("MICMAQ.cellposeCellproba_threshold" + type, 0.0));
 
         minOverlapSpinner.setValue(Prefs.get("MICMAC.cytoplasmoverlap", 50.0));
         minCytoSizeSpinner.setValue(Prefs.get("MICMAC.cytoplasmminsize", 25.0));
@@ -360,6 +370,7 @@ public class SegmentationParametersGUI {
 //        --> cellpose
         Prefs.set("MICMAQ.cellposeMethods" + type, (String) cellposeModelCB.getSelectedItem());
         Prefs.set("MICMAQ.cellposeDiameter" + type, (int) cellposeDiameterSpinner.getValue());
+        Prefs.set("MICMAQ.cellposeCellproba_threshold" + type, (double) cellposeCellproba_thresholdSpinner.getValue());
 
 //        --> cytoplasm
         Prefs.set("MICMAQ.cytoplasmoverlap", (double) minOverlapSpinner.getValue());
@@ -377,6 +388,7 @@ public class SegmentationParametersGUI {
         // minSize spinner
         thresholdMinSizeSpinner = new JSpinner(new SpinnerNumberModel(1000.0, 0.0, Integer.MAX_VALUE, 10.0));
         cellposeDiameterSpinner = new JSpinner(new SpinnerNumberModel(200, 0, Integer.MAX_VALUE, 10));
+        cellposeCellproba_thresholdSpinner = new JSpinner(new SpinnerNumberModel(0.0, -6.0, 6.0, 0.1));
 
 //  Text field to filter extension
         sliceMinSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 9999, 1));
@@ -454,7 +466,7 @@ public class SegmentationParametersGUI {
         final com.intellij.uiDesigner.core.Spacer spacer4 = new com.intellij.uiDesigner.core.Spacer();
         projectionPanel.add(spacer4, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         segmentationChoicePanel = new JPanel();
-        segmentationChoicePanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
+        segmentationChoicePanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 5, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(segmentationChoicePanel, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         segmentationChoicePanel.setBorder(BorderFactory.createTitledBorder(null, "Segmentation method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         cellposeRadioButton = new JRadioButton();
@@ -468,7 +480,10 @@ public class SegmentationParametersGUI {
         label2.setText("Which method of segmentation to use?");
         segmentationChoicePanel.add(label2, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final com.intellij.uiDesigner.core.Spacer spacer5 = new com.intellij.uiDesigner.core.Spacer();
-        segmentationChoicePanel.add(spacer5, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        segmentationChoicePanel.add(spacer5, new com.intellij.uiDesigner.core.GridConstraints(0, 4, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        starDistRadioButton = new JRadioButton();
+        starDistRadioButton.setText("StarDist");
+        segmentationChoicePanel.add(starDistRadioButton, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         thresholdParamsPanel = new JPanel();
         thresholdParamsPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(thresholdParamsPanel, new com.intellij.uiDesigner.core.GridConstraints(2, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
@@ -485,7 +500,7 @@ public class SegmentationParametersGUI {
         useWatershedCheckBox.setText("use watershed");
         thresholdParamsPanel.add(useWatershedCheckBox, new com.intellij.uiDesigner.core.GridConstraints(1, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposePanel = new JPanel();
-        cellposePanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(3, 2, new Insets(0, 0, 0, 0), -1, -1));
+        cellposePanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(cellposePanel, new com.intellij.uiDesigner.core.GridConstraints(3, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         cellposePanel.setBorder(BorderFactory.createTitledBorder(null, "Cellpose parameters", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         final JLabel label4 = new JLabel();
@@ -517,6 +532,10 @@ public class SegmentationParametersGUI {
         browseButton = new JButton();
         browseButton.setText("Browse");
         cellposeOwnModelPanel.add(browseButton, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setText("cellprob_threshold");
+        cellposePanel.add(label6, new com.intellij.uiDesigner.core.GridConstraints(3, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposePanel.add(cellposeCellproba_thresholdSpinner, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(5, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
@@ -538,13 +557,13 @@ public class SegmentationParametersGUI {
         cytoPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(cytoPanel, new com.intellij.uiDesigner.core.GridConstraints(4, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         cytoPanel.setBorder(BorderFactory.createTitledBorder(null, "Cytoplasm extraction parameters", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
-        final JLabel label6 = new JLabel();
-        label6.setText("minimal overlap of nucleus with cell (% of nucleus)");
-        cytoPanel.add(label6, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        cytoPanel.add(minOverlapSpinner, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label7 = new JLabel();
-        label7.setText("Minimal size of cytoplasm (% of cell)");
-        cytoPanel.add(label7, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        label7.setText("minimal overlap of nucleus with cell (% of nucleus)");
+        cytoPanel.add(label7, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cytoPanel.add(minOverlapSpinner, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label8 = new JLabel();
+        label8.setText("Minimal size of cytoplasm (% of cell)");
+        cytoPanel.add(label8, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cytoPanel.add(minCytoSizeSpinner, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         measurementsPanel = new JPanel();
         measurementsPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
@@ -557,6 +576,7 @@ public class SegmentationParametersGUI {
         buttonGroup = new ButtonGroup();
         buttonGroup.add(cellposeRadioButton);
         buttonGroup.add(thresholdingRadioButton);
+        buttonGroup.add(starDistRadioButton);
     }
 
     /**

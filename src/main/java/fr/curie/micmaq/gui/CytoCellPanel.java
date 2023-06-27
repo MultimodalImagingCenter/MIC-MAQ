@@ -245,7 +245,7 @@ public class CytoCellPanel {
             IJ.error("Please choose a model for cellpose.");
             return null;
         }
-        cellDetector.setDeepLearning((Integer) cellPoseMinDiameterSpinner.getValue(), cellposeModel, cellPoseExcludeOnEdgesCheckBox.isSelected(), finalValidationCheckBox.isSelected(), isPreview || showBinaryMaskCheckBox.isSelected());
+        cellDetector.setDeepLearning((Integer) cellPoseMinDiameterSpinner.getValue(), 0, cellposeModel, cellPoseExcludeOnEdgesCheckBox.isSelected(), finalValidationCheckBox.isSelected(), isPreview || showBinaryMaskCheckBox.isSelected());
 
 //        Saving results ?
         if (saveSegmentationMaskCheckBox.isVisible()) {

@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 public class CellposeLauncher {
     private final ImagePlus imagePlus;
     private final int minSizeNucleus;
+    private final double cellproba_threshold;
     private final String model;
     private final int nucleiChannel;
     private final int cytoChannel;
@@ -50,9 +51,10 @@ public class CellposeLauncher {
      *                       nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue
      * @param excludeOnEdges : choice to exclude cell on edge
      */
-    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, String model, int cytoChannel, int nucleiChannel, boolean excludeOnEdges) {
+    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, double cellproba_threshold,String model, int cytoChannel, int nucleiChannel, boolean excludeOnEdges) {
         this.imagePlus = imagePlus;
         this.minSizeNucleus = minSizeNucleus;
+        this.cellproba_threshold=cellproba_threshold;
         this.model = model;
         this.nucleiChannel = nucleiChannel;
         this.cytoChannel = cytoChannel;
@@ -67,8 +69,8 @@ public class CellposeLauncher {
      * @param model          :  model used (integrated or retrained)
      * @param excludeOnEdges : choice to exclude nuclei or cell on edge
      */
-    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, String model, boolean excludeOnEdges) {
-        this(imagePlus, minSizeNucleus, model, 0, 0, excludeOnEdges);
+    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, double cellproba_threshold, String model, boolean excludeOnEdges) {
+        this(imagePlus, minSizeNucleus, cellproba_threshold, model, 0, 0, excludeOnEdges);
     }
 
 
@@ -162,6 +164,7 @@ public class CellposeLauncher {
         settings.setModel(model);
         settings.setDatasetDir(cellposeTempDir.toString());
         settings.setDiameter(minSizeNucleus);
+        settings.setCellProbTh(cellproba_threshold);
         settings.setDiamThreshold(12.0); /*default value*/
 
         cellposeTask.setSettings(settings);

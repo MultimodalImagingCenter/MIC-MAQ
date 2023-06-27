@@ -10,6 +10,7 @@ import java.io.File;
 public class SegmentationParameters {
     static final public  int CELLPOSE=1;
     static final public int THRESHOLDING=2;
+    static final public int STARDIST=3;
 
     static final public int PROJECTION_MAX=0;
     static final public int PROJECTION_STDDEV=1;
@@ -23,7 +24,16 @@ public class SegmentationParameters {
     //CELLPOSE parameters
     String cellposeModel="cyto2";
     int cellposeDiameter;
+    double cellposeCellproba_trheshold;
     File pathToModel;
+
+    //Stardist parameters
+    String stardistModel="Versatile (fluorescent nuclei)";
+    double stardistPercentileBottom=0.0;
+    double stardistPercentileTop=100.0;
+    double stardistProbThresh=0.5;
+    double stardistNmsThresh=0.0;
+    String stardistModelFile=null;
 
     //cytoplasm extraction parameters
     double minOverlap=-1;
@@ -45,12 +55,33 @@ public class SegmentationParameters {
     boolean saveMasks=false;
     MeasureValue measurements;
 
-    public static SegmentationParameters createCellpose(String model, int diameter){
+    public static SegmentationParameters createCellpose(String model, int diameter, double cellproba_threshold){
         SegmentationParameters param=new SegmentationParameters();
         param.setCellposeDiameter(diameter);
+        param.setCellposeCellproba_trheshold(cellproba_threshold);
         param.setCellposeModel(model);
 
         param.setMethod(CELLPOSE);
+        MeasureValue tmp=new MeasureValue();
+        tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
+        param.setMeasurements(tmp);
+        return param;
+    }
+
+    public static SegmentationParameters createStarDist(String model,
+                                                        double stardistPercentileBottom,
+                                                        double stardistPercentileTop,
+                                                        double stardistProbThresh,
+                                                        double stardistNmsThresh,
+                                                        String stardistModelFile){
+        SegmentationParameters param=new SegmentationParameters();
+        param.setStardistModel(model);
+        param.setStardistPercentileBottom(stardistPercentileBottom);
+        param.setStardistPercentileTop(stardistPercentileTop);
+        param.setStardistProbThresh(stardistProbThresh);
+        param.setStardistNmsThresh(stardistNmsThresh);
+        if(stardistModelFile!=null) param.setStardistModelFile(stardistModelFile);
+        param.setMethod(STARDIST);
         MeasureValue tmp=new MeasureValue();
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
@@ -120,6 +151,14 @@ public class SegmentationParameters {
 
     public void setCellposeDiameter(int cellposeDiameter) {
         this.cellposeDiameter = cellposeDiameter;
+    }
+
+    public double getCellposeCellproba_trheshold() {
+        return cellposeCellproba_trheshold;
+    }
+
+    public void setCellposeCellproba_trheshold(double cellposeCellproba_trheshold) {
+        this.cellposeCellproba_trheshold = cellposeCellproba_trheshold;
     }
 
     public String getPreprocessMacro() {
@@ -240,5 +279,53 @@ public class SegmentationParameters {
 
     public double getMinCytoSize() {
         return minCytoSize;
+    }
+
+    public String getStardistModel() {
+        return stardistModel;
+    }
+
+    public void setStardistModel(String stardistModel) {
+        this.stardistModel = stardistModel;
+    }
+
+    public double getStardistPercentileBottom() {
+        return stardistPercentileBottom;
+    }
+
+    public void setStardistPercentileBottom(double stardistPercentileBottom) {
+        this.stardistPercentileBottom = stardistPercentileBottom;
+    }
+
+    public double getStardistPercentileTop() {
+        return stardistPercentileTop;
+    }
+
+    public void setStardistPercentileTop(double stardistPercentileTop) {
+        this.stardistPercentileTop = stardistPercentileTop;
+    }
+
+    public double getStardistProbThresh() {
+        return stardistProbThresh;
+    }
+
+    public void setStardistProbThresh(double stardistProbThresh) {
+        this.stardistProbThresh = stardistProbThresh;
+    }
+
+    public double getStardistNmsThresh() {
+        return stardistNmsThresh;
+    }
+
+    public void setStardistNmsThresh(double stardistNmsThresh) {
+        this.stardistNmsThresh = stardistNmsThresh;
+    }
+
+    public String getStardistModelFile() {
+        return stardistModelFile;
+    }
+
+    public void setStardistModelFile(String stardistModelFile) {
+        this.stardistModelFile = stardistModelFile;
     }
 }

@@ -1,18 +1,14 @@
 package fr.curie.micmaq.config;
 
-import com.jgoodies.common.collect.ArrayListModel;
 import fr.curie.micmaq.detectors.*;
-import fr.curie.micmaq.gui.Measures;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.segment.Segmentation;
 import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.LutLoader;
-import ij.process.ImageStatistics;
 
 import java.awt.image.IndexColorModel;
 import java.io.File;
@@ -134,7 +130,17 @@ public class ExperimentSettings {
             nucleiDetector.setThresholdMethod(nucleiSegmentationParams.getThresholdMethod(),nucleiSegmentationParams.getMinSize(),nucleiSegmentationParams.isThresholdingWatershed(),nucleiSegmentationParams.isExcludeOnEdge());
         }else if(nucleiSegmentationParams.getMethod()==SegmentationParameters.CELLPOSE){
             String cellposemodel=(nucleiSegmentationParams.getCellposeModel().equalsIgnoreCase("own model"))?nucleiSegmentationParams.getPathToModel().getAbsolutePath():nucleiSegmentationParams.getCellposeModel();
-            nucleiDetector.setDeepLearning(nucleiSegmentationParams.getCellposeDiameter(),cellposemodel,nucleiSegmentationParams.isExcludeOnEdge());
+            nucleiDetector.setCellposeMethod(nucleiSegmentationParams.getCellposeDiameter(),
+                    nucleiSegmentationParams.getCellposeCellproba_trheshold(),
+                    cellposemodel,
+                    nucleiSegmentationParams.isExcludeOnEdge());
+        }else if(nucleiSegmentationParams.getMethod()==SegmentationParameters.STARDIST){
+            nucleiDetector.setStarDistMethod(nucleiSegmentationParams.getStardistModel(),
+                    nucleiSegmentationParams.getStardistPercentileBottom(),
+                    nucleiSegmentationParams.getStardistPercentileTop(),
+                    nucleiSegmentationParams.getStardistProbThresh(),
+                    nucleiSegmentationParams.getStardistNmsThresh(),
+                    nucleiSegmentationParams.getStardistModelFile());
         }
         nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
         nucleiDetector.setSegmentation(nucleiSegmentationParams.isUserValidation(),preview);
@@ -179,7 +185,10 @@ public class ExperimentSettings {
 
         String cellposemodel=(cellSegmentationParams.getCellposeModel().equalsIgnoreCase("own model"))?cellSegmentationParams.getPathToModel().getAbsolutePath():cellSegmentationParams.getCellposeModel();
         System.out.println("cellpose model (experimentsettings):"+cellposemodel);
-        cellDetector.setDeepLearning(cellSegmentationParams.getCellposeDiameter(),cellposemodel,cellSegmentationParams.isExcludeOnEdge(),cellSegmentationParams.isUserValidation(), preview);
+        cellDetector.setDeepLearning(cellSegmentationParams.getCellposeDiameter(),
+                cellSegmentationParams.getCellposeCellproba_trheshold(),
+                cellposemodel,
+                cellSegmentationParams.isExcludeOnEdge(),cellSegmentationParams.isUserValidation(), preview);
 
 //        Cytoplasm ?
         NucleiDetector nucleiDetector=getNucleiDetector(preview);

@@ -28,9 +28,17 @@ public class NucleiDetector {
     private final Detector detector; /*Helper class that do the projection, thresholding and particle analyzer that are common with the spots*/
     private final String resultsDirectory; /*Directory to save results if necessary*/
     private final boolean showPreprocessingImage; /*Display or not the images (projection and binary)*/
-    private boolean deepLearning; /*use deep learning, if false use thresholding*/
-    private int minSizeDLNuclei;
+    private boolean cellpose; /*use Cellpose, if false use thresholding*/
+    private int cellposeDiameter;
     private String cellposeModel;
+    private double cellposeCellproba_threshold;
+    private boolean stardist; /*use Stardist, if false use thresholding*/
+    String stardistModel;
+    double stardistPercentileBottom;
+    double stardistPercentileTop;
+    double stardistProbThresh;
+    double stardistNmsThresh;
+    String stardistModelFile;
     private boolean useWatershed;
     private Roi[] nucleiRois;
     private boolean finalValidation;
@@ -170,7 +178,8 @@ public class NucleiDetector {
      * @param excludeOnEdges : if true, exclude particles on edge of image
      */
     public void setThresholdMethod(String thresholdMethod,double minSizeNucleus,boolean useWatershed,boolean excludeOnEdges) {
-        this.deepLearning = false;
+        this.cellpose = false;
+        this.stardist = false;
         detector.setThresholdParameters(thresholdMethod,excludeOnEdges,minSizeNucleus);
         this.useWatershed = useWatershed;
         this.excludeOnEdges = excludeOnEdges;
@@ -182,11 +191,30 @@ public class NucleiDetector {
      * @param cellposeModel : model used by cellpose to segment
      * @param excludeOnEdges : exclude nuclei on image edges
      */
-    public void setDeepLearning(int minSizeDLNuclei, String cellposeModel, boolean excludeOnEdges) {
-        this.deepLearning = true;
-        this.minSizeDLNuclei = minSizeDLNuclei;
+    public void setCellposeMethod(int minSizeDLNuclei, double cellproba_threshold, String cellposeModel, boolean excludeOnEdges) {
+        this.cellpose = true;
+        this.stardist = false;
+        this.cellposeDiameter = minSizeDLNuclei;
         this.cellposeModel = cellposeModel;
         this.excludeOnEdges = excludeOnEdges;
+        this.cellposeCellproba_threshold=cellproba_threshold;
+    }
+
+    public void setStarDistMethod(String model,
+                                  double stardistPercentileBottom,
+                                  double stardistPercentileTop,
+                                  double stardistProbThresh,
+                                  double stardistNmsThresh,
+                                  String stardistModelFile){
+        this.cellpose = false;
+        this.stardist = true;
+        this.stardistModel=model;
+        this.stardistPercentileBottom=stardistPercentileBottom;
+        this.stardistPercentileTop=stardistPercentileTop;
+        this.stardistProbThresh=stardistProbThresh;
+        this.stardistNmsThresh=stardistNmsThresh;
+        this.stardistModelFile=stardistModelFile;
+
     }
 
     /**
@@ -226,17 +254,32 @@ public class NucleiDetector {
         ImagePlus preprocessed = getPreprocessing();
         if (preprocessed!=null){
             preprocessed.show();
-            if (deepLearning){
+            if (cellpose){
 //            launch cellpose command to obtain mask
                 /*cyto channel = 0 for gray*/
                 /*nuclei channel = 0 for none*/
-                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed,minSizeDLNuclei, cellposeModel, excludeOnEdges);
+                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
                 cellposeLauncher.analysis();
                 ImagePlus cellposeOutput = cellposeLauncher.getCellposeMask();
                 cellposeOutput.show();
                 cellposeOutput.setDisplayRange(0,(cellposeLauncher.getCellposeRoiManager().getCount()+10));
                 cellposeOutput.updateAndDraw();
-            } else {
+            } else if(stardist){
+                StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
+                starDistLauncher.setModel(stardistModel);
+                starDistLauncher.setPercentileBottom(stardistPercentileBottom);
+                starDistLauncher.setPercentileTop(stardistPercentileTop);
+                starDistLauncher.setProbThresh(stardistProbThresh);
+                starDistLauncher.setNmsThresh(stardistNmsThresh);
+                starDistLauncher.setModelFile(stardistModelFile);
+                starDistLauncher.analysis();
+                ImagePlus stardistOuput = starDistLauncher.getInstanceMask();
+                stardistOuput.show();
+                stardistOuput.setDisplayRange(0,(starDistLauncher.getStardistRoiManager().getCount()+10));
+                stardistOuput.updateAndDraw();
+
+
+            }else {
                 thresholding(preprocessed);
             }
         }
@@ -275,14 +318,28 @@ public class NucleiDetector {
             ImagePlus labeledImage;
             String analysisType;
 //            SEGMENTATION
-            if (deepLearning){
+            if (cellpose){
                 analysisType = "cellpose";
-                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed,minSizeDLNuclei, cellposeModel, excludeOnEdges);
+                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
                 cellposeLauncher.analysis();
                 labeledImage = cellposeLauncher.getCellposeMask();
                 detector.renameImage(labeledImage,"cellpose");
                 roiManagerNuclei = cellposeLauncher.getCellposeRoiManager();
-            } else {
+            } else if(stardist){
+                analysisType = "StarDist";
+                StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
+                starDistLauncher.setModel(stardistModel);
+                starDistLauncher.setPercentileBottom(stardistPercentileBottom);
+                starDistLauncher.setPercentileTop(stardistPercentileTop);
+                starDistLauncher.setProbThresh(stardistProbThresh);
+                starDistLauncher.setNmsThresh(stardistNmsThresh);
+                starDistLauncher.setModelFile(stardistModelFile);
+                starDistLauncher.analysis();
+                labeledImage = starDistLauncher.getInstanceMask();
+                detector.renameImage(labeledImage,"stardist");
+                roiManagerNuclei = starDistLauncher.getStardistRoiManager();
+
+            }else {
                 analysisType = "threshold";
                 thresholding(preprocessed);
                 // Analyse particle

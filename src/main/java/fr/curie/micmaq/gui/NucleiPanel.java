@@ -222,7 +222,8 @@ public class NucleiPanel extends JPanel {
         }
         if (cellPoseRadioButton.isSelected()) {
             String cellposeModel = cellPoseModelCombo.getSelectedItem() == "own_model" ? cellposeModelPath.getAbsolutePath() : (String) cellPoseModelCombo.getSelectedItem();
-            nucleiDetector.setDeepLearning((Integer) cellPoseMinDiameterSpinner.getValue(), cellposeModel, excludeOnEdges.isSelected());
+            nucleiDetector.setCellposeMethod((Integer) cellPoseMinDiameterSpinner.getValue(),
+                    0, cellposeModel, excludeOnEdges.isSelected());
         } else {
             nucleiDetector.setThresholdMethod(threshMethodsCombo.getItemAt(threshMethodsCombo.getSelectedIndex()), (Double) minSizeNucleusSpinner.getValue(), useWatershedCheckBox.isSelected(), excludeOnEdges.isSelected());
         }

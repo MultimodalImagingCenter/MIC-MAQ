@@ -40,6 +40,7 @@ public class CellDetector {
 
     //    Parameters for cellpose
     private int minSizeCell; /*minimum size of the cell*/
+    private double cellposeCellproba_threshold; /* threshold for cell probability in cellpose*/
     private String cellposeModel; /*model to be used by cellpose*/
     private boolean excludeOnEdges; /*exclude the cells on the edge*/
 
@@ -143,8 +144,9 @@ public class CellDetector {
      * @param cellposeModel : model used by cellpose to segment
      * @param excludeOnEdges : exclude cell on image edges
      */
-    public void setDeepLearning(int minSizeDLCell, String cellposeModel, boolean excludeOnEdges, boolean finalValidation, boolean showBinaryImage) {
+    public void setDeepLearning(int minSizeDLCell, double cellproba_threshold, String cellposeModel, boolean excludeOnEdges, boolean finalValidation, boolean showBinaryImage) {
         this.minSizeCell = minSizeDLCell;
+        this.cellposeCellproba_threshold=cellproba_threshold;
         this.cellposeModel = cellposeModel;
         this.excludeOnEdges = excludeOnEdges;
         this.finalValidation = finalValidation;
@@ -257,13 +259,13 @@ public class CellDetector {
                         composite.show();
                     }
 //                    Create CellposeLauncher objet
-                    cellposeLauncher = new CellposeLauncher(composite, minSizeCell, cellposeModel, 1, 2, excludeOnEdges);
+                    cellposeLauncher = new CellposeLauncher(composite, minSizeCell, cellposeCellproba_threshold,cellposeModel, 1, 2, excludeOnEdges);
                 } else {
                     IJ.error("There is a problem with the nuclei preprocessing, please verify the parameters");
                     return false;
                 }
             } else {/*No nuclei channel*/
-                cellposeLauncher = new CellposeLauncher(preprocessed, minSizeCell, cellposeModel, excludeOnEdges);
+                cellposeLauncher = new CellposeLauncher(preprocessed, minSizeCell,cellposeCellproba_threshold, cellposeModel, excludeOnEdges);
             }
 //            Launch Cellpose
             cellposeLauncher.analysis();
@@ -348,13 +350,15 @@ public class CellDetector {
                         composite.show();
                     }
 //                    Create CellposeLauncher object
-                    cellposeLauncher = new CellposeLauncher(composite, minSizeCell, cellposeModel, 1, 2, excludeOnEdges);
+                    cellposeLauncher = new CellposeLauncher(composite, minSizeCell,cellposeCellproba_threshold,
+                            cellposeModel, 1, 2, excludeOnEdges);
                 } else {
                     IJ.error("There is a problem with the nuclei preprocessing, please verify the parameters");
                     return;
                 }
             } else { /*no nuclei channel*/
-                cellposeLauncher = new CellposeLauncher(preprocessed, minSizeCell, cellposeModel, excludeOnEdges);
+                cellposeLauncher = new CellposeLauncher(preprocessed, minSizeCell,cellposeCellproba_threshold,
+                        cellposeModel, excludeOnEdges);
             }
 //            Launch Cellpose
             cellposeLauncher.analysis();

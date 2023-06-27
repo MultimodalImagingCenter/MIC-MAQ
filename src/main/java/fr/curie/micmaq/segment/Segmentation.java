@@ -62,7 +62,7 @@ public class Segmentation {
      * @return instance segmentation mask
      */
     public ImagePlus cellposeSegmentation(ImagePlus imp){
-        CellposeLauncher cellposeLauncher = new CellposeLauncher(imp, params.cellposeDiameter, params.cellposeModel, params.excludeOnEdge);
+        CellposeLauncher cellposeLauncher = new CellposeLauncher(imp, params.cellposeDiameter, params.cellposeCellproba_trheshold, params.cellposeModel, params.excludeOnEdge);
         cellposeLauncher.analysis();
         ImagePlus labeledImage = cellposeLauncher.getCellposeMask();
         renameImage(imp,labeledImage,"cellpose");
