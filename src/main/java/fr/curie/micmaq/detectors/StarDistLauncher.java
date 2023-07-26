@@ -3,6 +3,7 @@ package fr.curie.micmaq.detectors;
 import de.csbdresden.stardist.StarDist2D;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.plugin.frame.RoiManager;
 import net.imagej.Dataset;
@@ -11,7 +12,9 @@ import net.imagej.ImageJ;
 import net.imagej.ImgPlus;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 
+import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class StarDistLauncher {
@@ -31,6 +34,8 @@ public class StarDistLauncher {
     boolean showProbAndDist=false;
     boolean process=false;
     String modelFile=null;
+    double scale=1.0;
+    boolean excludeOnEdges=false;
 
     RoiManager stardistRoiManager;
 
@@ -44,21 +49,29 @@ public class StarDistLauncher {
 
     public void analysis(){
 
+        ImagePlus scaledImg=imagePlus;
+        if(scale!=1.0){
+            scaledImg=imagePlus.resize((int)(imagePlus.getWidth()*scale), (int)(imagePlus.getHeight()*scale),"bicubic" );
+            System.out.println("new size ("+scaledImg.getWidth()+ ", "+ scaledImg.getHeight()+")");
+        }
+
         ImageJ ij=new ImageJ();
-        ImgPlus ip=new ImgPlus(ImageJFunctions.wrap(imagePlus));
+        //ImgPlus ip=new ImgPlus(ImageJFunctions.wrap(scaledImg));
        //ij.ui().show(ip);
-        System.out.println("stardist launcher ip:"+ip);
+        //System.out.println("stardist launcher ip:"+ip);
         //Dataset input = ij.imageDisplay().getActiveDataset();
         //Dataset input = ij.convert().convert(ip, Dataset.class);
+        System.out.println("stardist exclude on edges: " + excludeOnEdges);
         Dataset input = null;
         try {
             String tempDir = IJ.getDirectory("Temp");
             File t_imp_path = new File(tempDir, imagePlus.getShortTitle() + ".tif");
-            FileSaver fs = new FileSaver(imagePlus);
+            FileSaver fs = new FileSaver(scaledImg);
             fs.saveAsTiff(t_imp_path.getAbsolutePath());
             input = ij.scifio().datasetIO().open(t_imp_path.getAbsolutePath());
 
             System.out.println("stardist launcher input:"+input);
+            System.out.println("stardist launcher scale:"+scale);
             System.out.flush();
             //ij.ui().show(input);
             HashMap<String, Object> params = new HashMap();
@@ -85,6 +98,12 @@ public class StarDistLauncher {
 
             stardistRoiManager = RoiManager.getRoiManager();
             System.out.println("nb rois: "+stardistRoiManager.getCount());
+            if(scale!=1.0){
+                double iscale=1/scale;
+                stardistRoiManager.scale(iscale,iscale,false);
+            }
+            validateRoi();
+            System.out.println("nb rois after validation: "+stardistRoiManager.getCount());
 
 
             stardistMask = Detector.labeledImage(imagePlus.getWidth(), imagePlus.getHeight(), stardistRoiManager.getRoisAsArray());
@@ -95,6 +114,25 @@ public class StarDistLauncher {
             e.printStackTrace();
         }
 
+    }
+
+    public void validateRoi(){
+        if(!excludeOnEdges) return;
+        ArrayList<Roi> validated=new ArrayList<>();
+        for (int i=0;i<stardistRoiManager.getCount();i++){
+            Roi roi=stardistRoiManager.getRoi(i);
+            if (excludeOnEdges) {
+                Rectangle r = roi.getBounds();
+                if (r.x <= 1 || r.y <= 1 || r.x + r.width >= imagePlus.getWidth() - 1 || r.y + r.height >= imagePlus.getHeight() - 1) {
+                    continue;
+                }
+            }
+            validated.add(roi);
+        }
+        stardistRoiManager.reset();
+        for (Roi r:validated){
+            stardistRoiManager.addRoi(r);
+        }
     }
 
     public String getModel() {
@@ -223,5 +261,21 @@ public class StarDistLauncher {
 
     public ImagePlus getInstanceMask() {
         return stardistMask;
+    }
+
+    public double getScale() {
+        return scale;
+    }
+
+    public void setScale(double scale) {
+        this.scale = scale;
+    }
+
+    public boolean isExcludeOnEdges() {
+        return excludeOnEdges;
+    }
+
+    public void setExcludeOnEdges(boolean excludeOnEdges) {
+        this.excludeOnEdges = excludeOnEdges;
     }
 }

@@ -34,6 +34,7 @@ public class SegmentationParameters {
     double stardistProbThresh=0.5;
     double stardistNmsThresh=0.0;
     String stardistModelFile=null;
+    double stardistScale=1.0;
 
     //cytoplasm extraction parameters
     double minOverlap=-1;
@@ -73,13 +74,15 @@ public class SegmentationParameters {
                                                         double stardistPercentileTop,
                                                         double stardistProbThresh,
                                                         double stardistNmsThresh,
-                                                        String stardistModelFile){
+                                                        String stardistModelFile,
+                                                        double stardistScale){
         SegmentationParameters param=new SegmentationParameters();
         param.setStardistModel(model);
         param.setStardistPercentileBottom(stardistPercentileBottom);
         param.setStardistPercentileTop(stardistPercentileTop);
         param.setStardistProbThresh(stardistProbThresh);
         param.setStardistNmsThresh(stardistNmsThresh);
+        param.setStardistScale(stardistScale);
         if(stardistModelFile!=null) param.setStardistModelFile(stardistModelFile);
         param.setMethod(STARDIST);
         MeasureValue tmp=new MeasureValue();
@@ -327,5 +330,13 @@ public class SegmentationParameters {
 
     public void setStardistModelFile(String stardistModelFile) {
         this.stardistModelFile = stardistModelFile;
+    }
+
+    public double getStardistScale() {
+        return stardistScale;
+    }
+
+    public void setStardistScale(double stardistScale) {
+        this.stardistScale = stardistScale;
     }
 }

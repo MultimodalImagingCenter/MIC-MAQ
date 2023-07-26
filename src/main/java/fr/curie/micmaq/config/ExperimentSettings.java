@@ -140,7 +140,9 @@ public class ExperimentSettings {
                     nucleiSegmentationParams.getStardistPercentileTop(),
                     nucleiSegmentationParams.getStardistProbThresh(),
                     nucleiSegmentationParams.getStardistNmsThresh(),
-                    nucleiSegmentationParams.getStardistModelFile());
+                    nucleiSegmentationParams.getStardistModelFile(),
+                    nucleiSegmentationParams.getStardistScale(),
+                    nucleiSegmentationParams.isExcludeOnEdge());
         }
         nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
         nucleiDetector.setSegmentation(nucleiSegmentationParams.isUserValidation(),preview);

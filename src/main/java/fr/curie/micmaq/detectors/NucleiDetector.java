@@ -39,6 +39,7 @@ public class NucleiDetector {
     double stardistProbThresh;
     double stardistNmsThresh;
     String stardistModelFile;
+    double stardistScale;
     private boolean useWatershed;
     private Roi[] nucleiRois;
     private boolean finalValidation;
@@ -205,7 +206,9 @@ public class NucleiDetector {
                                   double stardistPercentileTop,
                                   double stardistProbThresh,
                                   double stardistNmsThresh,
-                                  String stardistModelFile){
+                                  String stardistModelFile,
+                                  double stardistScale,
+                                  boolean excludeOnEdges){
         this.cellpose = false;
         this.stardist = true;
         this.stardistModel=model;
@@ -214,6 +217,8 @@ public class NucleiDetector {
         this.stardistProbThresh=stardistProbThresh;
         this.stardistNmsThresh=stardistNmsThresh;
         this.stardistModelFile=stardistModelFile;
+        this.stardistScale=stardistScale;
+        this.excludeOnEdges=excludeOnEdges;
 
     }
 
@@ -272,6 +277,8 @@ public class NucleiDetector {
                 starDistLauncher.setProbThresh(stardistProbThresh);
                 starDistLauncher.setNmsThresh(stardistNmsThresh);
                 starDistLauncher.setModelFile(stardistModelFile);
+                starDistLauncher.setScale(stardistScale);
+                starDistLauncher.setExcludeOnEdges(excludeOnEdges);
                 starDistLauncher.analysis();
                 ImagePlus stardistOuput = starDistLauncher.getInstanceMask();
                 stardistOuput.show();
@@ -334,6 +341,8 @@ public class NucleiDetector {
                 starDistLauncher.setProbThresh(stardistProbThresh);
                 starDistLauncher.setNmsThresh(stardistNmsThresh);
                 starDistLauncher.setModelFile(stardistModelFile);
+                starDistLauncher.setScale(stardistScale);
+                starDistLauncher.setExcludeOnEdges(excludeOnEdges);
                 starDistLauncher.analysis();
                 labeledImage = starDistLauncher.getInstanceMask();
                 detector.renameImage(labeledImage,"stardist");
