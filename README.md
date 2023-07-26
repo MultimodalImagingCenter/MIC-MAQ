@@ -32,10 +32,14 @@ select MIC-MAQ
 
 if it is not available directly you can add it (button add update site) with the folowing URL https://sites.imagej.net/MIC-MAQ/
 
+more complete information to install MIC-MAQ is available in the [MIC-MAQ_Installation_Guide.pdf](https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/documentations/MIC-MAQ_Installation_Guide_v1.1.pdf)
+
 
 ## Usage
 
 run >Plugin>MIC-MAQ>MIC-MAQ
+
+full explanation of the workflow and parameters is available in [MIC-MAQ_Manual.pdf](https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/documentations/MIC-MAQ_Manual_v1.2.pdf)
 
 ## Licensing
 
