@@ -30,6 +30,7 @@
         </constraints>
         <properties>
           <text value="nuclei"/>
+          <toolTipText value="segmentation of nuclei and quantification"/>
         </properties>
       </component>
       <component id="c92db" class="javax.swing.JRadioButton" binding="entireCellRadioButton" default-binding="true">
@@ -38,6 +39,7 @@
         </constraints>
         <properties>
           <text value="cells"/>
+          <toolTipText value="segmentation of cells and quantification"/>
         </properties>
       </component>
       <component id="b3a3f" class="javax.swing.JRadioButton" binding="quantificationRadioButton" default-binding="true">
@@ -47,6 +49,7 @@
         <properties>
           <selected value="true"/>
           <text value="quantification"/>
+          <toolTipText value="quantification only"/>
         </properties>
       </component>
       <component id="9ccf6" class="javax.swing.JCheckBox" binding="spotsMeasureCheckBox" default-binding="true">

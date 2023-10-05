@@ -10,6 +10,7 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 
+import java.awt.*;
 import java.io.File;
 
 /**
@@ -259,6 +260,7 @@ public class NucleiDetector {
         ImagePlus preprocessed = getPreprocessing();
         if (preprocessed!=null){
             preprocessed.show();
+            WindowManager.setWindow(WindowManager.getWindow("Log"));
             if (cellpose){
 //            launch cellpose command to obtain mask
                 /*cyto channel = 0 for gray*/
@@ -320,12 +322,14 @@ public class NucleiDetector {
         if (preprocessed!=null){ /*if no error during preprocessing*/
             if (showPreprocessingImage){
                 preprocessed.show();
+                WindowManager.getWindow("Log").toFront();
             }
             RoiManager roiManagerNuclei;
             ImagePlus labeledImage;
             String analysisType;
 //            SEGMENTATION
             if (cellpose){
+                WindowManager.getWindow("Log").toFront();
                 analysisType = "cellpose";
                 CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
                 cellposeLauncher.analysis();

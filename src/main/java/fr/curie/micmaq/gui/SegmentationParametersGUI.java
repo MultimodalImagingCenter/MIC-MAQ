@@ -95,6 +95,9 @@ public class SegmentationParametersGUI {
         start = Instant.now();
         mainPanel.setBorder(BorderFactory.createTitledBorder("Segmentation parameters for " + type));
         cytoPanel.setVisible(false);
+
+        starDistRadioButton.setVisible(false);
+
         if (type.equals(NUCLEI)) {
             setMeasurementsButton.setText("set measurements for nuclei");
         } else {
@@ -618,10 +621,11 @@ public class SegmentationParametersGUI {
         mainPanel.add(segmentationChoicePanel, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         segmentationChoicePanel.setBorder(BorderFactory.createTitledBorder(null, "Segmentation method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         cellposeRadioButton = new JRadioButton();
+        cellposeRadioButton.setSelected(true);
         cellposeRadioButton.setText("Cellpose");
         segmentationChoicePanel.add(cellposeRadioButton, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         thresholdingRadioButton = new JRadioButton();
-        thresholdingRadioButton.setSelected(true);
+        thresholdingRadioButton.setSelected(false);
         thresholdingRadioButton.setText("Thresholding");
         segmentationChoicePanel.add(thresholdingRadioButton, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label2 = new JLabel();

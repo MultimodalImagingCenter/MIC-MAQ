@@ -9,18 +9,20 @@ import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Prefs;
+import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.io.OpenDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
+import ij.plugin.WindowOrganizer;
+import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
@@ -70,6 +72,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     ResultsTable cellResults;
     ResultsTable nucleusResults;
     String workingDirectory;
+
+    boolean resized = false;
+    int sizeflag = 0;
 
     public MicMaq_plugin() {
         try {
@@ -134,15 +139,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 updateChannels();
                 channelDefinitionChange(true);
                 checkCalibrationFromImages();
-                pack();
+                if (!resized) {
+                    pack();
+                    resized = false;
+                }
             }
         });
-        previewButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                new Thread(() -> previewAction()).start();
-            }
-        });
+
         channelsDisplay.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
@@ -159,6 +162,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
                 //close window
                 dispose();
+            }
+        });
+        previewButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Thread(() -> previewAction()).start();
+            }
+        });
+        previewCurrentStepButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Thread(() -> previewStep()).start();
             }
         });
         launchButton.addActionListener(new ActionListener() {
@@ -179,7 +194,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     updateChannels();
                     channelDefinitionChange(true);
                     ((ImagesTree) imagesTree).updateTree();
-                    pack();
+                    if (!resized) {
+                        pack();
+                        resized = false;
+                    }
                 }
             }
         });
@@ -201,15 +219,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 ((ImagesTree) imagesTree).updateTree();
                 updateChannels();
                 channelDefinitionChange(true);
-                pack();
+                if (!resized) {
+                    pack();
+                    resized = false;
+                }
             }
         });
-        previewCurrentStepButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                new Thread(() -> previewStep()).start();
-            }
-        });
+
         TabsPanel.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -228,6 +244,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         });
+
+
     }
 
     public int getNucleiChannel() {
@@ -365,13 +383,47 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (spotPanels != null) for (SpotsParametersGUI sp : spotPanels) if (sp != null) nbSpots++;
         neededTabs = 1 + ((nucleiParam != null) ? 1 : 0) + ((cellParam != null) ? 1 : 0) + nbSpots;
         System.out.println("after needed tabs=" + neededTabs + " (current=" + nbtabs + ")");
-        pack();
+        if (!resized) {
+            pack();
+            resized = false;
+        }
     }
 
     protected ChannelPanel getChannelPanel(int index) {
         return channelPanels.get(index);
     }
 
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Window Resize Example");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // Create a flag to track window resize
+        int[] isResizedByUser = new int[1];
+
+        // Add a component to display the flag's status
+        JLabel flagLabel = new JLabel("Window is not resized");
+        frame.add(flagLabel, BorderLayout.SOUTH);
+
+        // Add a component to occupy space
+        JPanel contentPane = new JPanel();
+        frame.add(contentPane);
+
+        // Add a ComponentListener to detect window resize
+        frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                isResizedByUser[0]++;
+                if (isResizedByUser[0] > 10) {
+                    // Set the flag to true when the window is resized
+                    flagLabel.setText("Window is resized by user");
+                }
+            }
+        });
+
+
+        frame.pack();
+        frame.setVisible(true);
+    }
 
     public void run(String s) {
         setTitle("MIC-MAQ");
@@ -379,6 +431,19 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         setContentPane(this.rootPane);
         pack();
         setVisible(true);
+        resized = false;
+
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
+                sizeflag++;
+                if(sizeflag>10) resized=true;
+
+            }
+        });
+
+
     }
 
     protected void updateChannels() {
@@ -421,7 +486,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         //channelsDisplay.setPreferredSize(new Dimension(channelsDisplay.getComponent(0).getWidth(), channelsDisplay.getComponent(0).getHeight() * correctNbChannels));
         channelScroll.setPreferredSize(new Dimension(channelsDisplay.getComponent(0).getWidth(), 600));
         quantifPanel = new QuantificationParametersGUI(provider);
-        pack();
+        if (!resized) {
+            pack();
+            resized = false;
+        }
 
     }
 
@@ -540,6 +608,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
     }
 
+
     private void previewAction() {
         if (provider != null && provider.getNbFielOfView() > 0) {
             int countNuclei = 0;
@@ -552,6 +621,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 IJ.error("channels distribution error", "for segmentation there can be only one nuclei channel and one cell channel");
                 return;
             }
+            ProgressWindowK2000 progress = new ProgressWindowK2000("Preview step");
+            progress.setLocationRelativeTo(rootPane);
+            progress.setAlwaysOnTop(true);
 
             int index = (Integer) PreviewSpinner.getValue();
             FieldOfView imgs = provider.getFieldOfView(index);
@@ -561,13 +633,23 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             IJ.log("##        preview          ##");
             IJ.log("#############################");
 
+            WindowManager.setWindow(WindowManager.getWindow("Log"));
+
             exp.run();
             if (cellResults != null) cellResults.show("cells/spots");
             if (nucleusResults != null) nucleusResults.show("nuclei correspondence");
+            progress.dispose();
+            new WindowOrganizer().run("tile");
+            WindowManager.getWindow("cells/spots").toFront();
+            RoiManager.getInstance().toFront();
         }
     }
 
     private void previewStep() {
+        ProgressWindowK2000 progress = new ProgressWindowK2000("Preview step");
+        progress.setLocationRelativeTo(rootPane);
+        progress.setAlwaysOnTop(true);
+
         int index = (Integer) PreviewSpinner.getValue();
         FieldOfView imgs = provider.getFieldOfView(index);
         Experiment exp = createExperiment(index, true);
@@ -588,6 +670,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         }
+        progress.dispose();
+        new WindowOrganizer().run("tile");
+        //WindowManager.getWindow("Log").toFront();
+        RoiManager.getInstance().toFront();
     }
 
     public void runAllExperiments() {

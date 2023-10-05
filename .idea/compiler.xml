@@ -9,8 +9,5 @@
         <module name="MIC-MAQ" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="MIC-MAQ" target="8" />
-    </bytecodeTargetLevel>
   </component>
 </project>

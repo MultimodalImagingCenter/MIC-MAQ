@@ -239,6 +239,7 @@ public class CellDetector {
             if (showPreprocessedImage){
                 //preprocessed.setTitle("preprocessed");
                 preprocessed.show();
+                WindowManager.setWindow(WindowManager.getWindow("Log"));
             }
 
 
@@ -334,6 +335,7 @@ public class CellDetector {
         ImagePlus preprocessed = getPreprocessing();
         if (preprocessed != null) {
             preprocessed.show();
+            WindowManager.setWindow(WindowManager.getWindow("Log"));
 //            SEGMENTATION : launch cellpose command to obtain mask
             /*cyto channel : 0=grayscale, 1=red, 2=green, 3=blue*/
             /*nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue*/
