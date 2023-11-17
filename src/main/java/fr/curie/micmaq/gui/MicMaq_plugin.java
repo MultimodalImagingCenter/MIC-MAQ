@@ -438,7 +438,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             public void componentResized(ComponentEvent e) {
                 super.componentResized(e);
                 sizeflag++;
-                if(sizeflag>10) resized=true;
+                if (sizeflag > 10) resized = true;
 
             }
         });
@@ -686,6 +686,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 "", -1, provider.getNbFielOfView() * 100);
         progress.setMillisToDecideToPopup(1);
         progress.setMillisToPopup(1);
+        int countNbExp = 0;
+        for (int index = 0; index < provider.getNbFielOfView(); index++) {
+            if (provider.getFieldOfView(index).isUsed()) countNbExp++;
+        }
         for (int index = 0; index < provider.getNbFielOfView(); index++) {
 
             IJ.log("#############################");
