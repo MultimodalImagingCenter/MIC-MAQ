@@ -28,22 +28,22 @@ public class ImagesTree extends JTree {
         public void keyTyped(KeyEvent e) {
             super.keyTyped(e);
             //System.out.println("key event ");
-            System.out.println(getRowCount());
+            //System.out.println(getRowCount());
             if (e.getKeyChar() == KeyEvent.VK_SPACE) {
-                System.out.println("key space");
+                //System.out.println("key space");
                 int row=getSelectionRows()[0];
-                System.out.println("current node "+ row);
+                //System.out.println("current node "+ row);
                 if(e.getModifiers() == 0 && row>0){
                     DefaultMutableTreeNode child=(DefaultMutableTreeNode) getLastSelectedPathComponent();
                     //System.out.println("name="+ child.toString());
                     ((CheckBoxNode)child.getUserObject()).toggleSelection();
                     //System.out.println("after toggle name="+ child.toString());
                 }else if (e.getModifiers() == KeyEvent.SHIFT_MASK) {
-                    System.out.println("shift key");
+                    //System.out.println("shift key");
                     toggleAll=!toggleAll;
                     for(int i=1;i<getRowCount();i++){
                         DefaultMutableTreeNode child=(DefaultMutableTreeNode) getPathForRow(i).getLastPathComponent();
-                        System.out.println("name="+ child.toString());
+                        //System.out.println("name="+ child.toString());
                         ((CheckBoxNode)child.getUserObject()).setSelected(toggleAll);
                     }
                 }
