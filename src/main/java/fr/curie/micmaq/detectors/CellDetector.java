@@ -184,7 +184,10 @@ public class CellDetector {
                 }
                 /*Save RoiManager*/
                 if(roiManager.getCount()>0) {
-                    if (roiManager.save(resultsDirectory + "/Results/Cell/ROI/" + image.getTitle() + "_CellsWithNucleusROIs.zip")) {
+                    String extension=(roiManager.getCount()==1)?".roi":".zip";
+                    File dir=new File(resultsDirectory + "/Results/Cell/ROI/validated/");
+                    if(!dir.exists()) dir.mkdirs();
+                    if (roiManager.save(resultsDirectory + "/Results/Cell/ROI/validated/" + image.getTitle() + "_CellsWithNucleusROIs"+extension)) {
                         IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Cell/ROI/");
                     } else {
                         IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cell/ROI/");
@@ -197,7 +200,9 @@ public class CellDetector {
 //            Save binary mask
             if (resultsDirectory!=null && saveBinary){
                 ImagePlus cellLabeledMask = detector.labeledImage(modifiedCellRois);
-                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Results/Cell/Images/validated" + cellLabeledMask.getTitle())) {
+                File dir=new File(resultsDirectory + "/Results/Cell/Images/validated/");
+                if(!dir.exists()) dir.mkdirs();
+                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Results/Cell/Images/validated/" + cellLabeledMask.getTitle())) {
                     IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus was saved in " + resultsDirectory + "/Results/Cell/Images/");
                 } else {
                     IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus could not be saved in " + resultsDirectory + "/Results/Cell/Images/");
@@ -310,7 +315,8 @@ public class CellDetector {
                     roiManagerCell.rename(i,"Cell_"+(i+1));
                 }
                 if(roiManagerCell.getCount()>0) {
-                    if (roiManagerCell.save(resultsDirectory + "/Results/Cell/ROI/" + image.getTitle() + "_Cells_cellpose_roi.zip")) {
+                    String extension=(roiManagerCell.getCount()==1)?".roi":".zip";
+                    if (roiManagerCell.save(resultsDirectory + "/Results/Cell/ROI/" + image.getTitle() + "_Cells_cellpose_roi"+extension)) {
                         IJ.log("The cell ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Cell/ROI/");
                     } else {
                         IJ.log("The cell ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cell/ROI/");
