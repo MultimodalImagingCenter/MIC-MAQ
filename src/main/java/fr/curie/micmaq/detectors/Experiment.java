@@ -204,6 +204,7 @@ public class Experiment {
                     nuclei.measureEachNuclei(cellID, finalResultsCellSpot,nucleiRois[cellID]);
                 }
                 if (cytoDetector!=null){
+                    System.out.println("measure cyto: "+cellID+"/"+numberOfObject);
                     cytoDetector.measureEachCytoplasm(cellID, finalResultsCellSpot);
                 }
                 for (SpotDetector spot : spots) {
