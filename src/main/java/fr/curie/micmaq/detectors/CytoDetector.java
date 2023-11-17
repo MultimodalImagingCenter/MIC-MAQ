@@ -39,6 +39,7 @@ public class CytoDetector {
     private Roi[] trueCellRois;
     private Roi[] cytoplasmRois;
     private int[] numberOfNucleiPerCell;
+    private int[] trueNbNucleiPerCell;
     private Roi[] trueAssociatedRoi;
 
     /**
@@ -133,7 +134,8 @@ public class CytoDetector {
                     }
                 }
                 if(roiManager.getCount()>0) {
-                    if (roiManager.save(resultsDirectory + "/Results/Cyto/ROI/" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi.zip")) {
+                    String extension=(roiManager.getCount()==1)?".roi":".zip";
+                    if (roiManager.save(resultsDirectory + "/Results/Cyto/ROI/" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi"+extension)) {
                         IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/Results/Cyto/ROI/");
                     } else {
                         IJ.log("#########\nThe cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cyto/ROI/\n######");
@@ -185,6 +187,8 @@ public class CytoDetector {
 //        IDs of ROIs to keep
         ArrayList<Integer> cellRoisToKeep = new ArrayList<>();
         ArrayList<Integer> associatedNucleiToKeep = new ArrayList<>();
+        ArrayList<Integer> numberNucleiToKeep = new ArrayList<>();
+
 //        Iterate on each cell roi
         for (int cellID = 0; cellID < cellRois.length; cellID++) {
             Roi cellROI = cellRois[cellID];
@@ -231,22 +235,30 @@ public class CytoDetector {
                 }
             }
 //            Keep only cell with minimum 1 nucleus
+
+
             if (numberOfNucleiPerCell[cellID]>0){
                 cellRoisToKeep.add(cellID);
                 associatedNucleiToKeep.add(cellID);
+                numberNucleiToKeep.add(numberOfNucleiPerCell[cellID]);
             }
         }
+        System.out.println("associate nuclei to cells: before "+cellRois.length+" cells after "+cellRoisToKeep.size());
 //        If not all cells are kept, the ids in cellRois and associatedNucleiRois need to be changed
         if (cellRoisToKeep.size()!=cellRois.length){
             trueCellRois = new Roi[cellRoisToKeep.size()];
             trueAssociatedRoi = new Roi[cellRoisToKeep.size()];
+            trueNbNucleiPerCell = new int[cellRoisToKeep.size()];
             for (int trueCellID = 0; trueCellID < cellRoisToKeep.size() ; trueCellID++) {
                 trueCellRois[trueCellID] = cellRois[cellRoisToKeep.get(trueCellID)];
                 trueAssociatedRoi[trueCellID] = associatedNucleiRois[associatedNucleiToKeep.get(trueCellID)];
+                trueNbNucleiPerCell[trueCellID]=numberNucleiToKeep.get(trueCellID);
             }
+            System.out.println(trueCellRois.length+" "+trueAssociatedRoi.length+" "+trueNbNucleiPerCell);
         }else {
             trueCellRois = cellRois;
             trueAssociatedRoi = associatedNucleiRois;
+            trueNbNucleiPerCell=numberOfNucleiPerCell;
         }
     }
 
@@ -305,7 +317,7 @@ public class CytoDetector {
             Roi cytoRoi = cytoplasmRois[cellID];
             cellCytoImageToMeasure.setRoi(cytoRoi);
             analyzer.measure();
-            resultsTableFinal.addValue("Number of nuclei", numberOfNucleiPerCell[cellID]);
+            resultsTableFinal.addValue("Number of nuclei", trueNbNucleiPerCell[cellID]);
             detector.setResultsAndRename(rawMeasures, resultsTableFinal, cellID, "Cytoplasm");
         }else {
             analyzer.measure();
