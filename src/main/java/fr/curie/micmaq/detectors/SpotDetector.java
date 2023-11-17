@@ -5,7 +5,9 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.PointRoi;
+import ij.gui.PolygonRoi;
 import ij.gui.Roi;
+import ij.gui.ShapeRoi;
 import ij.io.RoiEncoder;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
@@ -59,6 +61,7 @@ public class SpotDetector {
     //Detection of spots
     //    --> find maxima
     private ImagePlus findMaximaIP;
+    private ImagePlus findMaximaMask;
     private boolean spotByFindMaxima;
     private double prominence;
 
@@ -249,7 +252,7 @@ public class SpotDetector {
                 findMaximaIP = preprocessed.duplicate();
                 detector.renameImage(findMaximaIP, "maxima");
                 /*Find maxima*/
-                findMaxima(findMaximaIP);
+                findMaxima(findMaximaIP,prominence,"preview");
             }
         }
     }
@@ -315,10 +318,11 @@ public class SpotDetector {
             if (spotByFindMaxima) {
                 findMaximaIP = preprocessed.duplicate();
                 detector.renameImage(findMaximaIP, "maxima");
+                createFindMaximaMask(findMaximaIP);
                 if (resultsDirectory != null) {
                     if (saveRois){
                         findMaximaIP.setRoi((Roi)null);
-                        PointRoi roiMaxima = findMaxima(findMaximaIP);
+                        PointRoi roiMaxima = findMaxima(findMaximaIP, prominence, "full");
                         findMaximaIP.setRoi(roiMaxima);
                         boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory +"/Results/Spot"+spotName+"/ROI/findmaxima/" + image.getTitle() + "findMaxima_all_roi.roi");
                         if (!wasSaved) {
@@ -414,15 +418,18 @@ public class SpotDetector {
      * @param type : image, cell, nucleus or cytoplasm
      */
     private void findMaximaPerRegion(Roi regionROI, ResultsTable resultsTableToAdd, String type) {
-        findMaximaIP.setRoi(regionROI);
+        ImagePlus tmp= (findMaximaMask!=null) ? findMaximaMask:findMaximaIP;
+        double prom=(findMaximaMask!=null)? 10:prominence;
+        tmp.setRoi(regionROI);
 //                    Find maxima
-        PointRoi roiMaxima = findMaxima(findMaximaIP);
+
+        PointRoi roiMaxima = findMaxima(tmp, prom,type);
 //                    Get statistics
         int size = 0;
         float mean = 0;
         for (Point p : roiMaxima) {
             size++;
-            mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
+            mean += tmp.getProcessor().getPixelValue(p.x, p.y);
         }
         mean = mean / size;
         resultsTableToAdd.addValue(type + "_"+ spotName + " maxima prominence", prominence);
@@ -475,21 +482,64 @@ public class SpotDetector {
         return wobkgIP;
     }
 
+    private ImagePlus createFindMaximaMask(ImagePlus findMaximaIP){
+        MaximumFinder maximumFinder = new MaximumFinder();
+        ImageProcessor findMaximaProc = findMaximaIP.getProcessor().duplicate();
+        Polygon maxima = maximumFinder.getMaxima(findMaximaProc, prominence, true);
+        PointRoi roiMaxima = new PointRoi(maxima);
+        findMaximaIP.setRoi(roiMaxima);
+        findMaximaMask=new ImagePlus("find maxima mask",findMaximaIP.createRoiMask());
+        //findMaximaMask.show();
+        return findMaximaMask;
+    }
+
     /**
      * The algorithm scan the image to find all values all the pixel of
      * @param findMaximaIP : image to use for finding local maxima
      * @return : pointRoi corresponding to all local maxima
      */
-    private PointRoi findMaxima(ImagePlus findMaximaIP) {
+    private PointRoi findMaxima(ImagePlus findMaximaIP, double prominence,String type) {
         MaximumFinder maximumFinder = new MaximumFinder();
-        ImageProcessor findMaximaProc = findMaximaIP.getProcessor();
-        Polygon maxima = maximumFinder.getMaxima(findMaximaProc, prominence, true);
-        PointRoi roiMaxima = new PointRoi(maxima);
-        findMaximaIP.setRoi(roiMaxima);
-        if (showMaximaImage) {
-            findMaximaIP.flatten();
-            findMaximaIP.show();
+        ImageProcessor findMaximaProc = findMaximaIP.getProcessor().duplicate();
+        //ImageProcessor debug= findMaximaProc.duplicate();
+        //new ImagePlus("debug",debug).show();
+        //ImageProcessor debug2 = debug.duplicate();
+        Roi roi=findMaximaIP.getRoi();
+        if(roi!=null) {
+            if (roi instanceof PolygonRoi || roi instanceof ShapeRoi) {
+                roi = roi.getInverse(findMaximaIP);
+                findMaximaProc.setValue(0);
+                //System.out.println("debug fill");
+                findMaximaProc.fill(roi);
+                //new ImagePlus("debug2_" + type, findMaximaProc).show();
+            } else {
+                System.out.println("not a polygonRoi " + roi.getClass());
+            }
+            Polygon maxima = maximumFinder.getMaxima(findMaximaProc, prominence, true);
+            PointRoi roiMaxima = new PointRoi(maxima);
+            findMaximaIP.setRoi(roiMaxima);
+            if (showMaximaImage) {
+                findMaximaIP.flatten();
+                findMaximaIP.show();
+            }
+            return roiMaxima;
+        } else if (type.equals("full")) {
+            Polygon maxima = maximumFinder.getMaxima(findMaximaProc, prominence, true);
+            PointRoi roiMaxima = new PointRoi(maxima);
+            findMaximaIP.setRoi(roiMaxima);
+            if (showMaximaImage) {
+                findMaximaIP.flatten();
+                findMaximaIP.show();
+            }
+            return roiMaxima;
+        }else{
+            return new PointRoi();
         }
-        return roiMaxima;
+        //debug2.setRoi((PolygonRoi)findMaximaIP.getRoi());
+        //System.out.println("debug setMask");
+        //debug2.setMask(((PolygonRoi)findMaximaIP.getRoi()).getMask());
+
+
+
     }
 }
