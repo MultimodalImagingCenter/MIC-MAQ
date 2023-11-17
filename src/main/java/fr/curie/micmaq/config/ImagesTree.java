@@ -21,12 +21,43 @@ public class ImagesTree extends JTree {
     FieldOfViewProvider provider;
     private ArrayList<CheckBoxNode> nodes;
     int firstIndex=0;
+    boolean toggleAll=true;
+
+    KeyListener keyListener = new KeyAdapter() {
+        @Override
+        public void keyTyped(KeyEvent e) {
+            super.keyTyped(e);
+            //System.out.println("key event ");
+            System.out.println(getRowCount());
+            if (e.getKeyChar() == KeyEvent.VK_SPACE) {
+                System.out.println("key space");
+                int row=getSelectionRows()[0];
+                System.out.println("current node "+ row);
+                if(e.getModifiers() == 0 && row>0){
+                    DefaultMutableTreeNode child=(DefaultMutableTreeNode) getLastSelectedPathComponent();
+                    //System.out.println("name="+ child.toString());
+                    ((CheckBoxNode)child.getUserObject()).toggleSelection();
+                    //System.out.println("after toggle name="+ child.toString());
+                }else if (e.getModifiers() == KeyEvent.SHIFT_MASK) {
+                    System.out.println("shift key");
+                    toggleAll=!toggleAll;
+                    for(int i=1;i<getRowCount();i++){
+                        DefaultMutableTreeNode child=(DefaultMutableTreeNode) getPathForRow(i).getLastPathComponent();
+                        System.out.println("name="+ child.toString());
+                        ((CheckBoxNode)child.getUserObject()).setSelected(toggleAll);
+                    }
+                }
+                repaint();
+            }
+        }
+    };
 
 
     public ImagesTree(FieldOfViewProvider provider){
         super(new DefaultTreeModel(new DefaultMutableTreeNode("root")));
         this.provider=provider;
         createTree();
+        addKeyListener(keyListener);
         setRootVisible(true);
     }
 
@@ -64,14 +95,18 @@ public class ImagesTree extends JTree {
                 child.add(new DefaultMutableTreeNode(fov.getChannelName(c)));
             }
             child.setUserObject(tmp);
+
             root.add(child);
             //root.add(new DefaultMutableTreeNode(fov.getFieldname()));
         }
         ((DefaultTreeModel)getModel()).reload();
         CheckBoxNodeRenderer renderer = new CheckBoxNodeRenderer();
+
+
         setCellRenderer(renderer);
         setCellEditor(new CheckBoxNodeEditor(this));
         setEditable(true);
+
         //repaint();
     }
 
@@ -110,6 +145,7 @@ public class ImagesTree extends JTree {
         DefaultTreeCellRenderer nonLeafRenderer = new DefaultTreeCellRenderer();
         Color selectionBorderColor, selectionForeground, selectionBackground,
                 textForeground, textBackground;
+
 
         protected JCheckBox getLeafRenderer() {
             return leafRenderer;
@@ -217,13 +253,21 @@ public class ImagesTree extends JTree {
                     expanded, leaf, row, true);
             ItemListener itemListener = new ItemListener() {
                 public void itemStateChanged(ItemEvent itemEvent) {
+                    System.out.println("tree item change");
                     if (stopCellEditing()) {
                         fireEditingStopped();
                     }
                 }
             };
+
             if (editor instanceof JCheckBox) {
-                ((JCheckBox) editor).addItemListener(itemListener);
+                JCheckBox jc= (JCheckBox) editor;
+                if(jc.getItemListeners().length==0) {
+                    System.out.println("add custom listener");
+                    jc.addItemListener(itemListener);
+                }else{
+                    System.out.println("no listener needed");
+                }
             }
             return editor;
         }
@@ -240,6 +284,10 @@ public class ImagesTree extends JTree {
         }
         public void setSelected(boolean newValue) {
             selected = newValue;
+        }
+
+        public void toggleSelection(){
+            selected=!selected;
         }
         public String getText() {
             return text;

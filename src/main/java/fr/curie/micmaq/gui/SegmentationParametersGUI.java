@@ -309,6 +309,10 @@ public class SegmentationParametersGUI {
         }
         result += "\n\tExclude on edges: " + (excludeOnEdgesCheckBox.isSelected() ? "yes" : "no");
         result += "\n\tFinal user validation: " + (userValidationCheckBox.isSelected() ? "yes" : "no");
+        if (type.equals(CELL_CYTO)) {
+            result += "\n\tmin size overlap nucleus/cell: " + minOverlapSpinner.getValue();
+            result += "\n\tmin size of cytoplasm: " + minCytoSizeSpinner.getValue();
+        }
 
         return result;
     }
