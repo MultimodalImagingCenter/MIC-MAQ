@@ -150,7 +150,7 @@ public class SpotsParametersGUI {
     }
 
     public MeasureValue getMeasure() {
-        MeasureValue measureValue = new MeasureValue();
+        MeasureValue measureValue = new MeasureValue(false);
         measureValue.setMeasure(Measurements.MEAN + Measurements.INTEGRATED_DENSITY);
         if (isZStackCheckBox.isSelected()) {
             measureValue.setProjection(projectionMethodCB.getSelectedIndex());

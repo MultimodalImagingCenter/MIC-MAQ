@@ -137,9 +137,9 @@ public class PluginCellProt extends JFrame implements PlugIn {
         });
 //        CHOOSE MEASUREMENTS
         setMeasurementsForCellsButton.setEnabled(Prefs.get("MICMAQ.analyseCytoplasmBoolean", false));
-        measuresNuclei = new MeasureValue();
+        measuresNuclei = new MeasureValue(true);
         measuresNuclei.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
-        measuresCells = new MeasureValue();
+        measuresCells = new MeasureValue(true);
         measuresCells.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         setMeasurementsForCellsButton.addActionListener(e -> {
             Measures cellMeas = new Measures("Cells", measuresCells);
