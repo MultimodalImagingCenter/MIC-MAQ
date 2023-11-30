@@ -76,6 +76,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     boolean resized = false;
     int sizeflag = 0;
 
+    ArrayList<String> patterns = null;
+    String filePattern = null;
+    String path_shorten = null;
+
     public MicMaq_plugin() {
         try {
             boolean nimbusFound = false;
@@ -126,7 +130,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     workingDirectory = path;
 //                Shorten path to show only the 2 last subdirectories
                     if (path.split("\\\\").length > 2) {
-                        String path_shorten = path.substring(path.substring(0, path.lastIndexOf("\\")).lastIndexOf("\\"));
+                        path_shorten = path.substring(path.substring(0, path.lastIndexOf("\\")).lastIndexOf("\\"));
                         chosenDirectoryTextArea.setText("..." + path_shorten);
                     } else if (path.split("/").length > 2) {
                         String path_shorten = path.substring(path.substring(0, path.lastIndexOf("/")).lastIndexOf("/"));
@@ -190,7 +194,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (provider != null) {
-                    provider.parseDirectory(filePatternTextField.getText());
+                    filePattern = filePatternTextField.getText();
+                    provider.parseDirectory(filePattern);
                     updateChannels();
                     channelDefinitionChange(true);
                     ((ImagesTree) imagesTree).updateTree();
@@ -213,7 +218,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 RedefineChannelsDialog dialog = new RedefineChannelsDialog();
                 dialog.pack();
                 dialog.setVisible(true);
-                ArrayList<String> patterns = dialog.getChannelPatterns();
+                patterns = dialog.getChannelPatterns();
                 if (patterns == null) return;
                 provider.reorganiseFiles(filePatternTextField.getText(), patterns);
                 ((ImagesTree) imagesTree).updateTree();
@@ -479,7 +484,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         channelPanels.clear();
         for (int i = 0; i < correctNbChannels; i++) {
             ChannelPanel cp = new ChannelPanel(i, channelsDisplay);
-            cp.setProteinName(provider.getFieldOfView(((ImagesTree) imagesTree).getFirstIndex()).getChannelNameInFile(i + 1));
+            String tmpstr = provider.getFieldOfView(((ImagesTree) imagesTree).getFirstIndex()).getChannelUserName(i + 1);
+            if (tmpstr == null) {
+                tmpstr = provider.getFieldOfView(((ImagesTree) imagesTree).getFirstIndex()).getChannelNameInFile(i + 1);
+            }
+            cp.setProteinName(tmpstr);
             channelPanels.add(cp);
             channelsDisplay.add(cp.getPanel());
         }
@@ -754,9 +763,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 System.out.println("nuclei channel: " + (i + 1));
                 SegmentationParameters params = nucleiParam.getParameters();
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
-                MeasureValue tmp = quantifPanel.getMeasuresSegmentation();
+                MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i+1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
-                params.setPreprocessMacroQuantif(quantifPanel.getMacro());
+                params.setPreprocessMacroQuantif(quantifPanel.getMacro(i+1));
                 settings.setSegmentationNuclei(i + 1, params);
                 if (!params.isZproject() && tmp.isZproject()) {
                     params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
@@ -765,10 +774,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             } else if (cp.isUsed() && cp.isCell()) {
                 System.out.println("cell channel: " + (i + 1));
                 SegmentationParameters params = cellParam.getParameters();
-                MeasureValue tmp = quantifPanel.getMeasuresSegmentation();
+                MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i+1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
-                params.setPreprocessMacroQuantif(quantifPanel.getMacro());
+                params.setPreprocessMacroQuantif(quantifPanel.getMacro(i+1));
                 settings.setSegmentationCell(i + 1, params);
                 if (!params.isZproject() && tmp.isZproject()) {
                     params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
@@ -778,12 +787,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 System.out.println("quantification channel: " + (i + 1));
                 IJ.log("quantification channel: " + (i + 1) + " is spot " + cp.isSpot());
                 //IJ.log("number of slices: " + imgs.getNSlices(i + 1));
-                MeasureValue measureValue = new MeasureValue();
+                MeasureValue measureValue = new MeasureValue(false);
                 if (cp.isSpot()) {
                     SpotsParametersGUI sp = spotPanels.get(i);
                     if (sp != null) {
                         measureValue = sp.getMeasure();
-                        MeasureValue tmp = quantifPanel.getMeasuresSegmentation();
+                        MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i+1);
                         if (!measureValue.isZproject() && tmp.isZproject()) {
                             measureValue.setProjection(tmp.getProjectionMethod());
                             measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
@@ -793,16 +802,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 } else {
                     //TODO check that MAX projection is what should be done by default
                     if (imgs.getNSlices(i + 1) > 1) {
-                        MeasureValue tmp = quantifPanel.getMeasuresQuantif();
+                        MeasureValue tmp = quantifPanel.getMeasuresQuantif(i+1);
                         measureValue.setProjection(tmp.getProjectionMethod());
                         measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
                         measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
                         IJ.log("C" + (i + 1) + " quantification without spots: 3D -> set projection to the one defined in quantification");
                     }
                 }
-                measureValue.setMeasure(quantifPanel.getMeasuresQuantif().getMeasure());
+                measureValue.setMeasure(quantifPanel.getMeasuresQuantif(i+1).getMeasure());
                 measureValue.setName("C" + (i + 1) + "_" + cp.getProteinName());
-                measureValue.setPreprocessMacroQuantif(quantifPanel.getMacro());
+                measureValue.setPreprocessMacroQuantif(quantifPanel.getMacro(i+1));
                 settings.setQuantification(i + 1, measureValue);
                 //IJ.log("create exp: spot macro:" + measureValue.getPreprocessMacro());
                 //IJ.log("create exp: spot quantif macro:" + measureValue.getPreprocessMacroQuantif());
@@ -836,7 +845,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             } else if (cp.isUsed() && cp.isCell()) {
                 SegmentationParameters params = cellParam.getParameters();
-                MeasureValue tmp = quantifPanel.getMeasuresSegmentation();
+                MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i+1);
                 warningC = (imgs.getNSlices(i + 1) > 1) && (!params.isZproject());
                 if (warningC)
                     warningMessage += "C" + (i + 1) + " projection for cell is not defined, using the one from quantification\n";
@@ -856,7 +865,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     }
                 }
             }
-            MeasureValue tmp = quantifPanel.getMeasuresQuantif();
+            MeasureValue tmp = quantifPanel.getMeasuresQuantif(i+1);
             if (((imgs.getNSlices(i + 1) > 1) && (!tmp.isZproject()))) {
                 warningQ = true;
                 warningMessage += "C" + (i + 1) + " projection for quantification is not defined while using stacks\n";
@@ -887,17 +896,29 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             FileWriter fileWriter = new FileWriter(parametersFile.getAbsoluteFile(), false);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
             bufferedWriter.append("The configuration is :");
-            bufferedWriter.append("\nCALIBRATION: " + calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
+
+            bufferedWriter.append("\nFILES: ");
+            String tmp = "\n\tDirectory : "+workingDirectory;
+            tmp += (filePattern!=null)? "\n\tFilter by image filename pattern: "+filePattern : "";
+            if(patterns!=null){
+                tmp+="\n\tRearrange image file into channels with patterns:";
+                for(int i=0;i<patterns.size();i++){
+                    tmp+="\n\t\tCHANNEL "+(i+1)+": "+patterns.get(i);
+                }
+            }
+            bufferedWriter.append(tmp);
+
+            bufferedWriter.append("\n\nCALIBRATION: " + calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
 
             for (int i = 0; i < channelPanels.size(); i++) {
                 ChannelPanel cp = channelPanels.get(i);
-                String tmp = "\n\nCHANNEL " + (i + 1) + ":" + (cp.isUsed() ? " used" : " NOT USED");
+                tmp = "\n\nCHANNEL " + (i + 1) + " (" + channelPanels.get(i).getProteinName() + "):" + (cp.isUsed() ? " used" : " NOT USED");
                 if (cp.isUsed() && cp.isNuclei()) {
                     tmp += nucleiParam.getParametersAsString();
-                    tmp += quantifPanel.getParametersAsString(true);
+                    tmp += quantifPanel.getParametersAsString(true, i+1);
                 } else if (cp.isUsed() && cp.isCell()) {
                     tmp += cellParam.getParametersAsString();
-                    tmp += quantifPanel.getParametersAsString(true);
+                    tmp += quantifPanel.getParametersAsString(true, i+1);
                 } else if (cp.isUsed()) {
                     tmp += "\nQUANTIFICATION";
                     if (cp.isSpot()) {
@@ -906,7 +927,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             tmp += sp.getParametersAsString();
                         }
                     }
-                    tmp += quantifPanel.getParametersAsString(true);
+                    tmp += quantifPanel.getParametersAsString(false, i+1);
                 }
                 bufferedWriter.append(tmp);
             }
