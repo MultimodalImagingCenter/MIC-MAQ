@@ -143,7 +143,7 @@ public class SegmentationParametersGUI {
         } else {
             projectionPanel.setVisible(false);
         }
-        measures = new MeasureValue();
+        measures = new MeasureValue(true);
         int measurements = (int) Prefs.get("MICMAQ.Measurements_" + type, (Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY));
         measures.setMeasure(measurements); /*Default measurements*/
 
@@ -294,7 +294,7 @@ public class SegmentationParametersGUI {
         } else if (cellposeRadioButton.isSelected()) {
             result += "\nUse Cellpose:";
             result += "\n\tCellpose model: " + cellposeModelCB.getSelectedItem();
-            if (cellposeModelPath != null) result += "\n\tCellpose model path: " + cellposeModelPath;
+            if (cellposeModelCB.getSelectedIndex()== cellposeModelCB.getItemCount()-1 && cellposeModelPath != null) result += "\n\tCellpose model path: " + cellposeModelPath;
             result += "\n\tMinimum diameter: " + cellposeDiameterSpinner.getValue();
             result += "\n\tcellproba_threshold: " + cellposeCellproba_thresholdSpinner.getValue();
         } else if (starDistRadioButton.isSelected()) {
