@@ -33,8 +33,11 @@ public class MeasureValue {
     double subtractBGRadius=-1;
 
 
-    public MeasureValue() {
-        measure= Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
+    public MeasureValue(boolean morphology) {
+        if(morphology){
+            measure= Measurements.AREA;
+        }else
+         measure += Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
     }
 
     public void setMeasure(int measure) {
