@@ -24,9 +24,12 @@ public class FieldOfView {
     boolean used=true;
     int serieNb=0;
 
+    ArrayList<String> channelUserName;
+
     public FieldOfView(){
         channelsImagePlus=new ArrayList<ImportProcess>();
         originalChannelNb=new ArrayList<>();
+        channelUserName = new ArrayList<>();
     }
 
     /**
@@ -35,7 +38,7 @@ public class FieldOfView {
      * @param serieNb serie nb corresponding to field of view in image given as path
      * @param channelNb channel nb corresponding to field of view in image given as path
      */
-    public void addChannel(String path, int serieNb, int channelNb){
+    public void addChannel(String path, int serieNb, int channelNb, String userName){
         String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
         ImporterOptions options = null;
         this.serieNb=serieNb;
@@ -60,6 +63,7 @@ public class FieldOfView {
             IJ.log("fieldname: "+fieldname);
             channelsImagePlus.add(process);
             originalChannelNb.add(channelNb);
+            channelUserName.add(userName);
             //IJ.log("add channel : "+path+"   serieNb:"+serieNb+"    channel:"+channelNb);
         } catch (Exception e) {
             e.printStackTrace();
@@ -273,4 +277,12 @@ public class FieldOfView {
         if(tmp!=null) return tmp.replaceAll("/","_");
         return tmp;
     }
+
+    public String getChannelUserName(int channel) {
+        channel-=1;
+        if( channel>=0 && channel<channelUserName.size())
+            return channelUserName.get(channel);
+        return null;
+    }
+
 }
