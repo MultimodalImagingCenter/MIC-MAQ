@@ -288,11 +288,13 @@ public class CellDetector {
             if (finalValidation){
                 roiManagerCell.toFront();
                 ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
-                if (showBinaryImage){
+                /*if (showBinaryImage){
                     IJ.selectWindow(imageToMeasure.getID());
                 }else {
                     tempImage.show();
-                }
+                }*/
+                tempImage.show();
+                IJ.selectWindow(tempImage.getID());
                 roiManagerCell.runCommand("Show All");
                 new WaitForUserDialog("Cell selection","Delete cells : select the ROIs + delete").show();
                 if (!showBinaryImage){

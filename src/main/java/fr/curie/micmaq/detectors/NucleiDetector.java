@@ -373,11 +373,13 @@ public class NucleiDetector {
             if (finalValidation){
                 roiManagerNuclei.toFront();
                 ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
-                if (showBinaryImage){
+               /* if (showBinaryImage){
                     IJ.selectWindow(imageToMeasure.getID());
                 }else {
                     tempImage.show();
-                }
+                }*/
+                tempImage.show();
+                IJ.selectWindow(tempImage.getID());
                 roiManagerNuclei.runCommand("Show All");
                 new WaitForUserDialog("Nuclei selection", "Delete nuclei : select the ROIs + delete").show();
                 if (!showBinaryImage){
