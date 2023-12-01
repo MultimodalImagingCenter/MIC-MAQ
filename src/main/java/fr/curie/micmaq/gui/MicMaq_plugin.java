@@ -316,6 +316,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     nucleiParam = new SegmentationParametersGUI(provider, SegmentationParametersGUI.NUCLEI);
                     activePanel = i;
                 }
+                if(cellParam!=null){
+                    cellParam.setType(SegmentationParametersGUI.CELL_CYTO);
+                }
                 count++;
                 System.out.println("a nuclei param should display");
             }
@@ -325,6 +328,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     cellParam = new SegmentationParametersGUI(provider,
                             (countN > 0) ? SegmentationParametersGUI.CELL_CYTO : SegmentationParametersGUI.CELLS);
                     activePanel = i;
+                }else{
+                    if(nucleiParam!=null){
+                        cellParam.setType(SegmentationParametersGUI.CELL_CYTO);
+                    }else{
+                        cellParam.setType(SegmentationParametersGUI.CELLS);
+                    }
                 }
                 count++;
                 System.out.println("a cell param should display");
