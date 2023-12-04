@@ -263,4 +263,8 @@ public class FieldOfViewProvider {
         return nbImgsPerChanNb.get(index);
     }
 
+    public void setChannelsUserName(ArrayList<String> names){
+        for(FieldOfView fov : fields) fov.setChannelsUserName(names);
+    }
+
 }

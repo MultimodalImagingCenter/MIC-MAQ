@@ -70,6 +70,15 @@ public class ChannelPanel extends JPanel {
                 parent.firePropertyChange("channel", 1, 2 + offset);
             }
         });
+
+        proteinNameTF.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
+                parent.firePropertyChange("channel",1,2+ offset);
+            }
+        });
     }
 
     public boolean isUsed() {

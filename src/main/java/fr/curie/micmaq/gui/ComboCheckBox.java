@@ -52,6 +52,15 @@ public class ComboCheckBox {
         init(names);
     }
 
+    public void updateTexts(FieldOfViewProvider provider){
+        int nb= provider.getNumberOfChannel(0);
+        for(int i=0;i<nb;i++){
+            System.out.println("combocheckbox update text before:" +stores[i+1].name);
+            stores[i+1].name="C"+(i+1)+"_"+provider.getFieldOfView(0).getChannelUserName(i+1);
+            System.out.println("combocheckbox update text after:" +stores[i+1].name);
+        }
+    }
+
     public void init(String[] texts){
         stores=new Store[texts.length];
         for(int i=0;i<texts.length;i++){

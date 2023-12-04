@@ -280,9 +280,17 @@ public class FieldOfView {
 
     public String getChannelUserName(int channel) {
         channel-=1;
+        String tmpstr=null;
         if( channel>=0 && channel<channelUserName.size())
-            return channelUserName.get(channel);
-        return null;
+            tmpstr = channelUserName.get(channel);
+        if (tmpstr == null) {
+            tmpstr = getChannelNameInFile(channel+1);
+        }
+        return tmpstr;
+    }
+
+    public void setChannelsUserName(ArrayList<String> names){
+        channelUserName=names;
     }
 
 }

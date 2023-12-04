@@ -336,6 +336,11 @@ public class QuantificationParametersGUI {
         return result;
     }
 
+    public void updateComboCheckbox(){
+        preprocComboCheck.updateTexts(provider);
+        measureComboCheck.updateTexts(provider);
+    }
+
     private void createUIComponents() {
 
 //  Text field to filter extension

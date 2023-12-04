@@ -280,6 +280,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         int countC = 0;
         int countQ = 0;
         int countQbefore = 0;
+        ArrayList<String> names = new ArrayList<>(channelPanels.size());
         //count each categories
         for (int i = 0; i < channelPanels.size(); i++) {
             ChannelPanel cp = channelPanels.get(i);
@@ -293,6 +294,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 countQ++;
             }
             if (spotPanels != null && spotPanels.get(i) != null) countQbefore++;
+            names.add(cp.getProteinName());
         }
         //remove things
         if (countN == 0) {
@@ -357,7 +359,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         }
-        if (quantifPanel == null) quantifPanel = new QuantificationParametersGUI(provider);
+        if (quantifPanel == null){
+            quantifPanel = new QuantificationParametersGUI(provider);
+        }else{
+
+            provider.setChannelsUserName(names);
+            quantifPanel.updateComboCheckbox();
+        }
         updateTabsPanel();
         if (autoSelectPanel && activePanel >= 0) {
             if (activePanel + 1 == provider.getNucleiChannel()) {
