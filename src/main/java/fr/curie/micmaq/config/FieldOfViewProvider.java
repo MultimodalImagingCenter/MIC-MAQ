@@ -78,6 +78,7 @@ public class FieldOfViewProvider {
         };
         //System.out.println("filter " +fileExtension+" filter "+filter);
         File[] files=dir.listFiles(filter);
+        if(files==null || files.length==0) return;
         //System.out.println("nb files "+files.length);
         for(File f:files){
             if(!f.isDirectory()) {
