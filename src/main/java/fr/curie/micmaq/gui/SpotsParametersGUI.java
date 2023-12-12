@@ -15,6 +15,8 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class SpotsParametersGUI {
@@ -245,7 +247,7 @@ public class SpotsParametersGUI {
             result += "\n\tProminence: " + prominenceSpinner.getValue();
         }
         if (thresholdCheckBox.isSelected()) {
-            result += "\nFind Spots b thresholding:";
+            result += "\nFind Spots by thresholding:";
             if (thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1) {
                 result += "\n\tUser defined threshold: " + userThresholdSpinner.getValue();
                 result += "\n\tDark background: " + darkBGCheckBox.isSelected();
@@ -253,12 +255,90 @@ public class SpotsParametersGUI {
                 result += "\n\tAutomatic threshold method: " + thresholdMethodCB.getSelectedItem();
             }
 
-            result += "\n\tMinimum spot diameter: " + minSizeSpinner.getValue();
+            result += "\n\tMinimum spot diameter: " + (int)minSizeSpinner.getValue();
             result += "\n\tWatershed: " + (useWatershedCheckBox.isSelected() ? "yes" : "no");
         }
 
         return result;
     }
+
+    public void setParameters(ArrayList<String> params) {
+        boolean q = true;
+        boolean m = false;
+        String macro = "";
+        findMaximaCheckBox.setSelected(false);
+        thresholdCheckBox.setSelected(false);
+        subtractBackgroundCheckBox.setSelected(false);
+        isZStackCheckBox.setSelected(false);
+        useMacroCodeCheckBox.setSelected(false);
+
+        for (int i = 0; i < params.size(); i++) {
+            System.out.println("#spots: "+params.get(i));
+            if (q) {
+                if (params.get(i).startsWith("Measurements")) {
+                    m = false;
+                    System.out.println("stop macro");
+                }
+                if (m) {
+                    macro += params.get(i) + "\n";
+                    System.out.println("add text to macro " + params.get(i));
+                    System.out.println("macro becomes :\n" + macro);
+                    macroArea.setText(macro);
+                } else {
+
+                    if (params.get(i).startsWith("Macro:")) {
+                        m = true;
+                        System.out.println("start macro and activate in GUI");
+                        useMacroCodeCheckBox.setSelected(true);
+                        macroArea.setVisible(true);
+                    }
+
+                    if (params.get(i).startsWith("Projection")) {
+                        isZStackCheckBox.setSelected(true);
+                        System.out.println("change projection");
+                    }
+                    if (params.get(i).startsWith("Subtract Background:")){
+                        subtractBackgroundCheckBox.setSelected(true);
+                        sbgSpinner.setValue(new Double(params.get(i).split(": ")[1].split(" ")[1]));
+                    }
+
+                    if (params.get(i).endsWith("Local Maxima:")) {
+                        System.out.println("spots using local maxima");
+                        findMaximaCheckBox.setSelected(true);
+                        prominenceSpinner.setValue(new Double(params.get(i + 1).split(": ")[1]));
+                    }
+                    if (params.get(i).endsWith("thresholding:")) {
+                        System.out.println("spots using thresholds");
+                        thresholdCheckBox.setSelected(true);
+                        int offset=1;
+                        String model=params.get(i+offset).split(": ")[1];
+                        System.out.println("model to put = "+model);
+                        int index=-1;
+                        for(int ind=0;ind<thresholdMethodCB.getItemCount();ind++){
+                            if(thresholdMethodCB.getItemAt(ind).equals(model)) index=ind;
+                        }
+                        if(index>=0) thresholdMethodCB.setSelectedIndex(index);
+                        offset++;
+                        if(params.get(i+offset).startsWith("User defined threshold:")){
+                            String tmp=params.get(i+offset).split(": ")[1];
+                            userThresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                        }
+                        darkBGCheckBox.setSelected(params.get(i+offset).endsWith("true"));
+                        offset++;
+                        minSizeSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
+                        offset++;
+                        useWatershedCheckBox.setSelected(params.get(i+offset).endsWith("yes"));
+                    }
+                }
+
+            }
+            if (params.get(i).startsWith("Quantification  Parameters")) q = false;
+
+            mainPanel.repaint();
+        }//end for
+    }
+
 
     /**
      * Set preferences for ImageJ/Fiji
@@ -425,7 +505,7 @@ public class SpotsParametersGUI {
         thresholdMethods = new String[tmp.length + 1];
         System.arraycopy(tmp, 0, thresholdMethods, 0, tmp.length);
         thresholdMethods[thresholdMethods.length - 1] = "user_defined";
-        IJ.log("threshold methods:" + Arrays.toString(thresholdMethods));
+        //IJ.log("threshold methods:" + Arrays.toString(thresholdMethods));
         thresholdMethodCB = new JComboBox<>(thresholdMethods);
         userThresholdSpinner = new JSpinner(new SpinnerNumberModel(100.0, Integer.MIN_VALUE, Integer.MAX_VALUE, 1));
     }

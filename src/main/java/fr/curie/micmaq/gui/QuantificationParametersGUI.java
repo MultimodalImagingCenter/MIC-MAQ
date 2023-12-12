@@ -12,6 +12,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 public class QuantificationParametersGUI {
     private JButton setMeasurementsButton;
@@ -141,8 +142,8 @@ public class QuantificationParametersGUI {
     public MeasureValue getMeasuresQuantif(int channel) {
         setPreferences();
 
-        MeasureValue measure = (measureComboCheck.isSelected(channel))? measuresQuantif : new MeasureValue(false);
-        if(preprocComboCheck.isSelected(channel)) {
+        MeasureValue measure = (measureComboCheck.isSelected(channel)) ? measuresQuantif : new MeasureValue(false);
+        if (preprocComboCheck.isSelected(channel)) {
             if (isZStackCheckBox.isSelected()) {
                 measure.setProjection(projectionMethodCB.getSelectedIndex());
                 if (chooseSlicesToUseCheckBox.isSelected()) {
@@ -157,8 +158,8 @@ public class QuantificationParametersGUI {
 
     public MeasureValue getMeasuresSegmentation(int channel) {
         setPreferences();
-        MeasureValue measure = (measureComboCheck.isSelected(channel))? measuresSegmentation : new MeasureValue(true);
-        if(preprocComboCheck.isSelected(channel)) {
+        MeasureValue measure = (measureComboCheck.isSelected(channel)) ? measuresSegmentation : new MeasureValue(true);
+        if (preprocComboCheck.isSelected(channel)) {
             if (isZStackCheckBox.isSelected()) {
                 measure.setProjection(projectionMethodCB.getSelectedIndex());
                 if (chooseSlicesToUseCheckBox.isSelected()) {
@@ -172,9 +173,136 @@ public class QuantificationParametersGUI {
 
     }
 
+    public void resetMeasures() {
+        medianGrayValueCheckBox.setSelected(false);
+        standardDeviationCheckBox.setSelected(false);
+        minAndMaxGrayCheckBox.setSelected(false);
+        skewnessCheckBox.setSelected(false);
+        modalGrayValueCheckBox.setSelected(false);
+        kurtosisCheckBox.setSelected(false);
+        perimeterCheckBox.setSelected(false);
+        boundingRectangleCheckBox.setSelected(false);
+        centroidCheckBox.setSelected(false);
+        centerOfMassCheckBox.setSelected(false);
+        areaFractionCheckBox.setSelected(false);
+        fitEllipseCheckBox.setSelected(false);
+        shapeDescriptorCheckBox.setSelected(false);
+        feretSDiametersCheckBox.setSelected(false);
+
+        isZStackCheckBox.setSelected(false);
+        useMacroCodeCheckBox.setSelected(false);
+    }
+
+    public void setMeasures(int channel, ArrayList<String> params) {
+        boolean q = false;
+        boolean m = false;
+        String macro = "";
+        boolean includeMeasure=false;
+        boolean includeProcess=false;
+
+        for (int i = 0; i < params.size(); i++) {
+            System.out.println(params.get(i));
+            if (q) {
+                if (params.get(i).startsWith("Measurements")) {
+                    m = false;
+                    System.out.println("stop macro");
+                }
+                if (m) {
+                    macro += params.get(i)+"\n";
+                    System.out.println("add text to macro "+params.get(i));
+                    System.out.println("macro becomes :\n"+macro);
+                    macroTextArea.setText(macro);
+                }else {
+
+                    if (params.get(i).startsWith("Macro:")) {
+                        m = true;
+                        System.out.println("start macro and activate in GUI");
+                        useMacroCodeCheckBox.setSelected(true);
+                        macroTextPanel.setVisible(true);
+                        includeProcess=true;
+                    }
+
+                    if (params.get(i).startsWith("Projection")) {
+                        isZStackCheckBox.setSelected(true);
+                        System.out.println("change projection");
+                        includeProcess=true;
+                    }
+
+                    if (params.get(i).startsWith("median")) {
+                        medianGrayValueCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("std_dev")) {
+                        standardDeviationCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("min_max")) {
+                        minAndMaxGrayCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("skewness")) {
+                        skewnessCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("mode")) {
+                        modalGrayValueCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("kurtosis")) {
+                        kurtosisCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("perimeter")) {
+                        perimeterCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("bound_rectangle")){
+                        boundingRectangleCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("centroid")) {
+                        centroidCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("center_of_mass")){
+                        centerOfMassCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("area_fraction")) {
+                        areaFractionCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("fit_ellipse")) {
+                        fitEllipseCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("shape_descriptor")) {
+                        shapeDescriptorCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+                    if (params.get(i).startsWith("Feret's_diameter")) {
+                        feretSDiametersCheckBox.setSelected(true);
+                        includeMeasure=true;
+                    }
+
+                }
+
+            }
+            if (params.get(i).startsWith("Quantification  Parameters")) q = true;
+        }//end for
+        if(!includeMeasure){
+            measureComboCheck.setSelected(channel,false);
+            measureComboCheck.setSelected(0,false); // unselect all
+        }
+        if(!includeProcess){
+            preprocComboCheck.setSelected(channel,false);
+            preprocComboCheck.setSelected(0,false);//unselect All
+        }
+    }
+
 
     public String getMacro(int channel) {
-        if (useMacroCodeCheckBox.isSelected()&& preprocComboCheck.isSelected(channel)) return macroTextArea.getText();
+        if (useMacroCodeCheckBox.isSelected() && preprocComboCheck.isSelected(channel)) return macroTextArea.getText();
         return null;
     }
 
@@ -296,7 +424,7 @@ public class QuantificationParametersGUI {
     public String getParametersAsString(boolean morphological, int channel) {
         String result = "\nQuantification  Parameters";
         result += "\nPreprocessing:";
-        if(preprocComboCheck.isSelected(channel)) {
+        if (preprocComboCheck.isSelected(channel)) {
             if (isZStackCheckBox.isSelected()) {
                 result += "\n\tProjection: " + (String) projectionMethodCB.getSelectedItem();
                 if (chooseSlicesToUseCheckBox.isSelected()) {
@@ -306,12 +434,12 @@ public class QuantificationParametersGUI {
             if (useMacroCodeCheckBox.isSelected()) {
                 result += "\n\tMacro:\n" + macroTextArea.getText();
             }
-        }else{
-            result+="\n\tNone";
+        } else {
+            result += "\n\tNone";
         }
         result += "\nMeasurements (intensity based):";
         result += "\n\tmean\n\tintegrated density";
-        if(measureComboCheck.isSelected(channel)) {
+        if (measureComboCheck.isSelected(channel)) {
             if (medianGrayValueCheckBox.isSelected()) result += "\n\tmedian";
             if (standardDeviationCheckBox.isSelected()) result += "\n\tstd_dev";
             if (minAndMaxGrayCheckBox.isSelected()) result += "\n\tmin_max";
@@ -322,7 +450,7 @@ public class QuantificationParametersGUI {
         if (morphological) {
             result += "\nMeasurements (morphological):";
             result += "\n\tarea";
-            if(measureComboCheck.isSelected(channel)) {
+            if (measureComboCheck.isSelected(channel)) {
                 if (perimeterCheckBox.isSelected()) result += "\n\tperimeter";
                 if (boundingRectangleCheckBox.isSelected()) result += "\n\tbound_rectangle";
                 if (centroidCheckBox.isSelected()) result += "\n\tcentroid";
@@ -336,7 +464,7 @@ public class QuantificationParametersGUI {
         return result;
     }
 
-    public void updateComboCheckbox(){
+    public void updateComboCheckbox() {
         preprocComboCheck.updateTexts(provider);
         measureComboCheck.updateTexts(provider);
     }

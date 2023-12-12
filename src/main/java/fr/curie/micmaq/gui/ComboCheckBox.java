@@ -101,6 +101,10 @@ public class ComboCheckBox {
         return stores[index].state;
     }
 
+    public void setSelected(int index,boolean state){
+        stores[index].state=state;
+    }
+
     public static void main(String[] args){
         String[] texts= {"C1","C2","C3"};
         JFrame f = new JFrame();
