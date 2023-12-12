@@ -57,8 +57,7 @@ public class FieldOfView {
             }
             process.execute();
             fieldname= process.getIdName()+"#"+process.getSeriesLabel(serieNb);
-            fieldname=fieldname.replaceAll(":","_");
-            fieldname=fieldname.replaceAll(";","_");
+            fieldname=fieldname.replaceAll("[\\\\/:,;*?\"<>|]","_");
             IJ.log("idname: "+process.getIdName()+"\nserieslabel: "+process.getSeriesLabel(serieNb));
             IJ.log("fieldname: "+fieldname);
             channelsImagePlus.add(process);
@@ -75,8 +74,7 @@ public class FieldOfView {
         try {
 
             fieldname= importProcess.getIdName()+"#"+importProcess.getSeriesLabel(serieNb);
-            fieldname=fieldname.replaceAll(":","_");
-            fieldname=fieldname.replaceAll(";","_");
+            fieldname=fieldname.replaceAll("[\\\\/:*?\"<>|]","_");
             IJ.log("idname: "+importProcess.getIdName()+"\nserieslabel: "+importProcess.getSeriesLabel(serieNb));
             IJ.log("fieldname: "+fieldname);
             channelsImagePlus.add(importProcess);
