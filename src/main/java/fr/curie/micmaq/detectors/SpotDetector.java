@@ -379,10 +379,21 @@ public class SpotDetector {
         RoiManager roiManagerFoci=null;
         int numberSpot = 0; /*count number of spot detected*/
 //        Detection
-        if (regionROI!=null){
-            thresholdIP.setRoi(regionROI);
+        ImageProcessor tmpIP=thresholdIP.getProcessor().duplicate();
+        if(regionROI!=null) {
+            if (regionROI instanceof PolygonRoi || regionROI instanceof ShapeRoi) {
+                Roi tmproi = regionROI.getInverse(thresholdIP);
+                tmpIP.setValue(0);
+                //System.out.println("debug fill");
+                tmpIP.fill(tmproi);
+                //new ImagePlus("debug2_" + type, findMaximaProc).show();
+            } else {
+                System.out.println("not a polygonRoi " + regionROI.getClass());
+            }
+
+            tmpIP.setRoi(regionROI);
             //thresholdIP.getProcessor().invertLut();
-            roiManagerFoci = detector.analyzeParticles(thresholdIP);
+            roiManagerFoci = detector.analyzeParticles(new ImagePlus("",tmpIP));
             numberSpot = roiManagerFoci.getCount();
 //            --> Saving
             if (resultsDirectory!=null&&saveRois && numberSpot>0){
@@ -429,7 +440,7 @@ public class SpotDetector {
         float mean = 0;
         for (Point p : roiMaxima) {
             size++;
-            mean += tmp.getProcessor().getPixelValue(p.x, p.y);
+            mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
         }
         mean = mean / size;
         resultsTableToAdd.addValue(type + "_"+ spotName + " maxima prominence", prominence);
