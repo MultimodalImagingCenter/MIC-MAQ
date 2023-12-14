@@ -197,8 +197,8 @@ public class QuantificationParametersGUI {
         boolean q = false;
         boolean m = false;
         String macro = "";
-        boolean includeMeasure=false;
-        boolean includeProcess=false;
+        boolean includeMeasure = false;
+        boolean includeProcess = false;
 
         for (int i = 0; i < params.size(); i++) {
             System.out.println(params.get(i));
@@ -208,81 +208,81 @@ public class QuantificationParametersGUI {
                     System.out.println("stop macro");
                 }
                 if (m) {
-                    macro += params.get(i)+"\n";
-                    System.out.println("add text to macro "+params.get(i));
-                    System.out.println("macro becomes :\n"+macro);
+                    macro += params.get(i) + "\n";
+                    //System.out.println("add text to macro "+params.get(i));
+                    //System.out.println("macro becomes :\n"+macro);
                     macroTextArea.setText(macro);
-                }else {
+                } else {
 
                     if (params.get(i).startsWith("Macro:")) {
                         m = true;
-                        System.out.println("start macro and activate in GUI");
+                        //System.out.println("start macro and activate in GUI");
                         useMacroCodeCheckBox.setSelected(true);
                         macroTextPanel.setVisible(true);
-                        includeProcess=true;
+                        includeProcess = true;
                     }
 
                     if (params.get(i).startsWith("Projection")) {
                         isZStackCheckBox.setSelected(true);
-                        System.out.println("change projection");
-                        includeProcess=true;
+                        //System.out.println("change projection");
+                        includeProcess = true;
                     }
 
                     if (params.get(i).startsWith("median")) {
                         medianGrayValueCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("std_dev")) {
                         standardDeviationCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("min_max")) {
                         minAndMaxGrayCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("skewness")) {
                         skewnessCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("mode")) {
                         modalGrayValueCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("kurtosis")) {
                         kurtosisCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("perimeter")) {
                         perimeterCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
-                    if (params.get(i).startsWith("bound_rectangle")){
+                    if (params.get(i).startsWith("bound_rectangle")) {
                         boundingRectangleCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("centroid")) {
                         centroidCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
-                    if (params.get(i).startsWith("center_of_mass")){
+                    if (params.get(i).startsWith("center_of_mass")) {
                         centerOfMassCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("area_fraction")) {
                         areaFractionCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("fit_ellipse")) {
                         fitEllipseCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("shape_descriptor")) {
                         shapeDescriptorCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
                     if (params.get(i).startsWith("Feret's_diameter")) {
                         feretSDiametersCheckBox.setSelected(true);
-                        includeMeasure=true;
+                        includeMeasure = true;
                     }
 
                 }
@@ -290,13 +290,13 @@ public class QuantificationParametersGUI {
             }
             if (params.get(i).startsWith("Quantification  Parameters")) q = true;
         }//end for
-        if(!includeMeasure){
-            measureComboCheck.setSelected(channel,false);
-            measureComboCheck.setSelected(0,false); // unselect all
+        if (!includeMeasure) {
+            measureComboCheck.setSelected(channel, false);
+            measureComboCheck.setSelected(0, false); // unselect all
         }
-        if(!includeProcess){
-            preprocComboCheck.setSelected(channel,false);
-            preprocComboCheck.setSelected(0,false);//unselect All
+        if (!includeProcess) {
+            preprocComboCheck.setSelected(channel, false);
+            preprocComboCheck.setSelected(0, false);//unselect All
         }
     }
 

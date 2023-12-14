@@ -73,7 +73,7 @@ public class FieldOfViewProvider {
         FilenameFilter filter=new FilenameFilter(){
             @Override
             public boolean accept(File dir, String name) {
-                return filePattern.isEmpty()||name.contains(filePattern);
+                return filePattern==null||filePattern.isEmpty()||name.contains(filePattern);
             }
         };
         //System.out.println("filter " +fileExtension+" filter "+filter);

@@ -297,7 +297,7 @@ public class SegmentationParametersGUI {
             result += "\n\tCellpose model: " + cellposeModelCB.getSelectedItem();
             if (cellposeModelCB.getSelectedIndex() == cellposeModelCB.getItemCount() - 1 && cellposeModelPath != null)
                 result += "\n\tCellpose model path: " + cellposeModelPath;
-            result += "\n\tMinimum diameter: " + (int)cellposeDiameterSpinner.getValue();
+            result += "\n\tMinimum diameter: " + (int) cellposeDiameterSpinner.getValue();
             result += "\n\tcellproba_threshold: " + cellposeCellproba_thresholdSpinner.getValue();
         } else if (starDistRadioButton.isSelected()) {
             result += "\nUse StarDist:";
@@ -333,22 +333,22 @@ public class SegmentationParametersGUI {
         saveSegmentationMaskCheckBox.setSelected(false);
 
         for (int i = 0; i < params.size(); i++) {
-            System.out.println("#segm: "+params.get(i));
+            //System.out.println("#segm: "+params.get(i));
             if (q) {
-                if (params.get(i).startsWith("Measurements")|| params.get(i).startsWith("Use ")) {
+                if (params.get(i).startsWith("Measurements") || params.get(i).startsWith("Use ")) {
                     m = false;
-                    System.out.println("stop macro");
+                    //System.out.println("stop macro");
                 }
                 if (m) {
                     macro += params.get(i) + "\n";
-                    System.out.println("add text to macro " + params.get(i));
-                    System.out.println("macro becomes :\n" + macro);
+                    //System.out.println("add text to macro " + params.get(i));
+                    //System.out.println("macro becomes :\n" + macro);
                     macroTextArea.setText(macro);
                 } else {
 
                     if (params.get(i).startsWith("Macro:")) {
                         m = true;
-                        System.out.println("start macro and activate in GUI");
+                        //System.out.println("start macro and activate in GUI");
                         useMacroCodeCheckBox.setSelected(true);
                         macroTextPanel.setVisible(true);
                     }
@@ -363,66 +363,66 @@ public class SegmentationParametersGUI {
                         if (params.get(i).endsWith("Cellpose:")) {
                             System.out.println("Cellpose detected !");
                             cellposeRadioButton.setSelected(true);
-                            int offset=1;
-                            String model=params.get(i+offset).split(": ")[1];
-                            System.out.println("model to put = "+model);
-                            int index=-1;
-                            for(int ind=0;ind<cellposeModelCB.getItemCount();ind++){
-                                if(cellposeModelCB.getItemAt(ind).equals(model)) index=ind;
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            System.out.println("model to put = " + model);
+                            int index = -1;
+                            for (int ind = 0; ind < cellposeModelCB.getItemCount(); ind++) {
+                                if (cellposeModelCB.getItemAt(ind).equals(model)) index = ind;
                             }
-                            if(index>=0) cellposeModelCB.setSelectedIndex(index);
+                            if (index >= 0) cellposeModelCB.setSelectedIndex(index);
                             offset++;
-                            if(params.get(i+offset).startsWith("Cellpose model path: ")){
-                                String tmp=params.get(i+offset).split(": ")[1];
-                                cellposeModelPath=new File(tmp);
+                            if (params.get(i + offset).startsWith("Cellpose model path: ")) {
+                                String tmp = params.get(i + offset).split(": ")[1];
+                                cellposeModelPath = new File(tmp);
                                 cellposeModelPathTextField.setText(tmp);
                                 offset++;
                             }
-                            cellposeDiameterSpinner.setValue(new Integer(params.get(i+offset).split(": ")[1]));
-                            System.out.println("diameter: "+params.get(i+offset).split(": ")[1]);
+                            cellposeDiameterSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
+                            //System.out.println("diameter: "+params.get(i+offset).split(": ")[1]);
                             offset++;
-                            cellposeCellproba_thresholdSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
-                            System.out.println("cellproba: "+params.get(i+offset).split(": ")[1]);
+                            cellposeCellproba_thresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            //System.out.println("cellproba: "+params.get(i+offset).split(": ")[1]);
 
                         } else if (params.get(i).endsWith("StarDist:")) {
                             starDistRadioButton.setSelected(true);
-                            int offset=1;
-                            String model=params.get(i+offset).split(": ")[1];
-                            int index=-1;
-                            for(int ind=0;ind<stardistModelComboBox.getItemCount();ind++){
-                                if(stardistModelComboBox.getItemAt(ind).equals(model)) index=ind;
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            int index = -1;
+                            for (int ind = 0; ind < stardistModelComboBox.getItemCount(); ind++) {
+                                if (stardistModelComboBox.getItemAt(ind).equals(model)) index = ind;
                             }
-                            if(index>=0) stardistModelComboBox.setSelectedIndex(index);
+                            if (index >= 0) stardistModelComboBox.setSelectedIndex(index);
                             offset++;
-                            if(params.get(i+offset).startsWith("StarDist model path: ")){
-                                String tmp=params.get(i+offset).split(": ")[1];
-                                stardistModelPath=new File(tmp);
+                            if (params.get(i + offset).startsWith("StarDist model path: ")) {
+                                String tmp = params.get(i + offset).split(": ")[1];
+                                stardistModelPath = new File(tmp);
                                 stardistModelPathTextField.setText(tmp);
                                 offset++;
                             }
-                            stardistPercentileLowSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            stardistPercentileLowSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistPercentileHighSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            stardistPercentileHighSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistProbaThrSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            stardistProbaThrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistNMSthrSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            stardistNMSthrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistScaleSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            stardistScaleSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
 
                         } else {
                             thresholdingRadioButton.setSelected(true);
-                            int offset=1;
-                            String model=params.get(i+offset).split(": ")[1];
-                            int index=-1;
-                            for(int ind=0;ind<thresholdMethodsCB.getItemCount();ind++){
-                                if(thresholdMethodsCB.getItemAt(ind).equals(model)) index=ind;
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            int index = -1;
+                            for (int ind = 0; ind < thresholdMethodsCB.getItemCount(); ind++) {
+                                if (thresholdMethodsCB.getItemAt(ind).equals(model)) index = ind;
                             }
-                            if(index>=0) thresholdMethodsCB.setSelectedIndex(index);
+                            if (index >= 0) thresholdMethodsCB.setSelectedIndex(index);
                             offset++;
-                            thresholdMinSizeSpinner.setValue(new Double(params.get(i+offset).split(": ")[1]));
+                            thresholdMinSizeSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            useWatershedCheckBox.setSelected(params.get(i+offset).endsWith("yes"));
+                            useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
                         }
 
                     }

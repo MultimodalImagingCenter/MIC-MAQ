@@ -97,14 +97,16 @@ public class ChannelPanel extends JPanel {
         return isUsed() && (quantificationRadioButton.isSelected() || (!isCell() && !isNuclei()));
     }
 
-    public void setNuclei(boolean val){
+    public void setNuclei(boolean val) {
         nucleiRadioButton.setSelected(val);
     }
-    public void setCell(boolean val){
+
+    public void setCell(boolean val) {
         entireCellRadioButton.setSelected(val);
     }
-    public void setSpot(boolean val){
-        if(val) quantificationRadioButton.setSelected(true);
+
+    public void setSpot(boolean val) {
+        if (val) quantificationRadioButton.setSelected(true);
         spotsMeasureCheckBox.setSelected(val);
     }
 

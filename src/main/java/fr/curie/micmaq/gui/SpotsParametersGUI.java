@@ -255,7 +255,7 @@ public class SpotsParametersGUI {
                 result += "\n\tAutomatic threshold method: " + thresholdMethodCB.getSelectedItem();
             }
 
-            result += "\n\tMinimum spot diameter: " + (int)minSizeSpinner.getValue();
+            result += "\n\tMinimum spot diameter: " + (int) minSizeSpinner.getValue();
             result += "\n\tWatershed: " + (useWatershedCheckBox.isSelected() ? "yes" : "no");
         }
 
@@ -273,62 +273,62 @@ public class SpotsParametersGUI {
         useMacroCodeCheckBox.setSelected(false);
 
         for (int i = 0; i < params.size(); i++) {
-            System.out.println("#spots: "+params.get(i));
+            //System.out.println("#spots: "+params.get(i));
             if (q) {
                 if (params.get(i).startsWith("Measurements")) {
                     m = false;
-                    System.out.println("stop macro");
+                    //System.out.println("stop macro");
                 }
                 if (m) {
                     macro += params.get(i) + "\n";
-                    System.out.println("add text to macro " + params.get(i));
-                    System.out.println("macro becomes :\n" + macro);
+                    //System.out.println("add text to macro " + params.get(i));
+                    //System.out.println("macro becomes :\n" + macro);
                     macroArea.setText(macro);
                 } else {
 
                     if (params.get(i).startsWith("Macro:")) {
                         m = true;
-                        System.out.println("start macro and activate in GUI");
+                        //System.out.println("start macro and activate in GUI");
                         useMacroCodeCheckBox.setSelected(true);
                         macroArea.setVisible(true);
                     }
 
                     if (params.get(i).startsWith("Projection")) {
                         isZStackCheckBox.setSelected(true);
-                        System.out.println("change projection");
+                        //System.out.println("change projection");
                     }
-                    if (params.get(i).startsWith("Subtract Background:")){
+                    if (params.get(i).startsWith("Subtract Background:")) {
                         subtractBackgroundCheckBox.setSelected(true);
                         sbgSpinner.setValue(new Double(params.get(i).split(": ")[1].split(" ")[1]));
                     }
 
                     if (params.get(i).endsWith("Local Maxima:")) {
-                        System.out.println("spots using local maxima");
+                        //System.out.println("spots using local maxima");
                         findMaximaCheckBox.setSelected(true);
                         prominenceSpinner.setValue(new Double(params.get(i + 1).split(": ")[1]));
                     }
                     if (params.get(i).endsWith("thresholding:")) {
-                        System.out.println("spots using thresholds");
+                        //System.out.println("spots using thresholds");
                         thresholdCheckBox.setSelected(true);
-                        int offset=1;
-                        String model=params.get(i+offset).split(": ")[1];
-                        System.out.println("model to put = "+model);
-                        int index=-1;
-                        for(int ind=0;ind<thresholdMethodCB.getItemCount();ind++){
-                            if(thresholdMethodCB.getItemAt(ind).equals(model)) index=ind;
+                        int offset = 1;
+                        String model = params.get(i + offset).split(": ")[1];
+                        //System.out.println("model to put = "+model);
+                        int index = -1;
+                        for (int ind = 0; ind < thresholdMethodCB.getItemCount(); ind++) {
+                            if (thresholdMethodCB.getItemAt(ind).equals(model)) index = ind;
                         }
-                        if(index>=0) thresholdMethodCB.setSelectedIndex(index);
+                        if (index >= 0) thresholdMethodCB.setSelectedIndex(index);
                         offset++;
-                        if(params.get(i+offset).startsWith("User defined threshold:")){
-                            String tmp=params.get(i+offset).split(": ")[1];
+                        if (params.get(i + offset).startsWith("User defined threshold:")) {
+                            String tmp = params.get(i + offset).split(": ")[1];
                             userThresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
                             offset++;
                         }
-                        darkBGCheckBox.setSelected(params.get(i+offset).endsWith("true"));
+                        darkBGCheckBox.setSelected(params.get(i + offset).endsWith("true"));
                         offset++;
                         minSizeSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
                         offset++;
-                        useWatershedCheckBox.setSelected(params.get(i+offset).endsWith("yes"));
+                        useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
                     }
                 }
 
