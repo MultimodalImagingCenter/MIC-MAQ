@@ -74,7 +74,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     int sizeflag = 0;
 
     ArrayList<String> patterns = null;
-    String filePattern = null;
+    String filePattern = "";
     String path_shorten = null;
 
     public MicMaq_plugin() {
@@ -118,7 +118,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 File directory = chooseDirectory(rootPane);
                 if (directory == null) return;
                 //provider = new ImageProvider(directory.getAbsolutePath(), filePatternTextField.getText().trim());
-                updateDirectory(directory.getAbsolutePath());
+                updateDirectory(directory.getAbsolutePath(), filePattern);
             }
         });
 
@@ -270,11 +270,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         });
-        JMenuItem itemh3 = new JMenuItem("Tutorials video");
+        JMenuItem itemh3 = new JMenuItem("Tutorials videos");
         itemh3.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                final String url = "https://github.com/MultimodalImagingCenter/MIC-MAQ/";
+                final String url = "https://www.youtube.com/channel/UCVhGRHCSjIdgD__1yYVIhoA";
                 try {
                     BrowserLauncher.openURL(url);
                 } catch (IOException ioe) {
@@ -282,10 +282,22 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         });
+        JMenuItem itemh4 = new JMenuItem("About");
+        itemh4.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFrame frame = new JFrame("About");
+                frame.add(new AboutInformation().getMainPanel());
+                frame.pack();
+                frame.setVisible(true);
+            }
+        });
+
 
         menuHelp.add(itemh1);
         menuHelp.add(itemh3);
         menuHelp.add(itemh2);
+        menuHelp.add(itemh4);
         bar.add(menuHelp);
         setJMenuBar(bar);
     }
@@ -513,10 +525,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
     }
 
-    protected void updateDirectory(String directory) {
+    protected void updateDirectory(String directory, String filePattern) {
         if (directory != null) {
             provider = new FieldOfViewProvider(directory);
-            provider.parseDirectory(filePatternTextField.getText());
+            provider.parseDirectory(filePattern);
             ((ImagesTree) imagesTree).setFieldOfViewProvider(provider);
             ((SpinnerNumberModel) PreviewSpinner.getModel()).setValue(0);
             ((SpinnerNumberModel) PreviewSpinner.getModel()).setMaximum(provider.getNbFielOfView());
@@ -995,6 +1007,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             Recorder.recordOption("filePattern", tmp);
         }
         Recorder.recordOption("calibration", calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
+        Recorder.recordOption("parameterpath", workingDirectory + "/Results/Parameters.txt");
         Recorder.saveCommand();
     }
 
@@ -1016,6 +1029,17 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         IJ.log("working directory : " + workingDirectory);
         IJ.log("file pattern : " + filePattern);
         IJ.log("channel patterns : " + patterns.toString());
+
+        String parameterFilePath = Macro.getValue(options, "parameterpath", "");
+        IJ.log("Parameter file: " + parameterFilePath);
+
+        updateDirectory(workingDirectory, filePattern);
+
+        loadParameterFile(parameterFilePath, false);
+        checkParameters();
+        createParametersFile();
+        runAllExperiments();
+
     }
 
     private void createParametersFile() {
@@ -1036,9 +1060,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
             bufferedWriter.append("\nFILES: ");
             String tmp = "\n\tDirectory : " + workingDirectory;
-            tmp += (filePattern != null) ? "\n\tFilter by image filename pattern: " + filePattern : "";
-            if (patterns != null) {
-                tmp += "\n\tRearrange image file into channels with patterns:";
+            tmp += (filePattern != null && filePattern.equals("")) ? "\n\tFilter by image filename pattern: " + filePattern : "";
+            if (patterns != null && patterns.size() == correctNbChannels) {
+                tmp += "\n\tRearrange image file into channels with patterns:" + patterns.size();
                 for (int i = 0; i < patterns.size(); i++) {
                     tmp += "\n\t\tCHANNEL " + (i + 1) + ": " + patterns.get(i);
                 }
@@ -1084,7 +1108,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             filePattern = "";
             filePatternTextField.setText(filePattern);
         }
-        boolean channeldef=false;
+        boolean channeldef = false;
         try {
             read = new BufferedReader(new FileReader(path));
             String line = read.readLine();
@@ -1130,7 +1154,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         System.out.println(line);
                     }
                     if (loadFile) {
-                        updateDirectory(directory);
+                        updateDirectory(directory, filePattern);
                         if (patterns != null && !patterns.isEmpty()) {
                             rearrangeData();
                         }
@@ -1141,7 +1165,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
                 if (line.startsWith("CALIBRATION: ")) {
                     String calib = line.substring("CALIBRATION: ".length());
-                    System.out.println("claibration: \n" + calib);
+                    System.out.println("calibration: \n" + calib);
                     boolean found = false;
                     for (int i = 0; i < calibrationCombo.getItemCount(); i++) {
                         MeasureCalibration tmp = calibrationCombo.getItemAt(i);
@@ -1153,18 +1177,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     if (!found) {
                         String[] split = calib.split("\\(x");
                         String name = split[0];
-                        System.out.println(split.length + " name=" + name);
-                        System.out.println("split [1]=" + split[1]);
+                        //System.out.println(split.length + " name=" + name);
+                        //System.out.println("split [1]=" + split[1]);
                         split = split[1].split(" ");
-                        System.out.println("calib=" + split[0]);
-                        System.out.println("unit=" + split[1].split("\\)")[0]);
+                        //System.out.println("calib=" + split[0]);
+                        //System.out.println("unit=" + split[1].split("\\)")[0]);
                         calibrationCombo.addItem(new MeasureCalibration(name, split[0], split[1].split("\\)")[0]));
                         calibrationCombo.setSelectedIndex(calibrationCombo.getItemCount() - 1);
                     }
                 }// end if calibration
                 if (line.startsWith("CHANNEL ")) {
-                    if(!channeldef){
-                        channeldef=true;
+                    if (!channeldef) {
+                        channeldef = true;
                         quantifPanel.resetMeasures();
                     }
                     int chanNb = new Integer(line.substring("CHANNEL ".length(), line.indexOf("(")).trim());
@@ -1187,22 +1211,22 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             }
                         }
                         System.out.println("new channel! #" + chanNb + "\n" + channelParameters);
-                        if(channelParameters.get(1).startsWith("SEGMENTATION")){
-                            ChannelPanel cp = channelPanels.get(chanNb-1);
-                            if(channelParameters.get(1).endsWith("nuclei")){
+                        if (channelParameters.get(1).startsWith("SEGMENTATION")) {
+                            ChannelPanel cp = channelPanels.get(chanNb - 1);
+                            if (channelParameters.get(1).endsWith("nuclei")) {
                                 cp.setNuclei(true);
                                 channelDefinitionChange(true);
                                 nucleiParam.setParameters(channelParameters);
-                            }else{
+                            } else {
                                 cp.setCell(true);
                                 channelDefinitionChange(true);
                                 cellParam.setParameters(channelParameters);
                             }
-                        }else if(channelParameters.get(2).startsWith("SPOT")){
-                            ChannelPanel cp = channelPanels.get(chanNb-1);
+                        } else if (channelParameters.get(2).startsWith("SPOT")) {
+                            ChannelPanel cp = channelPanels.get(chanNb - 1);
                             cp.setSpot(true);
                             channelDefinitionChange(true);
-                            spotPanels.get(chanNb-1).setParameters(channelParameters);
+                            spotPanels.get(chanNb - 1).setParameters(channelParameters);
                         }
                         quantifPanel.setMeasures(chanNb, channelParameters);
                     }
