@@ -63,13 +63,16 @@ public class NucleiDetector {
      */
     public NucleiDetector(ImagePlus image, String nameExperiment, String resultsDir, boolean showPreprocessingImage) {
         this.image = image;
-        this.resultsDirectory =resultsDir;
         this.showPreprocessingImage =showPreprocessingImage;
         if (nameExperiment.endsWith("_")){
             this.nameExperiment = nameExperiment.substring(0,nameExperiment.length()-1);
         }else {
             this.nameExperiment =nameExperiment;
         }
+        //IJ.log("name experiment "+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_"));
+        this.resultsDirectory =resultsDir+"/Results/"+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_").replaceAll(" ","");
+        File dir=new File(resultsDirectory);
+        if(!dir.exists()) dir.mkdirs();
         detector = new Detector(image, "Nucleus");
         rawMeasures = new ResultsTable();
     }
@@ -93,12 +96,12 @@ public class NucleiDetector {
                 }
                 if(roiManager.getCount()>0) {
 
-                    File dir=new File(resultsDirectory + "/Results/Nuclei/ROI/associatedToCell/");
+                    File dir=new File(resultsDirectory + "/ROI/Validated/");
                     if(!dir.exists()) dir.mkdirs();
-                    if (roiManager.save(resultsDirectory + "/Results/Nuclei/ROI/associatedToCell/" + image.getTitle() + "_nucleus_associatedToCell_roi.zip")) {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Nuclei/ROI/");
+                    if (roiManager.save(resultsDirectory + "/ROI/Validated/" + image.getTitle() + "_nucleus_associatedToCell_roi.zip")) {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/Validated/");
                     } else {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Nuclei/ROI/");
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/Validated/");
                     }
                 }
             }
@@ -106,13 +109,13 @@ public class NucleiDetector {
                 IJ.error("No directory given for the results");
             }
             if (resultsDirectory!=null && saveMask){
-                File dir=new File(resultsDirectory + "/Results/Nuclei/Images/associatedToCell/");
+                File dir=new File(resultsDirectory + "/Images/");
                 if(!dir.exists()) dir.mkdirs();
                 ImagePlus nucleiLabeledMask = detector.labeledImage(associatedToCellNucleiRois);
-                if (IJ.saveAsTiff(nucleiLabeledMask, resultsDirectory + "/Results/Nuclei/Images/AssociatedToCell/" + nucleiLabeledMask.getTitle())) {
-                    IJ.log("The binary mask " + nucleiLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Results/Nuclei/Images/");
+                if (IJ.saveAsTiff(nucleiLabeledMask, resultsDirectory + "/Images/" + "Validated_Nuclei_" + nucleiLabeledMask.getTitle())) {
+                    IJ.log("The binary mask " + nucleiLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Images/"+ "Validated_Nuclei_" + nucleiLabeledMask.getTitle());
                 } else {
-                    IJ.log("The binary mask " + nucleiLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Nuclei/Images/");
+                    IJ.log("The binary mask " + nucleiLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Images/");
                 }
             }
         }else {
@@ -312,11 +315,11 @@ public class NucleiDetector {
     public boolean prepare(){
         //check saving directory
         if(saveRois){
-            File tmp=new File(resultsDirectory + "/Results/Nuclei/ROI/");
+            File tmp=new File(resultsDirectory + "/ROI/");
             if(!tmp.exists()) tmp.mkdirs();
         }
         if (saveMask){
-            File tmp=new File(resultsDirectory + "/Results/Nuclei/Images/");
+            File tmp=new File(resultsDirectory + "/Images/");
             if(!tmp.exists()) tmp.mkdirs();
         }
 
@@ -391,10 +394,10 @@ public class NucleiDetector {
             if (resultsDirectory !=null && saveMask){
                 detector.renameImage(labeledImage,analysisType+"_labeledMask");
                 detector.setLUT(labeledImage);
-                if(IJ.saveAsTiff(labeledImage, resultsDirectory +"/Results/Nuclei/Images/"+labeledImage.getTitle())){
-                    IJ.log("The segmentation mask "+labeledImage.getTitle() + " was saved in "+ resultsDirectory+"/Results/Nuclei/Images/");
+                if(IJ.saveAsTiff(labeledImage, resultsDirectory +"/Images/" + "Detected_Nuclei_" +labeledImage.getTitle())){
+                    IJ.log("The segmentation mask "+labeledImage.getTitle() + " was saved in "+ resultsDirectory+"/Images/" + "Detected_Nuclei_" +labeledImage.getTitle());
                 } else {
-                    IJ.log("The segmentation mask "+labeledImage.getTitle() + " could not be saved in "+ resultsDirectory+"/Results/Nuclei/Images/");
+                    IJ.log("The segmentation mask "+labeledImage.getTitle() + " could not be saved in "+ resultsDirectory+"/Images/");
                 }
             }else if (resultsDirectory==null && saveMask){
                 IJ.error("No directory given for the results");
@@ -406,10 +409,12 @@ public class NucleiDetector {
                 }
                 if(roiManagerNuclei.getCount()>0) {
                     String extension=(roiManagerNuclei.getCount()==1)?".roi":".zip";
-                    if (roiManagerNuclei.save(resultsDirectory + "/Results/Nuclei/ROI/" + image.getTitle() + analysisType + "_nucleus_threshold_roi"+extension)) {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Nuclei/ROI/");
+                    File dir=new File(resultsDirectory + "/ROI/AllDetected/");
+                    if(!dir.exists()) dir.mkdirs();
+                    if (roiManagerNuclei.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + analysisType + "_nucleus_detected_roi"+extension)) {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
                     } else {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Nuclei/ROI/");
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
                     }
                 }
             }

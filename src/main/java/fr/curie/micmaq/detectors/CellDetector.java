@@ -64,7 +64,6 @@ public class CellDetector {
      */
     public CellDetector(ImagePlus image, String nameExperiment, String resultsDir, boolean showPreprocessedImage,boolean showBinaryImage, boolean showCompositeImage) {
         this.image = image;
-        this.resultsDirectory = resultsDir;
         this.showPreprocessedImage = showPreprocessedImage;
         this.showBinaryImage = showBinaryImage;
         this.showCompositeImage = showCompositeImage;
@@ -73,6 +72,10 @@ public class CellDetector {
         } else {
             this.nameExperiment = nameExperiment;
         }
+        //IJ.log("name experiment "+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_"));
+        this.resultsDirectory =resultsDir+"/Results/"+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_").replaceAll(" ","");
+        File dir=new File(resultsDirectory);
+        if(!dir.exists()) dir.mkdirs();
         detector = new Detector(image, "Cell");
         nucleiDetector = null;
         rawMeasures = new ResultsTable();
@@ -185,12 +188,12 @@ public class CellDetector {
                 /*Save RoiManager*/
                 if(roiManager.getCount()>0) {
                     String extension=(roiManager.getCount()==1)?".roi":".zip";
-                    File dir=new File(resultsDirectory + "/Results/Cell/ROI/validated/");
+                    File dir=new File(resultsDirectory + "/ROI/Validated/");
                     if(!dir.exists()) dir.mkdirs();
-                    if (roiManager.save(resultsDirectory + "/Results/Cell/ROI/validated/" + image.getTitle() + "_CellsWithNucleusROIs"+extension)) {
-                        IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Cell/ROI/");
+                    if (roiManager.save(resultsDirectory + "/ROI/Validated/" + image.getTitle() + "_CellsWithNucleusROIs"+extension)) {
+                        IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/Validated/");
                     } else {
-                        IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cell/ROI/");
+                        IJ.log("The cell ROIs containing a nucleus of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/Validated/");
                     }
                 }
             }
@@ -200,12 +203,12 @@ public class CellDetector {
 //            Save binary mask
             if (resultsDirectory!=null && saveBinary){
                 ImagePlus cellLabeledMask = detector.labeledImage(modifiedCellRois);
-                File dir=new File(resultsDirectory + "/Results/Cell/Images/validated/");
+                File dir=new File(resultsDirectory + "/Images/");
                 if(!dir.exists()) dir.mkdirs();
-                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Results/Cell/Images/validated/" + cellLabeledMask.getTitle())) {
-                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus was saved in " + resultsDirectory + "/Results/Cell/Images/");
+                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Images/" + "Validated_Cells_" + cellLabeledMask.getTitle())) {
+                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus was saved in " + resultsDirectory + "/Images/" + "Validated_Cells_" + cellLabeledMask.getTitle());
                 } else {
-                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus could not be saved in " + resultsDirectory + "/Results/Cell/Images/");
+                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus could not be saved in " + resultsDirectory + "/Images/");
                 }
             }
         }else {
@@ -231,11 +234,11 @@ public class CellDetector {
         //IJ.showMessage("CellDetector showPreprocessed="+showPreprocessedImage+" showComposite="+showCompositeImage+" showBinary="+showBinaryImage);
         //check saving directory
         if(saveRois){
-            File tmp=new File(resultsDirectory + "/Results/Cell/ROI/");
+            File tmp=new File(resultsDirectory + "/ROI/AllDetected/");
             if(!tmp.exists()) tmp.mkdirs();
         }
         if (saveBinary){
-            File tmp=new File(resultsDirectory + "/Results/Cell/Images/");
+            File tmp=new File(resultsDirectory + "/Images/");
             if(!tmp.exists()) tmp.mkdirs();
         }
 //        PREPROCESSING
@@ -306,10 +309,10 @@ public class CellDetector {
 //            SAVINGS
             if (resultsDirectory != null && saveBinary) {
                 detector.setLUT(cellposeOutput);
-                if (IJ.saveAsTiff(cellposeOutput, resultsDirectory + "/Results/Cell/Images/" + cellposeOutput.getTitle())){
-                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " was saved in " + resultsDirectory + "/Results/Cell/Images/");
+                if (IJ.saveAsTiff(cellposeOutput, resultsDirectory + "/Images/" + "Detected_Cells_" + cellposeOutput.getTitle())){
+                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " was saved in " + resultsDirectory + "/Images/" + "Detected_Cells_" + cellposeOutput.getTitle());
                 }else {
-                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cell/Images/");
+                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " could not be saved in " + resultsDirectory + "/Images/");
                 }
             }
             if (resultsDirectory != null && saveRois) {
@@ -318,10 +321,10 @@ public class CellDetector {
                 }
                 if(roiManagerCell.getCount()>0) {
                     String extension=(roiManagerCell.getCount()==1)?".roi":".zip";
-                    if (roiManagerCell.save(resultsDirectory + "/Results/Cell/ROI/" + image.getTitle() + "_Cells_cellpose_roi"+extension)) {
-                        IJ.log("The cell ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/Results/Cell/ROI/");
+                    if (roiManagerCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_Cells_detected_roi"+extension)) {
+                        IJ.log("The cell ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
                     } else {
-                        IJ.log("The cell ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cell/ROI/");
+                        IJ.log("The cell ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
                     }
                 }
             }
