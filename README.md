@@ -45,6 +45,9 @@ Tutorials are Available on the [youtube channel of the Multimodal Imaging Center
 
 [<img src="https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/resources/MIC-MAQ_Tutorial_Cell_segmentation.png" width="50%">](https://www.youtube.com/watch?v=vR2kGQ9U5do)
 
+[<img src="https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/resources/MIC-MAQ_Tutorial_Nuclei_segmentation.png" width="50%">](https://www.youtube.com/watch?v=Mei3Y9hJMyE)
+
+
 ## Licensing
 
  MIC-MAQ plugin is licensed under the GNU GPL v2 License
