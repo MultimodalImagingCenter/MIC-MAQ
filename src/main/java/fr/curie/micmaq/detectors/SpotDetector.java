@@ -83,7 +83,6 @@ public class SpotDetector {
      */
     public SpotDetector(ImagePlus image, String spotName, String nameExperiment, String resultsDirectory, boolean showPreprocessedImage) {
         detector = new Detector(image, spotName);
-        this.resultsDirectory = resultsDirectory;
         this.showPreprocessedImage = showPreprocessedImage;
         this.image = image;
         this.spotName = spotName;
@@ -92,6 +91,11 @@ public class SpotDetector {
         } else {
             this.nameExperiment = nameExperiment;
         }
+        //IJ.log("name experiment "+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_"));
+        this.resultsDirectory =resultsDirectory+"/Results/"+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_").replaceAll(" ","");
+        File dir=new File(resultsDirectory);
+        if(!dir.exists()) dir.mkdirs();
+
         this.rollingBallSize = 0;
         this.useRollingBallSize = false;
         this.spotByThreshold = false;
@@ -267,26 +271,26 @@ public class SpotDetector {
     public boolean prepare(){
         //check saving directory
         if(saveRois){
-            File tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/ROI/");
+            File tmp=new File(resultsDirectory + "/ROI/Spot"+spotName+"/");
             if(!tmp.exists()) tmp.mkdirs();
             if(spotByThreshold){
-                tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/ROI/thresholding/");
+                tmp=new File(resultsDirectory + "/ROI/Spot"+spotName+"/thresholding/");
                 if(!tmp.exists()) tmp.mkdirs();
             }
             if(spotByFindMaxima){
-                tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/ROI/findmaxima/");
+                tmp=new File(resultsDirectory + "/ROI/Spot"+spotName+"/findmaxima/");
                 if(!tmp.exists()) tmp.mkdirs();
             }
         }
         if (saveImage){
-            File tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/Images/");
+            File tmp=new File(resultsDirectory + "/Images/Spot"+spotName+"/");
             if(!tmp.exists()) tmp.mkdirs();
             if(spotByThreshold){
-                tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/Images/thresholding");
+                tmp=new File(resultsDirectory + "/Images/Spot"+spotName+"/thresholding");
                 if(!tmp.exists()) tmp.mkdirs();
             }
             if(spotByFindMaxima){
-                tmp=new File(resultsDirectory + "/Results/Spot"+spotName+"/Images/findmaxima");
+                tmp=new File(resultsDirectory + "/Images/Spot"+spotName+"/findmaxima");
                 if(!tmp.exists()) tmp.mkdirs();
             }
         }
@@ -307,10 +311,10 @@ public class SpotDetector {
                     thresholdIP.show();
                 }
                 if (resultsDirectory != null && saveImage){
-                    if (IJ.saveAsTiff(thresholdIP, resultsDirectory +"/Results/Spot"+spotName+"/Images/thresholding/"+thresholdIP.getTitle())){
-                        IJ.log("The spot binary mask "+thresholdIP.getTitle() + " was saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/Images/thresholding/");
+                    if (IJ.saveAsTiff(thresholdIP, resultsDirectory +"/Images/Spot"+spotName+"/thresholding/"+thresholdIP.getTitle())){
+                        IJ.log("The spot binary mask "+thresholdIP.getTitle() + " was saved in "+ resultsDirectory+"/Images/Spot"+spotName+"/thresholding/");
                     }else {
-                        IJ.log("The spot binary mask "+thresholdIP.getTitle() + " could not be saved in  "+ resultsDirectory+"/Results/Spot"+spotName+"/Images/thresholding/");
+                        IJ.log("The spot binary mask "+thresholdIP.getTitle() + " could not be saved in  "+ resultsDirectory+"/Images/Spot"+spotName+"/thresholding/");
                     }
                 }
             }
@@ -324,19 +328,19 @@ public class SpotDetector {
                         findMaximaIP.setRoi((Roi)null);
                         PointRoi roiMaxima = findMaxima(findMaximaIP, prominence, "full");
                         findMaximaIP.setRoi(roiMaxima);
-                        boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory +"/Results/Spot"+spotName+"/ROI/findmaxima/" + image.getTitle() + "findMaxima_all_roi.roi");
+                        boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory +"/ROI/Spot"+spotName+"/findmaxima/" + image.getTitle() + "_findMaxima_all_roi.roi");
                         if (!wasSaved) {
                             IJ.error("Could not save ROIs");
                         }else {
-                            IJ.log("The ROIs of the spot found by find Maxima method of "+image.getTitle() + " were saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/ROI/" + image.getTitle() + "findMaxima_all_roi.roi");
+                            IJ.log("The ROIs of the spot found by find Maxima method of "+image.getTitle() + " were saved in "+ resultsDirectory+"/ROI/Spot"+spotName+"/" + image.getTitle() + "findMaxima_all_roi.roi");
                         }
                     }
                     if (saveImage){
                         ImagePlus toSave = findMaximaIP.flatten();
-                        if(IJ.saveAsTiff(toSave, resultsDirectory +"/Results/Spot"+spotName+"/Images/findmaxima/"+findMaximaIP.getTitle())){
-                            IJ.log("The find maxima spots image "+findMaximaIP.getTitle() + " was saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/Images/findmaxima/"+findMaximaIP.getTitle());
+                        if(IJ.saveAsTiff(toSave, resultsDirectory +"/Images/Spot"+spotName+"/findmaxima/"+findMaximaIP.getTitle())){
+                            IJ.log("The find maxima spots image "+findMaximaIP.getTitle() + " was saved in "+ resultsDirectory+"/Images/Spot"+spotName+"/findmaxima/"+findMaximaIP.getTitle());
                         } else {
-                            IJ.log("The find maxima spots image "+findMaximaIP.getTitle() + " could not be saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/Images/findmaxima/");
+                            IJ.log("The find maxima spots image "+findMaximaIP.getTitle() + " could not be saved in "+ resultsDirectory+"/Images/Spot"+spotName+"/findmaxima/");
                         }
                     }
                 }
@@ -379,17 +383,29 @@ public class SpotDetector {
         RoiManager roiManagerFoci=null;
         int numberSpot = 0; /*count number of spot detected*/
 //        Detection
-        if (regionROI!=null){
-            thresholdIP.setRoi(regionROI);
+        ImageProcessor tmpIP=thresholdIP.getProcessor().duplicate();
+        if(regionROI!=null) {
+            if (regionROI instanceof PolygonRoi || regionROI instanceof ShapeRoi) {
+                Roi tmproi = regionROI.getInverse(thresholdIP);
+                tmpIP.setValue(0);
+                //System.out.println("debug fill");
+                tmpIP.fill(tmproi);
+                //new ImagePlus("debug2_" + type, findMaximaProc).show();
+            } else {
+                System.out.println("not a polygonRoi " + regionROI.getClass());
+            }
+
+            tmpIP.setRoi(regionROI);
             //thresholdIP.getProcessor().invertLut();
-            roiManagerFoci = detector.analyzeParticles(thresholdIP);
+            roiManagerFoci = detector.analyzeParticles(new ImagePlus("",tmpIP));
             numberSpot = roiManagerFoci.getCount();
 //            --> Saving
             if (resultsDirectory!=null&&saveRois && numberSpot>0){
-                if (roiManagerFoci.save(resultsDirectory +"/Results/Spot"+spotName+"/ROI/thresholding/"+ image.getTitle() + "_threshold_"+type +(regionID+1)+"_roi.zip")){
-                    IJ.log("The ROIs of the "+type + " "+(regionID+1)+" of the image "+image.getTitle() + " by threshold method were saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/ROIs/thresholding/");
+                String extension=(roiManagerFoci.getCount()==1)?".roi":".zip";
+                if (roiManagerFoci.save(resultsDirectory +"/ROI/Spot"+spotName+"/thresholding/"+ image.getTitle() + "_threshold_"+type +(regionID+1)+"_ROIs"+extension)){
+                    IJ.log("The ROIs of the "+type + " "+(regionID+1)+" of the image "+image.getTitle() + " by threshold method were saved in "+ resultsDirectory+"/ROI/Spot"+spotName+"/thresholding/");
                 }else {
-                    IJ.log("The ROIs of the "+type + " "+ (regionID+1)+" of the image "+image.getTitle() + " by threshold method could not be saved in "+ resultsDirectory+"/Results/Spot"+spotName+"/ROIs/thresholding/");
+                    IJ.log("The ROIs of the "+type + " "+ (regionID+1)+" of the image "+image.getTitle() + " by threshold method could not be saved in "+ resultsDirectory+"/ROI/Spot"+spotName+"/thresholding/");
                 }
             }
         }
@@ -429,7 +445,7 @@ public class SpotDetector {
         float mean = 0;
         for (Point p : roiMaxima) {
             size++;
-            mean += tmp.getProcessor().getPixelValue(p.x, p.y);
+            mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
         }
         mean = mean / size;
         resultsTableToAdd.addValue(type + "_"+ spotName + " maxima prominence", prominence);

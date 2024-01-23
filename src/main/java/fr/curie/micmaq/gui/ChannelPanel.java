@@ -70,6 +70,15 @@ public class ChannelPanel extends JPanel {
                 parent.firePropertyChange("channel", 1, 2 + offset);
             }
         });
+
+        proteinNameTF.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
+                parent.firePropertyChange("channel", 1, 2 + offset);
+            }
+        });
     }
 
     public boolean isUsed() {
@@ -86,6 +95,19 @@ public class ChannelPanel extends JPanel {
 
     public boolean isQuantification() {
         return isUsed() && (quantificationRadioButton.isSelected() || (!isCell() && !isNuclei()));
+    }
+
+    public void setNuclei(boolean val) {
+        nucleiRadioButton.setSelected(val);
+    }
+
+    public void setCell(boolean val) {
+        entireCellRadioButton.setSelected(val);
+    }
+
+    public void setSpot(boolean val) {
+        if (val) quantificationRadioButton.setSelected(true);
+        spotsMeasureCheckBox.setSelected(val);
     }
 
     public boolean isSpot() {

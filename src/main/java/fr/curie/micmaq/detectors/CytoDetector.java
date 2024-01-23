@@ -32,6 +32,8 @@ public class CytoDetector {
     private final double minNucleiCellOverlap;
     private final double minCytoSize;
     private final String resultsDirectory;
+
+    private String nameExperiment;
     private final boolean showBinaryImage;
 
     private int[] associationCell2Nuclei;
@@ -60,7 +62,16 @@ public class CytoDetector {
         this.minNucleiCellOverlap = minNucleiCellOverlap;
         this.minCytoSize = minCytoSize;
         this.cellCytoImageToMeasure.setTitle(imageName);
-        this.resultsDirectory = resultsDir;
+        if (imageName.endsWith("_")){
+            nameExperiment = imageName.substring(0,imageName.length()-1);
+        }else {
+            nameExperiment =imageName;
+        }
+        //IJ.log("name experiment "+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_"));
+        //this.resultsDirectory =resultsDir+"/Results/"+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_").replaceAll(" ","");
+        //File dir=new File(resultsDirectory);
+        //if(!dir.exists()) dir.mkdirs();
+        this.resultsDirectory=resultsDir;
         this.showBinaryImage = showBinaryImage;
         this.saveBinaryImage = saveBinaryImage;
         this.detector = new Detector(cellCytoImageToMeasure, "Cytoplasm");
@@ -92,11 +103,11 @@ public class CytoDetector {
      */
     public boolean prepare() {
         if(saveRois){
-            File tmp=new File(resultsDirectory + "/Results/Cyto/ROI/");
+            File tmp=new File(resultsDirectory + "/ROI/Validated/");
             if(!tmp.exists()) tmp.mkdirs();
         }
         if (saveBinaryImage){
-            File tmp=new File(resultsDirectory + "/Results/Cyto/Images/");
+            File tmp=new File(resultsDirectory + "/Images/Validated/");
             if(!tmp.exists()) tmp.mkdirs();
         }
 //        Associated each cell to a nuclei
@@ -113,10 +124,10 @@ public class CytoDetector {
 //        SAVING
         if (resultsDirectory != null) {
             if (saveBinaryImage) {
-                if (IJ.saveAsTiff(cytoplasmLabeledMask, resultsDirectory + "/Results/Cyto/Images/" + cytoplasmLabeledMask.getTitle())) {
-                    IJ.log("The binary mask " + cytoplasmLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Results/Cyto/Images/");
+                if (IJ.saveAsTiff(cytoplasmLabeledMask, resultsDirectory + "/Images/Validated/" + "Cytoplams_" + cytoplasmLabeledMask.getTitle())) {
+                    IJ.log("The cytoplasm mask " + cytoplasmLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Images/Validated/" );
                 } else {
-                    IJ.log("The binary mask " + cytoplasmLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cyto/Images/");
+                    IJ.log("The cytoplasm mask " + cytoplasmLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Images/Validated/");
                 }
             }
             if (saveRois){ /*need to put Rois in roimanager to save*/
@@ -135,10 +146,10 @@ public class CytoDetector {
                 }
                 if(roiManager.getCount()>0) {
                     String extension=(roiManager.getCount()==1)?".roi":".zip";
-                    if (roiManager.save(resultsDirectory + "/Results/Cyto/ROI/" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi"+extension)) {
-                        IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/Results/Cyto/ROI/");
+                    if (roiManager.save(resultsDirectory + "/ROI/Validated/" + cellCytoImageToMeasure.getTitle() + "_CytoplasmROIs"+extension)) {
+                        IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/ROI/Validated/" );
                     } else {
-                        IJ.log("#########\nThe cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/Results/Cyto/ROI/\n######");
+                        IJ.log("#########\nThe cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/Validated/\n######");
                     }
                 }
 

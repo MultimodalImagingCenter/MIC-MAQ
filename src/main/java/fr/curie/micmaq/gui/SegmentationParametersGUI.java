@@ -21,6 +21,7 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 
 public class SegmentationParametersGUI {
     private JButton setMeasurementsButton;
@@ -143,7 +144,7 @@ public class SegmentationParametersGUI {
         } else {
             projectionPanel.setVisible(false);
         }
-        measures = new MeasureValue();
+        measures = new MeasureValue(true);
         int measurements = (int) Prefs.get("MICMAQ.Measurements_" + type, (Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY));
         measures.setMeasure(measurements); /*Default measurements*/
 
@@ -294,8 +295,9 @@ public class SegmentationParametersGUI {
         } else if (cellposeRadioButton.isSelected()) {
             result += "\nUse Cellpose:";
             result += "\n\tCellpose model: " + cellposeModelCB.getSelectedItem();
-            if (cellposeModelPath != null) result += "\n\tCellpose model path: " + cellposeModelPath;
-            result += "\n\tMinimum diameter: " + cellposeDiameterSpinner.getValue();
+            if (cellposeModelCB.getSelectedIndex() == cellposeModelCB.getItemCount() - 1 && cellposeModelPath != null)
+                result += "\n\tCellpose model path: " + cellposeModelPath;
+            result += "\n\tMinimum diameter: " + (int) cellposeDiameterSpinner.getValue();
             result += "\n\tcellproba_threshold: " + cellposeCellproba_thresholdSpinner.getValue();
         } else if (starDistRadioButton.isSelected()) {
             result += "\nUse StarDist:";
@@ -307,14 +309,152 @@ public class SegmentationParametersGUI {
             result += "\n\tOverlap threshold: " + stardistNMSthrSpinner.getValue();
             result += "\n\tscale image: " + stardistScaleSpinner.getValue();
         }
-        result += "\n\tExclude on edges: " + (excludeOnEdgesCheckBox.isSelected() ? "yes" : "no");
-        result += "\n\tFinal user validation: " + (userValidationCheckBox.isSelected() ? "yes" : "no");
+        result += "\nExclude on edges: " + (excludeOnEdgesCheckBox.isSelected() ? "yes" : "no");
+        result += "\nFinal user validation: " + (userValidationCheckBox.isSelected() ? "yes" : "no");
+        result += "\nsave Roi: " + (saveROIsCheckBox.isSelected() ? "yes" : "no");
+        result += "\nsave mask: " + (saveSegmentationMaskCheckBox.isSelected() ? "yes" : "no");
         if (type.equals(CELL_CYTO)) {
             result += "\n\tmin size overlap nucleus/cell: " + minOverlapSpinner.getValue();
             result += "\n\tmin size of cytoplasm: " + minCytoSizeSpinner.getValue();
         }
 
         return result;
+    }
+
+    public void setParameters(ArrayList<String> params) {
+        boolean q = true;
+        boolean m = false;
+        String macro = "";
+        useMacroCodeCheckBox.setSelected(false);
+        isZStackCheckBox.setSelected(false);
+        excludeOnEdgesCheckBox.setSelected(false);
+        userValidationCheckBox.setSelected(false);
+        saveROIsCheckBox.setSelected(true);
+        saveSegmentationMaskCheckBox.setSelected(false);
+
+        for (int i = 0; i < params.size(); i++) {
+            //System.out.println("#segm: "+params.get(i));
+            if (q) {
+                if (params.get(i).startsWith("Measurements") || params.get(i).startsWith("Use ")) {
+                    m = false;
+                    //System.out.println("stop macro");
+                }
+                if (m) {
+                    macro += params.get(i) + "\n";
+                    //System.out.println("add text to macro " + params.get(i));
+                    //System.out.println("macro becomes :\n" + macro);
+                    macroTextArea.setText(macro);
+                } else {
+
+                    if (params.get(i).startsWith("Macro:")) {
+                        m = true;
+                        //System.out.println("start macro and activate in GUI");
+                        useMacroCodeCheckBox.setSelected(true);
+                        macroTextPanel.setVisible(true);
+                    }
+
+                    if (params.get(i).startsWith("Projection")) {
+                        isZStackCheckBox.setSelected(true);
+                        System.out.println("change projection");
+                    }
+
+                    if (params.get(i).startsWith("Use")) {
+                        System.out.println("use segmentation :");
+                        if (params.get(i).endsWith("Cellpose:")) {
+                            System.out.println("Cellpose detected !");
+                            cellposeRadioButton.setSelected(true);
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            System.out.println("model to put = " + model);
+                            int index = -1;
+                            for (int ind = 0; ind < cellposeModelCB.getItemCount(); ind++) {
+                                if (cellposeModelCB.getItemAt(ind).equals(model)) index = ind;
+                            }
+                            if (index >= 0) cellposeModelCB.setSelectedIndex(index);
+                            offset++;
+                            if (params.get(i + offset).startsWith("Cellpose model path: ")) {
+                                String tmp = params.get(i + offset).split(": ")[1];
+                                cellposeModelPath = new File(tmp);
+                                cellposeModelPathTextField.setText(tmp);
+                                offset++;
+                            }
+                            cellposeDiameterSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
+                            //System.out.println("diameter: "+params.get(i+offset).split(": ")[1]);
+                            offset++;
+                            cellposeCellproba_thresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            //System.out.println("cellproba: "+params.get(i+offset).split(": ")[1]);
+
+                        } else if (params.get(i).endsWith("StarDist:")) {
+                            starDistRadioButton.setSelected(true);
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            int index = -1;
+                            for (int ind = 0; ind < stardistModelComboBox.getItemCount(); ind++) {
+                                if (stardistModelComboBox.getItemAt(ind).equals(model)) index = ind;
+                            }
+                            if (index >= 0) stardistModelComboBox.setSelectedIndex(index);
+                            offset++;
+                            if (params.get(i + offset).startsWith("StarDist model path: ")) {
+                                String tmp = params.get(i + offset).split(": ")[1];
+                                stardistModelPath = new File(tmp);
+                                stardistModelPathTextField.setText(tmp);
+                                offset++;
+                            }
+                            stardistPercentileLowSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                            stardistPercentileHighSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                            stardistProbaThrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                            stardistNMSthrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                            stardistScaleSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+
+                        } else {
+                            thresholdingRadioButton.setSelected(true);
+                            int offset = 1;
+                            String model = params.get(i + offset).split(": ")[1];
+                            int index = -1;
+                            for (int ind = 0; ind < thresholdMethodsCB.getItemCount(); ind++) {
+                                if (thresholdMethodsCB.getItemAt(ind).equals(model)) index = ind;
+                            }
+                            if (index >= 0) thresholdMethodsCB.setSelectedIndex(index);
+                            offset++;
+                            thresholdMinSizeSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            offset++;
+                            useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
+                        }
+
+                    }
+
+                    if (params.get(i).startsWith("Exclude on edges:")) {
+                        excludeOnEdgesCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
+                    if (params.get(i).startsWith("Final user validation:")) {
+                        userValidationCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
+                    if (params.get(i).startsWith("save Roi:")) {
+                        saveROIsCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
+                    if (params.get(i).startsWith("save mask:")) {
+                        saveSegmentationMaskCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
+
+                    if (params.get(i).startsWith("min size overlap nucleus/cell:")) {
+                        minOverlapSpinner.setValue(new Double(params.get(i).split(": ")[1]));
+                    }
+                    if (params.get(i).startsWith("min size of cytoplasm:")) {
+                        minCytoSizeSpinner.setValue(new Double(params.get(i).split(": ")[1]));
+                    }
+
+
+                }
+
+            }
+            if (params.get(i).startsWith("Quantification  Parameters")) q = false;
+
+            mainPanel.repaint();
+        }//end for
     }
 
     public SegmentationParameters getParameters() {

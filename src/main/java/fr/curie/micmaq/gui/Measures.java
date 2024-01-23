@@ -51,7 +51,7 @@ public class Measures extends JFrame {
         this.type = type;
         getPrefs(type);
         initListeners();
-        measurementsValueClass = new MeasureValue();
+        measurementsValueClass = new MeasureValue(true);
         measurementsValueClass.setMeasure(measures);
     }
 

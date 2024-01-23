@@ -63,7 +63,7 @@ public class SegmentationParameters {
         param.setCellposeModel(model);
 
         param.setMethod(CELLPOSE);
-        MeasureValue tmp=new MeasureValue();
+        MeasureValue tmp=new MeasureValue(true);
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
         return param;
@@ -85,7 +85,7 @@ public class SegmentationParameters {
         param.setStardistScale(stardistScale);
         if(stardistModelFile!=null) param.setStardistModelFile(stardistModelFile);
         param.setMethod(STARDIST);
-        MeasureValue tmp=new MeasureValue();
+        MeasureValue tmp=new MeasureValue(true);
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
         return param;
@@ -96,7 +96,7 @@ public class SegmentationParameters {
         param.setMethod(THRESHOLDING);
         param.setThresholdMethod(method);
         param.setThresholdingWatershed(watershed);
-        MeasureValue tmp=new MeasureValue();
+        MeasureValue tmp=new MeasureValue(true);
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
         return param;

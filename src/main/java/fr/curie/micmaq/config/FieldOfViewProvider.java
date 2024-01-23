@@ -73,11 +73,12 @@ public class FieldOfViewProvider {
         FilenameFilter filter=new FilenameFilter(){
             @Override
             public boolean accept(File dir, String name) {
-                return filePattern.isEmpty()||name.contains(filePattern);
+                return filePattern==null||filePattern.isEmpty()||name.contains(filePattern);
             }
         };
         //System.out.println("filter " +fileExtension+" filter "+filter);
         File[] files=dir.listFiles(filter);
+        if(files==null || files.length==0) return;
         //System.out.println("nb files "+files.length);
         for(File f:files){
             if(!f.isDirectory()) {
@@ -222,14 +223,14 @@ public class FieldOfViewProvider {
                     for (int i = 0; i < nSeries; i++) {
                         IJ.log("adding field of view "+i);
                         FieldOfView fov= new FieldOfView();
-                        fov.addChannel(path,i,1);
+                        fov.addChannel(path,i,1, patterns.get(0));
                         for(int c=1;c<patterns.size();c++){
                             String name=f.getName();
                             IJ.log("original name "+name);
                             String f2=name.replaceAll(patterns.get(0),patterns.get(c));
                             IJ.log("after pattern replacement --> " + f2);
                             IJ.log("path "+dir+File.separator+f2);
-                            fov.addChannel(dir+File.separator+f2,i,1);
+                            fov.addChannel(dir+File.separator+f2,i,1,patterns.get(c));
                         }
                         fov.setFieldname(f.getName().replaceAll(patterns.get(0),""));
                         fields.add(fov);
@@ -261,6 +262,10 @@ public class FieldOfViewProvider {
 
     public int getNbImgsPerChanNb(int index) {
         return nbImgsPerChanNb.get(index);
+    }
+
+    public void setChannelsUserName(ArrayList<String> names){
+        for(FieldOfView fov : fields) fov.setChannelsUserName(names);
     }
 
 }
