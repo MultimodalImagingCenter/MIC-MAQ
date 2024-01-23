@@ -203,12 +203,12 @@ public class CellDetector {
 //            Save binary mask
             if (resultsDirectory!=null && saveBinary){
                 ImagePlus cellLabeledMask = detector.labeledImage(modifiedCellRois);
-                File dir=new File(resultsDirectory + "/Images/");
+                File dir=new File(resultsDirectory + "/Images/Validated/");
                 if(!dir.exists()) dir.mkdirs();
-                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Images/" + "Validated_Cells_" + cellLabeledMask.getTitle())) {
-                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus was saved in " + resultsDirectory + "/Images/" + "Validated_Cells_" + cellLabeledMask.getTitle());
+                if (IJ.saveAsTiff(cellLabeledMask, resultsDirectory + "/Images/Validated/" + "Cells_" + cellLabeledMask.getTitle())) {
+                    IJ.log("The validated cell segmentation validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus was saved in " + resultsDirectory + "/Images/Validated/");
                 } else {
-                    IJ.log("The binary mask validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus could not be saved in " + resultsDirectory + "/Images/");
+                    IJ.log("The validated cell segmentation validated" + cellLabeledMask.getTitle() + " with only cells containing a nucleus could not be saved in " + resultsDirectory + "/Images/Validated/");
                 }
             }
         }else {
@@ -309,10 +309,12 @@ public class CellDetector {
 //            SAVINGS
             if (resultsDirectory != null && saveBinary) {
                 detector.setLUT(cellposeOutput);
-                if (IJ.saveAsTiff(cellposeOutput, resultsDirectory + "/Images/" + "Detected_Cells_" + cellposeOutput.getTitle())){
-                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " was saved in " + resultsDirectory + "/Images/" + "Detected_Cells_" + cellposeOutput.getTitle());
+                File dir=new File(resultsDirectory + "/Images/AllDetected/");
+                if(!dir.exists()) dir.mkdirs();
+                if (IJ.saveAsTiff(cellposeOutput, resultsDirectory + "/Images/AllDetected/" + "Cells_" + cellposeOutput.getTitle())){
+                    IJ.log("The cell segmentation mask " + cellposeLauncher.getCellposeMask().getTitle() + " was saved in " + resultsDirectory + "/Images/AllDetected/" );
                 }else {
-                    IJ.log("The binary mask " + cellposeLauncher.getCellposeMask().getTitle() + " could not be saved in " + resultsDirectory + "/Images/");
+                    IJ.log("The cell segmentation mask " + cellposeLauncher.getCellposeMask().getTitle() + " could not be saved in " + resultsDirectory + "/Images/AllDetected/");
                 }
             }
             if (resultsDirectory != null && saveRois) {
@@ -321,7 +323,7 @@ public class CellDetector {
                 }
                 if(roiManagerCell.getCount()>0) {
                     String extension=(roiManagerCell.getCount()==1)?".roi":".zip";
-                    if (roiManagerCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_Cells_detected_roi"+extension)) {
+                    if (roiManagerCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_CellsDetectedROIs"+extension)) {
                         IJ.log("The cell ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
                     } else {
                         IJ.log("The cell ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");

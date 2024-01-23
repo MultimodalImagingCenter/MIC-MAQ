@@ -107,7 +107,7 @@ public class CytoDetector {
             if(!tmp.exists()) tmp.mkdirs();
         }
         if (saveBinaryImage){
-            File tmp=new File(resultsDirectory + "/Images/");
+            File tmp=new File(resultsDirectory + "/Images/Validated/");
             if(!tmp.exists()) tmp.mkdirs();
         }
 //        Associated each cell to a nuclei
@@ -124,10 +124,10 @@ public class CytoDetector {
 //        SAVING
         if (resultsDirectory != null) {
             if (saveBinaryImage) {
-                if (IJ.saveAsTiff(cytoplasmLabeledMask, resultsDirectory + "/Images/" + "Validated_Cytoplams_" + cytoplasmLabeledMask.getTitle())) {
-                    IJ.log("The binary mask " + cytoplasmLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Images/" + "Validated_Cytoplams_" + cytoplasmLabeledMask.getTitle());
+                if (IJ.saveAsTiff(cytoplasmLabeledMask, resultsDirectory + "/Images/Validated/" + "Cytoplams_" + cytoplasmLabeledMask.getTitle())) {
+                    IJ.log("The cytoplasm mask " + cytoplasmLabeledMask.getTitle() + " was saved in " + resultsDirectory + "/Images/Validated/" );
                 } else {
-                    IJ.log("The binary mask " + cytoplasmLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Images/");
+                    IJ.log("The cytoplasm mask " + cytoplasmLabeledMask.getTitle() + " could not be saved in " + resultsDirectory + "/Images/Validated/");
                 }
             }
             if (saveRois){ /*need to put Rois in roimanager to save*/
@@ -146,8 +146,8 @@ public class CytoDetector {
                 }
                 if(roiManager.getCount()>0) {
                     String extension=(roiManager.getCount()==1)?".roi":".zip";
-                    if (roiManager.save(resultsDirectory + "/ROI/Validated/" + "Validated_Cytoplams_" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi"+extension)) {
-                        IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/ROI/Validated/" + "Validated_Cytoplams_" + cellCytoImageToMeasure.getTitle() + "_cytoplasm_roi"+extension);
+                    if (roiManager.save(resultsDirectory + "/ROI/Validated/" + cellCytoImageToMeasure.getTitle() + "_CytoplasmROIs"+extension)) {
+                        IJ.log("The cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " were saved in " + resultsDirectory + "/ROI/Validated/" );
                     } else {
                         IJ.log("#########\nThe cytoplasm ROIs of " + cellCytoImageToMeasure.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/Validated/\n######");
                     }

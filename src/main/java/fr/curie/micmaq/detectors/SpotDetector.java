@@ -328,7 +328,7 @@ public class SpotDetector {
                         findMaximaIP.setRoi((Roi)null);
                         PointRoi roiMaxima = findMaxima(findMaximaIP, prominence, "full");
                         findMaximaIP.setRoi(roiMaxima);
-                        boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory +"/ROI/Spot"+spotName+"/findmaxima/" + image.getTitle() + "findMaxima_all_roi.roi");
+                        boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory +"/ROI/Spot"+spotName+"/findmaxima/" + image.getTitle() + "_findMaxima_all_roi.roi");
                         if (!wasSaved) {
                             IJ.error("Could not save ROIs");
                         }else {
@@ -401,7 +401,8 @@ public class SpotDetector {
             numberSpot = roiManagerFoci.getCount();
 //            --> Saving
             if (resultsDirectory!=null&&saveRois && numberSpot>0){
-                if (roiManagerFoci.save(resultsDirectory +"/ROI/Spot"+spotName+"/thresholding/"+ image.getTitle() + "_threshold_"+type +(regionID+1)+"_roi.zip")){
+                String extension=(roiManagerFoci.getCount()==1)?".roi":".zip";
+                if (roiManagerFoci.save(resultsDirectory +"/ROI/Spot"+spotName+"/thresholding/"+ image.getTitle() + "_threshold_"+type +(regionID+1)+"_ROIs"+extension)){
                     IJ.log("The ROIs of the "+type + " "+(regionID+1)+" of the image "+image.getTitle() + " by threshold method were saved in "+ resultsDirectory+"/ROI/Spot"+spotName+"/thresholding/");
                 }else {
                     IJ.log("The ROIs of the "+type + " "+ (regionID+1)+" of the image "+image.getTitle() + " by threshold method could not be saved in "+ resultsDirectory+"/ROI/Spot"+spotName+"/thresholding/");
