@@ -3,7 +3,7 @@
   <grid id="27dc6" binding="mainPanel" layout-manager="GridLayoutManager" row-count="8" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="20" y="20" width="698" height="871"/>
+      <xy x="20" y="20" width="698" height="945"/>
     </constraints>
     <properties/>
     <border type="none" title="Segmentation parameters"/>
@@ -282,9 +282,17 @@
                 <item value="nuclei"/>
                 <item value="cyto"/>
                 <item value="cyto2"/>
-                <item value="bact_omni"/>
+                <item value="cyto2_cp3"/>
+                <item value="cyto3"/>
                 <item value="tissuenet"/>
+                <item value="tissuenet_cp3"/>
                 <item value="livecell"/>
+                <item value="livecell_cp3"/>
+                <item value="yeast_BF_cp3"/>
+                <item value="yeast_PhC_cp3"/>
+                <item value="bact_phase_cp3"/>
+                <item value="bact_fluor_cp3"/>
+                <item value="deepbacs_cp3"/>
                 <item value="own_model"/>
               </model>
             </properties>

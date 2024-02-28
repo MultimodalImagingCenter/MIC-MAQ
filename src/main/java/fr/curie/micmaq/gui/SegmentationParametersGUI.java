@@ -1,8 +1,6 @@
 package fr.curie.micmaq.gui;
 
-import fr.curie.micmaq.config.FieldOfView;
 import fr.curie.micmaq.config.FieldOfViewProvider;
-import fr.curie.micmaq.config.ImageProvider;
 import fr.curie.micmaq.config.MeasureValue;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import fr.curie.micmaq.segment.SegmentationParameters;
@@ -251,6 +249,7 @@ public class SegmentationParametersGUI {
         });
         end = Instant.now();
         IJ.log("segmentationGUI : add listener  " + Duration.between(start, end).toString());
+
     }
 
     public void setType(String type) {
@@ -807,9 +806,17 @@ public class SegmentationParametersGUI {
         defaultComboBoxModel2.addElement("nuclei");
         defaultComboBoxModel2.addElement("cyto");
         defaultComboBoxModel2.addElement("cyto2");
-        defaultComboBoxModel2.addElement("bact_omni");
+        defaultComboBoxModel2.addElement("cyto2_cp3");
+        defaultComboBoxModel2.addElement("cyto3");
         defaultComboBoxModel2.addElement("tissuenet");
+        defaultComboBoxModel2.addElement("tissuenet_cp3");
         defaultComboBoxModel2.addElement("livecell");
+        defaultComboBoxModel2.addElement("livecell_cp3");
+        defaultComboBoxModel2.addElement("yeast_BF_cp3");
+        defaultComboBoxModel2.addElement("yeast_PhC_cp3");
+        defaultComboBoxModel2.addElement("bact_phase_cp3");
+        defaultComboBoxModel2.addElement("bact_fluor_cp3");
+        defaultComboBoxModel2.addElement("deepbacs_cp3");
         defaultComboBoxModel2.addElement("own_model");
         cellposeModelCB.setModel(defaultComboBoxModel2);
         cellposePanel.add(cellposeModelCB, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
