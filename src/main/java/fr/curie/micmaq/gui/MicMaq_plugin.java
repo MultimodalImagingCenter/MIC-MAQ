@@ -2,6 +2,7 @@ package fr.curie.micmaq.gui;
 
 import com.jgoodies.common.collect.ArrayListModel;
 import fr.curie.micmaq.config.*;
+import fr.curie.micmaq.detectors.CellposeLauncher;
 import fr.curie.micmaq.detectors.Experiment;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import fr.curie.micmaq.helpers.MeasureCalibration;
@@ -222,6 +223,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     }
 
     private void addMenus() {
+        /****************  file menu   *****************/
         JMenuBar bar = new JMenuBar();
         JMenu menuf = new JMenu("File");
         JMenuItem itemf1 = new JMenuItem("Load images and parameters from file");
@@ -243,6 +245,33 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         });
         menuf.add(itemf2);
         bar.add(menuf);
+
+        /****************  edit menu   *****************/
+        JMenu menuEdit = new JMenu("Edit");
+        JMenuItem itemE1 = new JMenuItem("set Cellpose tiling");
+        itemE1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                GenericDialog gd = new GenericDialog("Cellpose tiling parameters");
+                gd.addNumericField("Tile_size", CellposeLauncher.tileSize, 0);
+                gd.addNumericField("Tile_overlap", CellposeLauncher.tileOverlap, 0);
+                gd.showDialog();
+
+                if (!gd.wasCanceled()) {
+                    CellposeLauncher.tileSize = (int) gd.getNextNumber();
+                    CellposeLauncher.tileOverlap = (int) gd.getNextNumber();
+
+                    IJ.log("changed Cellpose tiling to :\ntile size: "+CellposeLauncher.tileSize+"\ntile overlap: "+CellposeLauncher.tileOverlap);
+                }
+
+            }
+        });
+
+        menuEdit.add(itemE1);
+        bar.add(menuEdit);
+
+
+        /****************  help menu   *****************/
 
         JMenu menuHelp = new JMenu("Help");
         JMenuItem itemh1 = new JMenuItem("user manual");
@@ -848,6 +877,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             } else {
                 IJ.log("User removed this field of view from analysis\nnothing done!");
             }
+            if (cellResults != null) {
+                cellResults.save(workingDirectory + "/results/Results.xls");
+            }
+            if (nucleusResults != null) {
+                nucleusResults.save(workingDirectory + "/results/Cells-Nuclei-Association.xls");
+            }
         }
         if (cellResults != null) {
             cellResults.deleteRow(cellResults.size() - 1);
@@ -1070,6 +1105,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             bufferedWriter.append(tmp);
 
             bufferedWriter.append("\n\nCALIBRATION: " + calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
+
+            if(CellposeLauncher.tileSize>=0) bufferedWriter.append("\n\nCellpose tiling: size="+CellposeLauncher.tileSize+"\t overlap="+CellposeLauncher.tileOverlap);
 
             for (int i = 0; i < channelPanels.size(); i++) {
                 ChannelPanel cp = channelPanels.get(i);

@@ -56,6 +56,9 @@ public class SegmentationParameters {
     boolean saveMasks=false;
     MeasureValue measurements;
 
+    int tileSize=-1;
+    int tileOverlap=-1;
+
     public static SegmentationParameters createCellpose(String model, int diameter, double cellproba_threshold){
         SegmentationParameters param=new SegmentationParameters();
         param.setCellposeDiameter(diameter);
@@ -338,5 +341,21 @@ public class SegmentationParameters {
 
     public void setStardistScale(double stardistScale) {
         this.stardistScale = stardistScale;
+    }
+
+    public int getTileSize() {
+        return tileSize;
+    }
+
+    public void setTileSize(int tileSize) {
+        this.tileSize = tileSize;
+    }
+
+    public int getTileOverlap() {
+        return tileOverlap;
+    }
+
+    public void setTileOverlap(int tileOverlap) {
+        this.tileOverlap = tileOverlap;
     }
 }
