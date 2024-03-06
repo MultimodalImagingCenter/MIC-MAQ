@@ -95,7 +95,7 @@ public class SegmentationParametersGUI {
         mainPanel.setBorder(BorderFactory.createTitledBorder("Segmentation parameters for " + type));
         cytoPanel.setVisible(false);
 
-        starDistRadioButton.setVisible(false);
+        starDistRadioButton.setVisible(true);
 
         if (type.equals(NUCLEI)) {
             setMeasurementsButton.setText("set measurements for nuclei");
