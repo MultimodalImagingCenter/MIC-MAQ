@@ -2,7 +2,6 @@ package fr.curie.micmaq.detectors;
 
 import ch.epfl.biop.wrappers.cellpose.CellposeTaskSettings;
 import ch.epfl.biop.wrappers.cellpose.DefaultCellposeTask;
-import fr.curie.micmaq.helpers.CombineTiles;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -14,10 +13,13 @@ import ij.io.FileSaver;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.frame.RoiManager;
 import ij.process.Blitter;
+import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
 import java.awt.*;
 import java.io.File;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.stream.IntStream;
 
 /**
@@ -25,12 +27,11 @@ import java.util.stream.IntStream;
  * Date : 05/05/2022
  * Class for
  * - segmenting nuclei using cellpose
- *
+ * <p>
  * Class based on <a href="https://github.com/BIOP/ijl-utilities-wrappers/blob/master/src/main/java/ch/epfl/biop/wrappers/cellpose/ij2commands/Cellpose_SegmentImgPlusOwnModelAdvanced.java">...</a>
  * It has been simplified for images with only one frame and to be used with or without GUI.
  * It is used to launch cellpose in command line.
  * All parameters are set by default other than the method and diameter and channels to use
- *
  */
 public class CellposeLauncher {
     private final ImagePlus imagePlus;
@@ -43,8 +44,8 @@ public class CellposeLauncher {
     private ImagePlus cellposeMask;
     private RoiManager cellposeRoiManager;
 
-    public static int tileSize=-1;
-    public static int tileOverlap=-1;
+    public static int tileSize = -1;
+    public static int tileOverlap = -1;
 //    CONSTRUCTOR
 
     /**
@@ -59,10 +60,10 @@ public class CellposeLauncher {
      *                       nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue
      * @param excludeOnEdges : choice to exclude cell on edge
      */
-    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, double cellproba_threshold,String model, int cytoChannel, int nucleiChannel, boolean excludeOnEdges) {
+    public CellposeLauncher(ImagePlus imagePlus, int minSizeNucleus, double cellproba_threshold, String model, int cytoChannel, int nucleiChannel, boolean excludeOnEdges) {
         this.imagePlus = imagePlus;
         this.minSizeNucleus = minSizeNucleus;
-        this.cellproba_threshold=cellproba_threshold;
+        this.cellproba_threshold = cellproba_threshold;
         this.model = model;
         this.nucleiChannel = nucleiChannel;
         this.cytoChannel = cytoChannel;
@@ -100,8 +101,9 @@ public class CellposeLauncher {
      * Launching of cellpose resulting with a binary mask and a RoiManager
      */
     public void analysis() {
-        cellposeMask=runCellpose();
-        cellposeRoiManager=label2Roi(cellposeMask);
+        cellposeMask = runCellpose();
+        //cellposeRoiManager=label2Roi(cellposeMask);
+        cellposeRoiManager = RoiManager.getRoiManager();
         cellposeMask = Detector.labeledImage(cellposeMask.getWidth(), cellposeMask.getHeight(), cellposeRoiManager.getRoisAsArray());
         cellposeMask.setTitle(imagePlus.getShortTitle() + "-cellpose");
     }
@@ -110,20 +112,30 @@ public class CellposeLauncher {
      * Launching of cellpose resulting with only a binary mask
      */
     public void analysisWithoutRois() {
-        cellposeMask=runCellpose();
+        cellposeMask = runCellpose();
     }
 
-
-    public ImagePlus runCellpose(){
+    /**
+     * run cellpose. it checks if tiling is set if yes run on tiles if no run on full image
+     * @return cellpose mask
+     * @see CellposeLauncher#runCellposeImage(ImagePlus)
+     * @see CellposeLauncher#runCellposeTiled(ImagePlus)
+     */
+    public ImagePlus runCellpose() {
         RoiManager.getRoiManager().reset();
-        if(tileSize<0 || (tileSize>=imagePlus.getWidth()&& tileSize>= imagePlus.getHeight())){
+        if (tileSize < 0 || (tileSize >= imagePlus.getWidth() && tileSize >= imagePlus.getHeight())) {
             return runCellposeImage(imagePlus);
-        }else{
+        } else {
             return runCellposeTiled(imagePlus);
         }
     }
 
-    public ImagePlus runCellposeImage(ImagePlus input){
+    /**
+     * run cellpose on an image
+     * @param input
+     * @return
+     */
+    public ImagePlus runCellposeImage(ImagePlus input) {
         DefaultCellposeTask cellposeTask = new DefaultCellposeTask();
         File cellposeTempDir = getCellposeTempDir();
         setSettings(cellposeTask, cellposeTempDir);
@@ -158,78 +170,100 @@ public class CellposeLauncher {
         return null;
     }
 
-    public ImagePlus runCellposeTiled(ImagePlus input){
-        ImagePlus tiles=null;
-        if(input.getNChannels()>1){
-            tiles=tileChannels(input);
-        }else{
-            tiles=tileImage(input.getProcessor());
+    /**
+     * run Cellpose after tiling image and recombine the tiles at the end of computation
+     * @param input
+     * @return
+     */
+    public ImagePlus runCellposeTiled(ImagePlus input) {
+        ImagePlus tiles = null;
+        if (input.getNChannels() > 1) {
+            tiles = tileChannels(input);
+        } else {
+            tiles = tileImage(input.getProcessor());
         }
-        ImageStack masks=new ImageStack(tileSize, tileSize);
+        ImageStack masks = new ImageStack(tileSize, tileSize);
         //tiles.show();
 
-        for(int slice=1;slice<=tiles.getNSlices();slice++){
-            IJ.showStatus("run cellpose on tile #"+slice+" / "+tiles.getNSlices());
-            if(input.getNChannels()==1){
+        for (int slice = 1; slice <= tiles.getNSlices(); slice++) {
+            IJ.log("run cellpose on tile #" + slice + " / " + tiles.getNSlices());
+            if (input.getNChannels() == 1) {
                 tiles.setSlice(slice);
-                ImageProcessor tmp= tiles.getProcessor();
+                ImageProcessor tmp = tiles.getProcessor();
 
-                masks.addSlice(runCellposeImage(new ImagePlus("tmp"+slice,tmp)).getProcessor());
-            }else{
-                tiles.setPosition(1,slice,1);
-                ImageProcessor c1=tiles.getProcessor().duplicate();
-                tiles.setPosition(2,slice,1);
-                ImageProcessor c2=tiles.getProcessor().duplicate();
-                ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{new ImagePlus("c1",c1), new ImagePlus("c2",c2)}, true);
+                masks.addSlice(runCellposeImage(new ImagePlus("tmp" + slice, tmp)).getProcessor());
+            } else {
+                tiles.setPosition(1, slice, 1);
+                ImageProcessor c1 = tiles.getProcessor().duplicate();
+                tiles.setPosition(2, slice, 1);
+                ImageProcessor c2 = tiles.getProcessor().duplicate();
+                ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{new ImagePlus("c1", c1), new ImagePlus("c2", c2)}, true);
                 masks.addSlice(runCellposeImage(composite).getProcessor());
             }
-            IJ.showProgress(slice,tiles.getNSlices());
+            IJ.showProgress(slice, tiles.getNSlices());
         }
         IJ.showStatus("combine masks");
         //new ImagePlus("tiles masks",masks).show();
 
-        ImagePlus result= new ImagePlus(input.getTitle()+"TiledCellpose_mask",combineTileImage(masks));
+        ImagePlus result = new ImagePlus(input.getTitle() + "TiledCellpose_mask", combineTileImage(masks));
         return result;
     }
 
-
-    ImagePlus tileChannels(ImagePlus imp){
-        ImagePlus[] channels=new ImagePlus[imp.getNChannels()];
-        for(int c=0;c<channels.length;c++){
-            imp.setC(c+1);
-            channels[c]=tileImage(imp.getChannelProcessor());
+    /**
+     * split an image with multiple channels using tileSize and tileOverlap
+     * @param imp image to split
+     * @return multichannel imagestack containing all square tiles
+     */
+    ImagePlus tileChannels(ImagePlus imp) {
+        ImagePlus[] channels = new ImagePlus[imp.getNChannels()];
+        for (int c = 0; c < channels.length; c++) {
+            imp.setC(c + 1);
+            channels[c] = tileImage(imp.getChannelProcessor());
             //channels[c].show();
         }
         ImagePlus composite = RGBStackMerge.mergeChannels(channels, true);
         return composite;
     }
 
-    ImagePlus tileImage(ImageProcessor ip){
-        int step=tileSize-tileOverlap;
-        ImageStack is=new ImageStack(tileSize,tileSize);
-        for(int y=0;y<ip.getHeight()-tileOverlap;y+=step){
-            for(int x=0;x<ip.getWidth()-tileOverlap;x+=step){
-                ip.setRoi(x,y,tileSize,tileSize);
-                ImageProcessor crop= ip.crop();
-                is.addSlice("",crop);
+    /**
+     * split an image into tiles using tileSize and tile overlap
+     * @param ip image to split
+     * @return ImageStack containing all square tiles of size tileSize
+     */
+    ImagePlus tileImage(ImageProcessor ip) {
+        int step = tileSize - tileOverlap;
+        ImageStack is = new ImageStack(tileSize, tileSize);
+        for (int y = 0; y < ip.getHeight() - tileOverlap; y += step) {
+            for (int x = 0; x < ip.getWidth() - tileOverlap; x += step) {
+                ip.setRoi(x, y, tileSize, tileSize);
+                ImageProcessor crop = ip.crop();
+                is.addSlice("", crop);
             }
         }
-        return new ImagePlus("tiles",is);
+        return new ImagePlus("tiles", is);
     }
 
-    ImageProcessor combineTileImage(ImageStack is){
-        int step=is.getWidth()-tileOverlap;
-        ImageProcessor result=is.getProcessor(1).createProcessor(imagePlus.getWidth(),imagePlus.getHeight());
-        int index=1;
-        for(int y=0;y<result.getHeight()-tileOverlap;y+=step){
-            for(int x=0;x< result.getWidth()-tileOverlap;x+=step){
-                ImageProcessor tmp=is.getProcessor(1).createProcessor(imagePlus.getWidth(),imagePlus.getHeight());
-                tmp.copyBits(is.getProcessor(index),x,y, Blitter.MAX);
-                label2Roi(new ImagePlus("",is.getProcessor(index)),x,y);
+    /**
+     * combine tiles after computation of cellpose on all tiles
+     * @param is cellpose masks
+     * @return combined image
+     */
+    ImageProcessor combineTileImage(ImageStack is) {
+        int step = is.getWidth() - tileOverlap;
+        ImageProcessor result = is.getProcessor(1).createProcessor(imagePlus.getWidth(), imagePlus.getHeight());
+        int index = 1;
+        ImageProcessor tmp = is.getProcessor(1).createProcessor(imagePlus.getWidth(), imagePlus.getHeight());
+        ImageProcessor eraser = is.getProcessor(1).createProcessor(is.getWidth(), is.getHeight());
+        for (int y = 0; y < result.getHeight() - tileOverlap; y += step) {
+            for (int x = 0; x < result.getWidth() - tileOverlap; x += step) {
+                tmp.copyBits(is.getProcessor(index), x, y, Blitter.MAX);
+                label2Roi(new ImagePlus("", is.getProcessor(index)), x, y);
+                tmp.copyBits(eraser, x, y, Blitter.COPY);
                 index++;
             }
         }
         checkDuplicates(RoiManager.getRoiManager());
+        if(RoiManager.getRoiManager().getCount()>Short.MAX_VALUE) result = new FloatProcessor(imagePlus.getWidth(),imagePlus.getHeight());
         rois2Labels(result);
         return result;
     }
@@ -245,7 +279,7 @@ public class CellposeLauncher {
     private void setSettings(DefaultCellposeTask cellposeTask, File cellposeTempDir) {
         CellposeTaskSettings settings = new CellposeTaskSettings();
         settings.setFromPrefs(); /* get info on if to use GPU or CPU and other particularities*/
-        System.out.println("cellpose model:"+model);
+        System.out.println("cellpose model:" + model);
         switch (model) {
             case "nuclei":
                 settings.setChannel1(nucleiChannel);
@@ -307,11 +341,18 @@ public class CellposeLauncher {
      * Creates the RoiManager containing all particle Rois
      */
     public RoiManager label2Roi(ImagePlus cellposeIP) {
-        return label2Roi(cellposeIP,0,0);
+        return label2Roi(cellposeIP, 0, 0);
     }
 
+    /***
+     * convert label image into Rois
+     * @param cellposeIP
+     * @param xoffset
+     * @param yoffset
+     * @return
+     */
     public RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset) {
-        if(cellposeIP==null) System.out.println("error cellposeIP is null!");
+        if (cellposeIP == null) System.out.println("error cellposeIP is null!");
         ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
         Wand wand = new Wand(cellposeProc);
 
@@ -354,7 +395,7 @@ public class CellposeLauncher {
                         cellposeProc.fill(roi);
                         Rectangle r = roi.getBounds();
 
-                        roi.setLocation(xoffset+r.x,yoffset+r.y);
+                        roi.setLocation(xoffset + r.x, yoffset + r.y);
                         cellposeRoiManager.addRoi(roi);
                     }
                 }
@@ -364,46 +405,137 @@ public class CellposeLauncher {
     }
 
 
-    public void checkDuplicates(RoiManager roiManager){
-        int nRois= roiManager.getCount();
-        IJ.log("check duplicate : starting nb rois="+nRois);
-        for (int i=nRois-1;i>0;i--){
-            boolean toRemove=false;
-            for(int j= i-1;j>=0;j--){
-                Roi r1=roiManager.getRoi(i);
-                Roi r2=roiManager.getRoi(j);
-                Point[] points=r1.getContainedPoints();
-                double areaR1=r1.getStatistics().pixelCount;
-                double areaR2=r2.getStatistics().pixelCount;
-                int count=0;
-                for(Point p:points){
-                    if(r2.contains((int)p.getX(),(int)p.getY())) count++;
-                }
-                double IoU=((double)count)/(areaR1+areaR2-(double)count);
-                if(IoU>0.1) {
-                    ShapeRoi s1=new ShapeRoi(r1);
-                    ShapeRoi s2=new ShapeRoi(r2);
-                    s1.or(s2);
-                    roiManager.setRoi(s1,j);
-                    toRemove=true;
+    /**
+     * check if ROIs are inside overlaps areas in tiling computation and dispatch in the two given arraylist
+     * @param roiManager rois to dispatch
+     * @param toCheckRoi rois that are inside overlap areas
+     * @param toKeepRoi rois that are outside overlap areas
+     */
+    protected void dispatchRoisToCheck(RoiManager roiManager, ArrayList<Roi> toCheckRoi, ArrayList<Roi> toKeepRoi) {
+        ArrayList<Rectangle> overlaps = new ArrayList<>();
+        int step = tileSize - tileOverlap;
+        for (int y = step; y < imagePlus.getHeight() - tileOverlap; y += step) {
+            IJ.log("overlap rectangle : " + 0 + ", " + y + " , " + imagePlus.getWidth() + " , " + tileOverlap);
+            overlaps.add(new Rectangle(0, y, imagePlus.getWidth(), tileOverlap));
+        }
+        for (int x = step; x < imagePlus.getWidth() - tileOverlap; x += step) {
+            IJ.log("overlap rectangle : " + x + ", " + 0 + " , " + tileOverlap + " , " + imagePlus.getHeight());
+            overlaps.add(new Rectangle(x, 0, tileOverlap, imagePlus.getHeight()));
+        }
+        for (int i = 0; i < roiManager.getCount(); i++) {
+            Roi roi = roiManager.getRoi(i);
+            Rectangle r = roi.getBounds();
+            //IJ.log("roi "+i+" ("+r.x+", "+r.y+", "+r.width+", "+r.height+")");
+            boolean tocheck = false;
+            for (Rectangle overlap : overlaps) {
+                if (overlap.intersects(r)) {
+                    tocheck = true;
+                    break;
                 }
             }
-            if (toRemove) {
-                IJ.log("remove roi #"+i);
-                roiManager.deselect();
-                roiManager.select(i);
-                roiManager.runCommand("delete");
+            //IJ.log("roi "+i+" to check "+tocheck);
+            if (tocheck) toCheckRoi.add(roi);
+            else toKeepRoi.add(roi);
+        }
+    }
+
+    /**
+     * method to display Duration (nanoseconds) into HH:MM:SS:MS
+     * @param time duration in nanoseconds
+     * @return string version of duration
+     */
+    public String convertDuration(Duration time) {
+        long heures = time.toHours();
+        long minutes = time.toMinutes() % 60;
+        long secondes = (time.toMillis() * 1000 % 60);
+        long millisecondes = time.toMillis() % 1000;
+
+        return String.format("%02d:%02d:%02d:%03d", heures, minutes, secondes, millisecondes);
+    }
+
+    /**
+     * check duplicates in ROIs detected during tiling
+     * @param roiManager ROIs to check
+     */
+    public void checkDuplicates(RoiManager roiManager) {
+        int nRois = roiManager.getCount();
+        IJ.log("check duplicates : starting nb rois=" + nRois);
+        long debut = System.nanoTime();
+        ArrayList<Roi> toCheckRoi = new ArrayList<>();
+        ArrayList<Roi> toKeepRoi = new ArrayList<>();
+        dispatchRoisToCheck(roiManager, toCheckRoi, toKeepRoi);
+        IJ.log(toCheckRoi.size() + " rois to check for duplicates");
+        IJ.log(toKeepRoi.size() + " rois to be left unchanged");
+        long fin = System.nanoTime();
+        Duration time = Duration.ofNanos(fin - debut);
+        IJ.log("time for overlap : " + convertDuration(time));
+        debut = fin;
+
+        for (int i = 0; i < toCheckRoi.size() - 1; i++) {
+            Roi r1 = toCheckRoi.get(i);
+            if (r1 != null) {
+                for (int j = i + 1; j < toCheckRoi.size(); j++) {
+                    Roi r2 = toCheckRoi.get(j);
+                    if (r2 != null) {
+                        if (r1.getBounds().intersects(r2.getBounds())) {
+                            double areaR1 = r1.getStatistics().pixelCount;
+                            double areaR2 = r2.getStatistics().pixelCount;
+                            double percentage = 0;
+                            if (areaR1 < areaR2) {
+                                Point[] points = r1.getContainedPoints();
+                                int count = 0;
+                                for (Point p : points) {
+                                    if (r2.contains((int) p.getX(), (int) p.getY())) count++;
+                                }
+                                percentage = count / areaR1;
+                            }
+                            if (areaR2 < areaR1) {
+                                Point[] points = r2.getContainedPoints();
+                                int count = 0;
+                                for (Point p : points) {
+                                    if (r1.contains((int) p.getX(), (int) p.getY())) count++;
+                                }
+                                percentage = count / areaR2;
+                            }
+                            //double IoU = ((double) count) / (areaR1 + areaR2 - (double) count);
+                            if (percentage > 0.1) {
+                                ShapeRoi s1 = new ShapeRoi(r1);
+                                ShapeRoi s2 = new ShapeRoi(r2);
+                                s1.or(s2);
+                                r1 = s1;
+                                toCheckRoi.set(j, null);
+                            }
+                        }
+                    }
+                }
+                toKeepRoi.add(r1);
+                toCheckRoi.set(i, null);
             }
         }
-        IJ.log("check duplicate : end nb rois="+roiManager.getCount());
+        IJ.log(toKeepRoi.size() + " rois to be set into RoiManager");
+        roiManager.reset();
+        IJ.log("size of RoiManager: " + roiManager.getCount());
+        for (Roi r : toKeepRoi) roiManager.addRoi(r);
+
+        IJ.log("end nb rois=" + roiManager.getCount());
+        IJ.log("check duplicate " + nRois + " rois reduced to " + roiManager.getCount());
+        fin = System.nanoTime();
+        time = Duration.ofNanos(fin - debut);
+        IJ.log("time for duplicates checking : " + convertDuration(time));
 
     }
 
-    public ImageProcessor rois2Labels(ImageProcessor result){
-        RoiManager rm=RoiManager.getRoiManager();
-        for (int r=0;r<rm.getCount();r++){
-            Roi roi=rm.getRoi(r);
-            result.setColor(r+1);
+    /**
+     * convert ROIs into an Image
+     * @param result
+     * @return
+     */
+    public ImageProcessor rois2Labels(ImageProcessor result) {
+        RoiManager rm = RoiManager.getRoiManager();
+        IJ.log("rois2labels : " + rm.getCount());
+        for (int r = 0; r < rm.getCount(); r++) {
+            Roi roi = rm.getRoi(r);
+            result.setColor(r + 1);
             result.fill(roi);
         }
         return result;
