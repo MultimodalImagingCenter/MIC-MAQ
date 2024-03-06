@@ -69,6 +69,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
     ResultsTable cellResults;
     ResultsTable nucleusResults;
+
+    ResultsTable[] spotsInNuclei;
+    ResultsTable[] spotsInCells;
+    ResultsTable[] spotsInCyto;
     String workingDirectory;
 
     boolean resized = false;
@@ -883,6 +887,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             if (nucleusResults != null) {
                 nucleusResults.save(workingDirectory + "/results/Cells-Nuclei-Association.xls");
             }
+            if (spotPanels != null) {
+                for (int s = 0; s < spotPanels.size(); s++) {
+                    if (spotPanels.get(s) != null) {
+                        if (spotsInNuclei != null && spotsInNuclei[s] != null)
+                            spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                        if (spotsInCells != null && spotsInCells[s] != null)
+                            spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                        if (spotsInCyto != null && spotsInCyto[s] != null)
+                            spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                    }
+                }
+            }
         }
         if (cellResults != null) {
             cellResults.deleteRow(cellResults.size() - 1);
@@ -893,6 +909,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             nucleusResults.deleteRow(nucleusResults.size() - 1);
             nucleusResults.show("Cells-Nuclei Association");
             nucleusResults.save(workingDirectory + "/results/Cells-Nuclei-Association.xls");
+        }
+        if (spotPanels != null) {
+            for (int s = 0; s < spotPanels.size(); s++) {
+                if (spotPanels.get(s) != null) {
+                    if (spotsInNuclei != null && spotsInNuclei[s] != null)
+                        spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                    if (spotsInCells != null && spotsInCells[s] != null)
+                        spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                    if (spotsInCyto != null && spotsInCyto[s] != null)
+                        spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                }
+            }
         }
 
         Instant dateEnd = Instant.now();
@@ -973,6 +1001,31 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (cellResults == null) cellResults = new ResultsTable();
         if (nucleus && cell && nucleusResults == null) nucleusResults = new ResultsTable();
         Experiment exp = settings.createExperiment(workingDirectory, imgs, cellResults, nucleusResults, preview);
+        if (spotPanels != null) {
+            IJ.log("there are spots");
+            for (int s = 0; s < spotPanels.size(); s++) {
+                if (spotPanels.get(s) != null) {
+                    IJ.log("spots for channel " + (s + 1));
+                    if (spotsInNuclei == null) spotsInNuclei = new ResultsTable[spotPanels.size()];
+                    if (spotsInCells == null) spotsInCells = new ResultsTable[spotPanels.size()];
+                    if (spotsInCyto == null) spotsInCyto = new ResultsTable[spotPanels.size()];
+                    if (nucleus && spotsInNuclei[s] == null) {
+                        IJ.log("create result table for spots in nuclei");
+                        spotsInNuclei[s] = new ResultsTable();
+                    }
+                    if (cell && spotsInCells[s] == null) {
+                        IJ.log("create result table for spots in cells");
+                        spotsInCells[s] = new ResultsTable();
+                    }
+                    if (nucleus && cell && spotsInCyto[s] == null) {
+                        IJ.log("create result table for spots in cytoplasms");
+                        spotsInCyto[s] = new ResultsTable();
+                    }
+                    IJ.log("set tables in experiments");
+                    exp.setSpotsTables(s, spotsInNuclei[s], spotsInCells[s], spotsInCyto[s]);
+                }
+            }
+        }
         IJ.log("create experiment finished");
         return exp;
     }

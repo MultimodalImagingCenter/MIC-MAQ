@@ -79,6 +79,9 @@ public class SpotDetector {
 
     private int measurements = Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
 
+    private int spotMeasurements =Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY+Measurements.SHAPE_DESCRIPTORS+Measurements.ELLIPSE+Measurements.FERET;
+
+
     /**
      * @param image            : image corresponding to spots
      * @param spotName         : name of protein analyzed
@@ -476,7 +479,7 @@ public class SpotDetector {
      * @param resultsTableFinal : results table to fill
      * @param type              : image, cell, nucleus or cytoplasm
      */
-    public void analysisPerRegion(int regionID, Roi regionROI, ResultsTable resultsTableFinal, String type) {
+    public void analysisPerRegion(int regionID, Roi regionROI, ResultsTable resultsTableFinal, String type, ResultsTable spotsMeasuresTable) {
         imageToMeasure.setRoi(regionROI);
         ResultsTable rawMeasures = new ResultsTable();
 //        Measures of mean and raw intensities in the whole ROI are always done for spot images
@@ -488,7 +491,7 @@ public class SpotDetector {
             findMaximaPerRegion(regionROI, resultsTableFinal, type);
         }
         if (spotByThreshold) {
-            findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type);
+            findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
         }
     }
 
@@ -500,7 +503,7 @@ public class SpotDetector {
      * @param resultsTableToAdd : results table to fill
      * @param type              : image, cell, nucleus or cytoplasm
      */
-    private void findThresholdPerRegion(int regionID, Roi regionROI, ResultsTable resultsTableToAdd, String type) {
+    private void findThresholdPerRegion(int regionID, Roi regionROI, ResultsTable resultsTableToAdd, String type, ResultsTable spotMeasuresTable) {
         RoiManager roiManagerFoci = null;
         int numberSpot = 0; /*count number of spot detected*/
 //        Detection
@@ -534,10 +537,21 @@ public class SpotDetector {
         resultsTableToAdd.addValue(type + "_" + spotName + " threshold nr. spot", numberSpot);
         if (numberSpot > 0) {
             ResultsTable resultsTable = new ResultsTable();
-            Analyzer analyzer = new Analyzer(imageToMeasure, Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY, resultsTable);
+            Analyzer analyzer = new Analyzer(imageToMeasure, spotMeasurements, resultsTable);
             for (int spot = 0; spot < numberSpot; spot++) {
                 roiManagerFoci.select(imageToMeasure, spot);
                 analyzer.measure();
+                if(spotMeasuresTable!=null) {
+                    String[] headings=resultsTable.getHeadings();
+                    //for(String head:headings) IJ.log(head);
+                    for(int r=0;r<resultsTable.getCounter();r++){
+                        spotMeasuresTable.addValue("Name experiment",nameExperiment);
+                        spotMeasuresTable.addValue(type+" nr",regionID);
+                        for(int c=0;c<headings.length;c++)
+                            spotMeasuresTable.addValue(headings[c],resultsTable.getValue(headings[c],r));
+                        spotMeasuresTable.incrementCounter();
+                    }
+                }
             }
             detector.setSummarizedResults(resultsTable, resultsTableToAdd, type + "_" + spotName);
         } else {

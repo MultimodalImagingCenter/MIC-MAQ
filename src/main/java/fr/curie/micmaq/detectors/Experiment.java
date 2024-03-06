@@ -23,6 +23,10 @@ public class Experiment {
     private  ResultsTable finalResultsNuclei;
     private  ResultsTable finalResultsCellSpot;
 
+    private ArrayList<ResultsTable> spotsInNucleiTable;
+    private ArrayList<ResultsTable> spotsInCellsTable;
+    private ArrayList<ResultsTable> spotsInCytoplasmsTable;
+
     private boolean interrupt = false;
 
     private  MeasureCalibration measureCalibration;
@@ -40,7 +44,19 @@ public class Experiment {
         this.nuclei = nucleiDetector;
         this.cell = cellDetector;
         this.spots = spotDetectors;
-        if(this.spots==null) this.spots=new ArrayList<>();
+        this.spotsInNucleiTable=new ArrayList<>();
+        this.spotsInCellsTable=new ArrayList<>();
+        this.spotsInCytoplasmsTable=new ArrayList<>();
+        if(this.spots==null) {
+            this.spots=new ArrayList<>();
+        }else{
+            for(int i=0;i<spots.size();i++) {
+                spotsInNucleiTable.add(null);
+                spotsInCellsTable.add(null);
+                spotsInCytoplasmsTable.add(null);
+            }
+            IJ.log("experiment spot tables "+spots.size()+", "+spotsInNucleiTable.size()+", "+spotsInCellsTable.size()+", "+spotsInCytoplasmsTable.size());
+        }
         if (nucleiDetector!=null) this.experimentName = nucleiDetector.getNameExperiment();
         else if (cellDetector!=null) this.experimentName = cellDetector.getNameExperiment();
         else if (spotDetectors.size()>0) this.experimentName = spotDetectors.get(0).getNameExperiment();
@@ -95,6 +111,16 @@ public class Experiment {
     public void setResultsTables(ResultsTable finalResultsCellSpot, ResultsTable finalResultsNuclei){
         this.finalResultsNuclei=finalResultsNuclei;
         this.finalResultsCellSpot=finalResultsCellSpot;
+    }
+
+    public void setSpotsTables(int index,ResultsTable spotsInNucleiTable, ResultsTable spotsInCellsTable, ResultsTable spotsInCytoplasmsTable){
+        this.spotsInNucleiTable.set(index,spotsInNucleiTable);
+        this.spotsInCellsTable.set(index,spotsInCellsTable);
+        this.spotsInCytoplasmsTable.set(index, spotsInCytoplasmsTable);
+        IJ.log("experiment set Spots tables at index "+index);
+        if(spotsInNucleiTable!=null) IJ.log("spots in nuclei size:"+spotsInNucleiTable.size());
+        if(spotsInCellsTable!=null) IJ.log("spots in nuclei size:"+spotsInCellsTable.size());
+        if(spotsInCytoplasmsTable!=null) IJ.log("spots in nuclei size:"+spotsInCytoplasmsTable.size());
     }
 
 
@@ -184,8 +210,12 @@ public class Experiment {
                 finalResultsNuclei.addValue("Nucleus nr.", "" + (nucleusID + 1));
                 finalResultsNuclei.addValue("Cell associated",""+association2Cell[nucleusID]);
                 nuclei.measureEachNuclei(nucleusID, finalResultsNuclei,allNuclei[nucleusID]);
-                for (SpotDetector spot : spots) {
-                    if(spot!=null) spot.analysisPerRegion(nucleusID,allNuclei[nucleusID], finalResultsNuclei,"Nuclei");
+                for (int s=0;s<spots.size();s++) {
+                    SpotDetector spot=spots.get(s);
+                    if(spot!=null) {
+                        spot.analysisPerRegion(nucleusID,allNuclei[nucleusID], finalResultsNuclei,"Nuclei",spotsInNucleiTable.get(s));
+                        //IJ.log("analysis region nuclei spots exists"+(spotsInNucleiTable.get(s)!=null));
+                    }
                 }
                 finalResultsNuclei.incrementCounter();
             }
@@ -207,16 +237,18 @@ public class Experiment {
                     System.out.println("measure cyto: "+cellID+"/"+numberOfObject);
                     cytoDetector.measureEachCytoplasm(cellID, finalResultsCellSpot);
                 }
-                for (SpotDetector spot : spots) {
+                for (int s=0;s<spots.size();s++) {
+                    SpotDetector spot=spots.get(s);
                     if(spot!=null) {
                         //IJ.log("measure spot "+spot.getSpotName()+ "     "+spot);
                         if (cellRois != null)
-                            spot.analysisPerRegion(cellID, cellRois[cellID], finalResultsCellSpot, "Cell");
-                        if (nucleiRois != null && cellRois == null)
-                            spot.analysisPerRegion(cellID, nucleiRois[cellID], finalResultsCellSpot, "Nuclei");
-                        if (cytoplasmRois != null)
-                            spot.analysisPerRegion(cellID, cytoplasmRois[cellID], finalResultsCellSpot, "Cytoplasm");
-                        if (onlySpot) spot.analysisPerRegion(cellID, null, finalResultsCellSpot, "Image");
+                            spot.analysisPerRegion(cellID, cellRois[cellID], finalResultsCellSpot, "Cell",spotsInCellsTable.get(s));
+                        if (nucleiRois != null && cellRois == null) {
+                            spot.analysisPerRegion(cellID, nucleiRois[cellID], finalResultsCellSpot, "Nuclei", spotsInNucleiTable.get(s));
+                            //IJ.log("analysis region nuclei spots exists"+(spotsInNucleiTable.get(s)!=null));
+                        }if (cytoplasmRois != null)
+                            spot.analysisPerRegion(cellID, cytoplasmRois[cellID], finalResultsCellSpot, "Cytoplasm",spotsInCytoplasmsTable.get(s));
+                        if (onlySpot) spot.analysisPerRegion(cellID, null, finalResultsCellSpot, "Image",spotsInNucleiTable.get(s));
                     }
                 }
                 finalResultsCellSpot.incrementCounter();
@@ -294,7 +326,7 @@ public class Experiment {
             interrupt=true;
             return false;
         }
-        spot.analysisPerRegion(0,null, finalResultsCellSpot,"Image");
+        spot.analysisPerRegion(0,null, finalResultsCellSpot,"Image",null);
 
         return true;
     }

@@ -163,6 +163,7 @@ public class CellposeLauncher {
             cellpose_imp_path.delete();
             cellpose_outlines_path.delete();
             cellposeTempDir.delete();
+            label2Roi(cellposeMask);
             return cellposeMask;
         } catch (Exception e) {
             e.printStackTrace();
