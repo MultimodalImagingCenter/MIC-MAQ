@@ -1,23 +1,21 @@
 package fr.curie.micmaq.gui;
 
 import fr.curie.micmaq.config.FieldOfViewProvider;
-import fr.curie.micmaq.config.ImageProvider;
 import fr.curie.micmaq.config.MeasureValue;
+import fr.curie.micmaq.detectors.SpotDetector;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
-import ij.IJ;
-import ij.ImagePlus;
 import ij.Prefs;
 import ij.measure.Measurements;
 import ij.process.AutoThresholder;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class SpotsParametersGUI {
     private JPanel mainPanel;
@@ -50,11 +48,15 @@ public class SpotsParametersGUI {
     private JPanel spotDetectionPanel;
     private JSpinner userThresholdSpinner;
     private JCheckBox darkBGCheckBox;
+    private JToggleButton liveMaximaButton;
+    private JToggleButton liveThresholdButton;
 
     protected int channel = -1;
     FieldOfViewProvider imageProvider;
     protected String proteinName;
     protected String[] thresholdMethods = null;
+
+    SpotDetector spotDetectorLive;
 
     public SpotsParametersGUI(FieldOfViewProvider imageProvider, int channel) {
         this.channel = channel;
@@ -113,8 +115,87 @@ public class SpotsParametersGUI {
             public void actionPerformed(ActionEvent e) {
                 userThresholdSpinner.setVisible(thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1);
                 darkBGCheckBox.setVisible(thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1);
+                if (spotDetectorLive != null) updateLiveThreshold();
             }
         });
+        liveMaximaButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean start = liveMaximaButton.getModel().isSelected();
+                //liveButton.getModel().setPressed(start);
+                if (start) {
+                    spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
+                    if (isZStackCheckBox.isSelected())
+                        spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+                    spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue());
+                } else {
+                    if (spotDetectorLive != null) {
+                        spotDetectorLive.endLivePreview();
+                        spotDetectorLive = null;
+                    }
+                }
+            }
+        });
+        prominenceSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (spotDetectorLive != null)
+                    spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue());
+            }
+        });
+        liveThresholdButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean start = liveThresholdButton.getModel().isSelected();
+                //liveButton.getModel().setPressed(start);
+                if (start) {
+                    spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
+                    updateLiveThreshold();
+                } else {
+                    if (spotDetectorLive != null) {
+                        spotDetectorLive.endLivePreview();
+                        spotDetectorLive = null;
+                    }
+                }
+            }
+        });
+        userThresholdSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                updateLiveThreshold();
+            }
+        });
+        minSizeSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                updateLiveThreshold();
+            }
+        });
+        useWatershedCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateLiveThreshold();
+            }
+        });
+        darkBGCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateLiveThreshold();
+            }
+        });
+    }
+
+    private void updateLiveThreshold() {
+        if (spotDetectorLive == null) return;
+        if (isZStackCheckBox.isSelected())
+            spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+        String thMethod = (String) thresholdMethodCB.getSelectedItem();
+        double thValue = (thresholdMethodCB.getSelectedIndex() == thresholdMethodCB.getItemCount() - 1) ? (double) userThresholdSpinner.getValue() : Double.NaN;
+        int minArea = (int) minSizeSpinner.getValue();
+        boolean useWatershed = useWatershedCheckBox.isSelected();
+        boolean dark = darkBGCheckBox.isSelected();
+        spotDetectorLive.setSpotByThreshold(thMethod, dark ? thValue : -1.0E30D, dark ? 1.0E30D : thValue, minArea, useWatershed, false);
+        spotDetectorLive.livePreviewThreshold();
     }
 
     public JPanel getMainPanel() {
@@ -143,12 +224,14 @@ public class SpotsParametersGUI {
         minSizeSpinner.setEnabled(enabled);
         userThresholdSpinner.setEnabled(enabled);
         darkBGCheckBox.setEnabled(enabled);
+        liveThresholdButton.setEnabled(enabled);
     }
 
     private void setEnablingOfMaximaPanel(boolean enabled) {
         maximaPanel.setEnabled(enabled);
         prominenceLabel.setEnabled(enabled);
         prominenceSpinner.setEnabled(enabled);
+        liveMaximaButton.setEnabled(enabled);
     }
 
     public MeasureValue getMeasure() {
@@ -467,15 +550,18 @@ public class SpotsParametersGUI {
         thresholdCheckBox.setText("threshold");
         spotDetectionPanel.add(thresholdCheckBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         maximaPanel = new JPanel();
-        maximaPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        maximaPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
         spotDetectionPanel.add(maximaPanel, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         maximaPanel.setBorder(BorderFactory.createTitledBorder(null, "Find maxima method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         prominenceLabel = new JLabel();
         prominenceLabel.setText("prominence");
         maximaPanel.add(prominenceLabel, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         maximaPanel.add(prominenceSpinner, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        liveMaximaButton = new JToggleButton();
+        liveMaximaButton.setText("live testing");
+        maximaPanel.add(liveMaximaButton, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         thresholdPanel = new JPanel();
-        thresholdPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 4, new Insets(0, 0, 0, 0), -1, -1));
+        thresholdPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(3, 4, new Insets(0, 0, 0, 0), -1, -1));
         spotDetectionPanel.add(thresholdPanel, new com.intellij.uiDesigner.core.GridConstraints(1, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         thresholdPanel.setBorder(BorderFactory.createTitledBorder(null, "Threshold method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         thresholdLabel = new JLabel();
@@ -495,6 +581,9 @@ public class SpotsParametersGUI {
         darkBGCheckBox.setSelected(true);
         darkBGCheckBox.setText("dark BG");
         thresholdPanel.add(darkBGCheckBox, new com.intellij.uiDesigner.core.GridConstraints(1, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        liveThresholdButton = new JToggleButton();
+        liveThresholdButton.setText("live testing");
+        thresholdPanel.add(liveThresholdButton, new com.intellij.uiDesigner.core.GridConstraints(2, 0, 1, 4, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     private void createUIComponents() {
