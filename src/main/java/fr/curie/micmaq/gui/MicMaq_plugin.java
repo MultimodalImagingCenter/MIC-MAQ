@@ -247,7 +247,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         bar.add(menuf);
 
         /****************  edit menu   *****************/
-        JMenu menuEdit = new JMenu("Edit");
+        JMenu menuEdit = new JMenu("Options");
         JMenuItem itemE1 = new JMenuItem("set Cellpose tiling");
         itemE1.addActionListener(new ActionListener() {
             @Override
@@ -261,7 +261,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     CellposeLauncher.tileSize = (int) gd.getNextNumber();
                     CellposeLauncher.tileOverlap = (int) gd.getNextNumber();
 
-                    IJ.log("changed Cellpose tiling to :\ntile size: "+CellposeLauncher.tileSize+"\ntile overlap: "+CellposeLauncher.tileOverlap);
+                    IJ.log("changed Cellpose tiling to :\ntile size: " + CellposeLauncher.tileSize + "\ntile overlap: " + CellposeLauncher.tileOverlap);
                 }
 
             }
@@ -1106,7 +1106,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
             bufferedWriter.append("\n\nCALIBRATION: " + calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
 
-            if(CellposeLauncher.tileSize>=0) bufferedWriter.append("\n\nCellpose tiling: size="+CellposeLauncher.tileSize+"\t overlap="+CellposeLauncher.tileOverlap);
+            if (CellposeLauncher.tileSize >= 0)
+                bufferedWriter.append("\n\nCellpose tiling: size=" + CellposeLauncher.tileSize + "\t overlap=" + CellposeLauncher.tileOverlap);
 
             for (int i = 0; i < channelPanels.size(); i++) {
                 ChannelPanel cp = channelPanels.get(i);
