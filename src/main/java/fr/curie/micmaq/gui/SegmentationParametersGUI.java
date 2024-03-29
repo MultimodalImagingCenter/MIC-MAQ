@@ -119,6 +119,7 @@ public class SegmentationParametersGUI {
             minSizeLabel.setText("minimum size of cells (area in pixels)");
             cellposeDiameterLabel.setText("diameter of cells (pixel)");
         }
+        IJ.log("segmentationGUI constr"+thresholdingRadioButton.isSelected()+", "+cellposeRadioButton.isSelected());
         if (thresholdingRadioButton.isSelected()) {
             stardistPanel.setVisible(false);
             cellposePanel.setVisible(false);
@@ -257,17 +258,23 @@ public class SegmentationParametersGUI {
         cytoPanel.setVisible(false);
         if (type.equals(CELLS)) {
             segmentationChoicePanel.setVisible(false);
-            cellposeRadioButton.setSelected(true);
             thresholdingRadioButton.setSelected(false);
+            starDistRadioButton.setSelected(false);
+            cellposeRadioButton.setSelected(true);
             getPreferences();
         }
         if (type.equals(CELL_CYTO)) {
             cytoPanel.setVisible(true);
             segmentationChoicePanel.setVisible(false);
-            cellposeRadioButton.setSelected(true);
             thresholdingRadioButton.setSelected(false);
+            starDistRadioButton.setSelected(false);
+            cellposeRadioButton.setSelected(true);
             getPreferences();
         }
+        IJ.log("set Type "+type+", "+thresholdingRadioButton.isSelected()+", "+cellposeRadioButton.isSelected());
+        thresholdParamsPanel.setVisible(thresholdingRadioButton.isSelected());
+        cellposePanel.setVisible(cellposeRadioButton.isSelected());
+        stardistPanel.setVisible(starDistRadioButton.isSelected());
     }
 
     public JPanel getMainPanel() {
@@ -528,7 +535,8 @@ public class SegmentationParametersGUI {
         macroTextArea.append(Prefs.get("MICMAQ.macro" + type, " "));
 
 //        Segmentation
-        int approach = (int) Prefs.get("MICMAQ.approach" + type, 1);
+        int approach = (int) Prefs.get("MICMAQ.approach" + type, 2);
+        if(approach == 1 && (type.equals(CELLS)|| type.equals(CELL_CYTO))) approach=2;
         switch (approach) {
             case 1:
             default:
