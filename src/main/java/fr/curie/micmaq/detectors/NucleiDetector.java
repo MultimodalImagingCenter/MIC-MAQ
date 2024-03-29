@@ -527,4 +527,14 @@ public class NucleiDetector {
     public void setMeasurements(int measurements) {
         this.measurements = measurements;
     }
+
+    public int getMeasurements() {
+        return measurements;
+    }
+
+    public ImagePlus getImageToMeasure() {
+        return imageToMeasure;
+    }
+
+
 }

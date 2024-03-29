@@ -36,8 +36,8 @@ public class MeasureValue {
     public MeasureValue(boolean morphology) {
         if(morphology){
             measure= Measurements.AREA;
-        }else
-         measure += Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
+        }
+        measure += Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
     }
 
     public void setMeasure(int measure) {

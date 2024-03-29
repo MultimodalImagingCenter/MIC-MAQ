@@ -252,6 +252,8 @@ public class ExperimentSettings {
                     tmp.setMeasurements(measureValue.getMeasure());
                     tmp.setPreprocessingMacroQuantif(measureValue.getPreprocessMacroQuantif());
 
+                    tmp.setNameChannel(measureValue.name);
+
                     //spots.set(i,tmp);
                     spots.add(tmp);
                 }else{

@@ -80,6 +80,7 @@ public class SpotDetector {
     private int measurements = Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
 
     private int spotMeasurements =Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY+Measurements.SHAPE_DESCRIPTORS+Measurements.ELLIPSE+Measurements.FERET;
+    String nameChannel;
 
 
     /**
@@ -695,5 +696,17 @@ public class SpotDetector {
         //debug2.setMask(((PolygonRoi)findMaximaIP.getRoi()).getMask());
 
 
+    }
+
+    public ImagePlus getImageToMeasure() {
+        return imageToMeasure;
+    }
+
+    public String getNameChannel() {
+        return nameChannel;
+    }
+
+    public void setNameChannel(String nameChannel) {
+        this.nameChannel = nameChannel;
     }
 }

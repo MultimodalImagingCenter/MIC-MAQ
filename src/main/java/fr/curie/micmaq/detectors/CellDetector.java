@@ -462,11 +462,20 @@ public class CellDetector {
         detector.setResultsAndRename(rawMeasures,resultsTableFinal,cell,"Cell"+nameChannel);
     }
 
+
     /**
      *
      * @param measurements : integer corresponding to measurements to do on cells
      */
     public void setMeasurements(int measurements) {
         this.measurements = measurements;
+    }
+
+    public int getMeasurements() {
+        return measurements;
+    }
+
+    public ImagePlus getImageToMeasure() {
+        return imageToMeasure;
     }
 }
