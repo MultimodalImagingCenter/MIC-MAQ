@@ -2,6 +2,7 @@ package fr.curie.micmaq.detectors;
 
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
+import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import org.checkerframework.checker.units.qual.A;

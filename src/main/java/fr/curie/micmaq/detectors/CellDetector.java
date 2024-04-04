@@ -395,7 +395,7 @@ public class CellDetector {
             IJ.run("Options...", "iterations=1 count=1 black");
 //        PROJECTION : convert stack to one image
             this.imageToMeasure = detector.getImageQuantification(); /*detector class does the projection if needed*/
-            ImagePlus imageToReturn = detector.getImage().duplicate(); /*detector class does the projection if needed*/
+            ImagePlus imageToReturn = detector.getImage(); /*detector class does the projection if needed*/
             ImagePlus temp;
 //      MACRO : apply custom commands of user
             if (macroText!=null){
@@ -476,6 +476,9 @@ public class CellDetector {
     }
 
     public ImagePlus getImageToMeasure() {
+        if(imageToMeasure==null) {
+            imageToMeasure=detector.getImageQuantification();
+        }
         return imageToMeasure;
     }
 }

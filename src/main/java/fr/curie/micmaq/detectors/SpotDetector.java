@@ -91,6 +91,7 @@ public class SpotDetector {
      *                         //     * @param showImage
      */
     public SpotDetector(ImagePlus image, String spotName, String nameExperiment, String resultsDirectory, boolean showPreprocessedImage) {
+
         detector = new Detector(image, spotName);
         this.showPreprocessedImage = showPreprocessedImage;
         this.image = image;
@@ -603,7 +604,7 @@ public class SpotDetector {
             IJ.run("Options...", "iterations=1 count=1 black");
 //        PROJECTION : convert stack to one image
             imageToMeasure = detector.getImageQuantification();
-            ImagePlus imageToReturn = detector.getImage().duplicate();
+            ImagePlus imageToReturn = detector.getImage();
             ImagePlus temp;
 //      MACRO : apply custom commands of user
             if (macroText != null) {
@@ -699,6 +700,9 @@ public class SpotDetector {
     }
 
     public ImagePlus getImageToMeasure() {
+        if(imageToMeasure==null) {
+            imageToMeasure=detector.getImageQuantification();
+        }
         return imageToMeasure;
     }
 

@@ -110,6 +110,7 @@ public class ExperimentSettings {
         }
         if(nucleiDetector!=null) return nucleiDetector;
         nucleiDetector=new NucleiDetector(imgs.getImagePlus(nucleiSegmentationChannel),imgs.getFieldname(), resultsDir, preview);
+
         nucleiDetector.setMeasurements(nucleiSegmentationParams.getMeasurements().measure);
         nucleiDetector.setNameChannel(nucleiSegmentationParams.getMeasurements().name);
         //IJ.log("nuclei detector : "+nucleiDetector.getNameChannel()+" should be "+nucleiSegmentationParams.getMeasurements().name);
@@ -146,7 +147,7 @@ public class ExperimentSettings {
         }
         nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
         nucleiDetector.setSegmentation(nucleiSegmentationParams.isUserValidation(),preview);
-        nucleiDetector.setPreprocessingMacroQuantif(nucleiSegmentationParams.getPreprocessMacro());
+
         return nucleiDetector;
 
     }
@@ -203,7 +204,6 @@ public class ExperimentSettings {
 
         }
         cellDetector.setSavings(cellSegmentationParams.isSaveMasks(),cellSegmentationParams.isSaveROIs());
-        cellDetector.setPreprocessingMacroQuantif(cellSegmentationParams.getPreprocessMacro());
         return cellDetector;
     }
 

@@ -111,7 +111,9 @@ public class Detector {
 
 //    GETTER
 
+
     /**
+     * returns a copy of original image
      * @return image that either does not need a projection or is already projected or null if it needs projection
      */
     public ImagePlus getImage() {
@@ -119,7 +121,7 @@ public class Detector {
             IJ.error("The image " + image + " is a stack, please precise the Z-projection parameters");
             return null;
         } else {
-            return image;
+            return image.duplicate();
         }
     }
 
@@ -143,7 +145,7 @@ public class Detector {
             temp.close();
             return imageToReturn;
         }
-        return image;
+        return image.duplicate();
     }
 
     public String getQuantifMacro() {

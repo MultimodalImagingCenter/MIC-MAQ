@@ -63,6 +63,7 @@ public class NucleiDetector {
      */
     public NucleiDetector(ImagePlus image, String nameExperiment, String resultsDir, boolean showPreprocessingImage) {
         this.image = image;
+        detector = new Detector(image, "Nucleus");
         this.showPreprocessingImage =showPreprocessingImage;
         if (nameExperiment.endsWith("_")){
             this.nameExperiment = nameExperiment.substring(0,nameExperiment.length()-1);
@@ -73,7 +74,6 @@ public class NucleiDetector {
         this.resultsDirectory =resultsDir+"/Results/"+nameExperiment.replaceAll("[\\\\/:,;*?\"<>|]","_").replaceAll(" ","");
         File dir=new File(resultsDirectory);
         if(!dir.exists()) dir.mkdirs();
-        detector = new Detector(image, "Nucleus");
         rawMeasures = new ResultsTable();
     }
 
@@ -323,7 +323,6 @@ public class NucleiDetector {
             if(!tmp.exists()) tmp.mkdirs();
         }
 
-
 //        PREPROCESSING
        // System.out.println("nuclei detector prepare macro preprocess: "+getPreprocessingMacro());
         ImagePlus preprocessed = getPreprocessing();
@@ -375,7 +374,7 @@ public class NucleiDetector {
 //            User can redefine ROIs if option selected
             if (finalValidation){
                 roiManagerNuclei.toFront();
-                ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
+                ImagePlus tempImage = detector.getImageQuantification().duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
                /* if (showBinaryImage){
                     IJ.selectWindow(imageToMeasure.getID());
                 }else {
@@ -423,28 +422,15 @@ public class NucleiDetector {
             else if (resultsDirectory==null && saveRois){
                 IJ.error("No directory given for the results");
             }
+            if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures); /*set measurements and image to analyze*/
             nucleiRois = roiManagerNuclei.getRoisAsArray();
+
+            //imageToMeasure=null;
             return true;
         }else return false;
     }
 
-    /**
-     * Do the measurement for each nucleus and add them to result table
-     * @param nucleus : index of the nucleus to analyze
-     * @param resultsTableFinal : resultTable to fill
-     */
-    public void measureEachNuclei(int nucleus,ResultsTable resultsTableFinal, Roi nucleusRoi) {
-        if (nucleusRoi!=null){ /*TODO verify if necessary. Possible it was only done for precedent version of plugin where all cells were considered (thus those without nucleus) and the nucleus measurements were in the cell ResultsTable*/
-            imageToMeasure.setRoi(nucleusRoi);
-            analyzer.measure();
-            detector.setResultsAndRename(rawMeasures,resultsTableFinal,nucleus,"Nuclei"+nameChannel);
-        }else {
-            imageToMeasure.setRoi((Roi) null);
-            analyzer.measure();
-            detector.setNullResultsAndRename(rawMeasures,resultsTableFinal,"Nuclei"+nameChannel);
-        }
-    }
 
     /**
      * If useThreshold, prepare threshold image
@@ -484,7 +470,7 @@ public class NucleiDetector {
 //        PROJECTION : convert stack to one image
             //System.out.println("nuclei detector getpreprocessing macro: "+getPreprocessingMacro());
             imageToMeasure = detector.getImageQuantification();
-            ImagePlus imageToReturn = detector.getImage().duplicate(); /*detector class does the projection if needed*/
+            ImagePlus imageToReturn = detector.getImage(); /*detector class does the projection if needed*/
             ImagePlus temp;
 //      MACRO : apply custom commands of user
             if (useMacro){
@@ -533,6 +519,9 @@ public class NucleiDetector {
     }
 
     public ImagePlus getImageToMeasure() {
+        if(imageToMeasure==null) {
+            imageToMeasure=detector.getImageQuantification();
+        }
         return imageToMeasure;
     }
 
