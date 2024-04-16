@@ -402,6 +402,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
                 if (cellParam != null) {
                     cellParam.setType(SegmentationParametersGUI.CELL_CYTO);
+                    nucleiParam.setNucleiOnly(false);
+                } else {
+                    nucleiParam.setNucleiOnly(true);
                 }
                 count++;
                 System.out.println("a nuclei param should display");
@@ -415,6 +418,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 } else {
                     if (nucleiParam != null) {
                         cellParam.setType(SegmentationParametersGUI.CELL_CYTO);
+                        nucleiParam.setNucleiOnly(false);
                     } else {
                         cellParam.setType(SegmentationParametersGUI.CELLS);
                     }
@@ -988,7 +992,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     }
                 }
                 measureValue.setMeasure(quantifPanel.getMeasuresQuantif(i + 1).getMeasure());
-                measureValue.setName("C" + (i + 1) + "_" + cp.getProteinName());
+                measureValue.setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 measureValue.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setQuantification(i + 1, measureValue);
                 //IJ.log("create exp: spot macro:" + measureValue.getPreprocessMacro());

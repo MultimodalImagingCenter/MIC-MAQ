@@ -16,6 +16,8 @@ public class MeasureRois {
     public static String NUCLEI="Nuclei";
     public static String CELL="Cell";
     public static String CYTO="Cyto";
+    public static String NUCLEI_EXP_CELL="Nuclei_expanded_cell";
+    public static String NUCLEI_EXP_CYTO="Nuclei_expanded_cyto";
 
     int intensityMeasures = Measurements.MEAN+Measurements.INTEGRATED_DENSITY+Measurements.MEDIAN+Measurements.MIN_MAX+Measurements.STD_DEV+Measurements.KURTOSIS+Measurements.SKEWNESS+Measurements.MODE;
     NucleiDetector nuclei;
@@ -26,6 +28,10 @@ public class MeasureRois {
 
     ResultsTable rawMeasures;
     Analyzer analyzer;
+
+    private ArrayList<ResultsTable> spotsInNucleiTable;
+    private ArrayList<ResultsTable> spotsInCellsTable;
+    private ArrayList<ResultsTable> spotsInCytoplasmsTable;
 
 
     public MeasureRois(NucleiDetector nuclei, CellDetector cells, CytoDetector cyto, ArrayList<SpotDetector> spots) {
@@ -38,6 +44,7 @@ public class MeasureRois {
     }
 
     public void measureAll(ResultsTable finalResultsNuclei, ResultsTable finalResultsCellSpot, String experimentName, MeasureCalibration calibration){
+
         if(cells!=null && nuclei!=null){
             Roi[] allNuclei = nuclei.getRoiArray();
             int[] association2Cell = cyto.getAssociationCell2Nuclei();
@@ -58,10 +65,14 @@ public class MeasureRois {
                 if (cells!=null){
                     Roi[] roiscell= cells.getRoiArray();
                     measure(cellID, finalResultsCellSpot,roiscell[cellID],CELL, calibration);
-                }
-                if (nuclei!=null && cells==null){
+                }else if (nuclei!=null){
                     Roi[] rois= nuclei.getRoiArray();
                     measure(cellID, finalResultsCellSpot,rois[cellID],NUCLEI, calibration);
+                    if(nuclei.isExpand4Cells()){
+                        ArrayList<Roi[]> roisExpanded= nuclei.getExpandedRois();
+                        measure(cellID, finalResultsCellSpot,roisExpanded.get(1)[cellID],NUCLEI_EXP_CELL, calibration);
+                        measure(cellID, finalResultsCellSpot,roisExpanded.get(2)[cellID],NUCLEI_EXP_CYTO, calibration);
+                    }
                 }
                 if (cyto!=null){
                     Roi[] rois= cyto.getCytoRois();
@@ -72,7 +83,7 @@ public class MeasureRois {
         }
     }
 
-    public void measure(int nb, ResultsTable resultsTableFinal, Roi measureRoi, String type, MeasureCalibration calib){
+    public void measure(int cellID, ResultsTable resultsTableFinal, Roi measureRoi, String type, MeasureCalibration calib){
         rawMeasures.reset();
         if(type.equals(NUCLEI)){
             if(nuclei!=null) measureNuclei(measureRoi,type,resultsTableFinal,calib);
@@ -82,9 +93,10 @@ public class MeasureRois {
             if(nuclei!=null) measureNuclei(measureRoi,type,resultsTableFinal,calib);
         }
         if(spots!=null){
-            for (SpotDetector spot : spots) {
+            for (int s=0;s<spots.size();s++) {
+                SpotDetector spot = spots.get(s);
                 if (spot != null) {
-                    measureSpot(spot,measureRoi,type,resultsTableFinal,calib);
+                    measureSpot(spot,cellID,s,measureRoi,type,resultsTableFinal,calib);
                 }
             }
         }
@@ -98,28 +110,33 @@ public class MeasureRois {
         rawMeasures.reset();
         analyzer = new Analyzer(tmp, measures, rawMeasures);
         analyzer.measure();
-        setResultsAndRename(rawMeasures,resultsTableFinal,type+cells.getNameChannel(),calib);
+        setResultsAndRename(rawMeasures,resultsTableFinal,type + cells.getNameChannel(),calib);
     }
 
     public  void measureNuclei(Roi measureRoi, String type, ResultsTable resultsTableFinal, MeasureCalibration calib){
         ImagePlus tmp=nuclei.getImageToMeasure();
         tmp.setRoi(measureRoi);
         int measures=nuclei.getMeasurements();
-        if(!type.equals(NUCLEI)) measures= measures&intensityMeasures;
+        if(type.equals(CELL)||type.equals(CYTO)) measures= measures&intensityMeasures;
         //IJ.log("measure nuclei :"+type+" : "+measures+" ("+cells.getMeasurements()+")");
         rawMeasures.reset();
         analyzer = new Analyzer(tmp, measures, rawMeasures);
         analyzer.measure();
-        setResultsAndRename(rawMeasures,resultsTableFinal,type+nuclei.getNameChannel(),calib);
+        setResultsAndRename(rawMeasures,resultsTableFinal,type + nuclei.getNameChannel(),calib);
     }
-    public  void measureSpot(SpotDetector spot,Roi measureRoi, String type, ResultsTable resultsTableFinal, MeasureCalibration calib){
-        ImagePlus tmp = spot.getImageToMeasure();
+    public  void measureSpot(SpotDetector spot,int cellID, int spotID, Roi measureRoi, String type, ResultsTable resultsTableFinal, MeasureCalibration calib){
+        //IJ.log("measure spot "+spot.getSpotName());
+        spot.setMeasureCalibration(calib);
+        if(type.equals(NUCLEI)) spot.analysisPerRegion(cellID,measureRoi,resultsTableFinal,type,spotsInNucleiTable.get(spotID));
+        if(type.equals(CELL)||type.equals(NUCLEI_EXP_CELL)) spot.analysisPerRegion(cellID,measureRoi,resultsTableFinal,type ,spotsInCellsTable.get(spotID));
+        if(type.equals(CYTO)||type.equals(NUCLEI_EXP_CYTO)) spot.analysisPerRegion(cellID,measureRoi,resultsTableFinal,type ,spotsInCytoplasmsTable.get(spotID));
+        /*ImagePlus tmp = spot.getImageToMeasure();
         tmp.setRoi(measureRoi);
         int measures = spot.getMeasurements();
         rawMeasures.reset();
         analyzer = new Analyzer(tmp, measures, rawMeasures);
         analyzer.measure();
-        setResultsAndRename(rawMeasures, resultsTableFinal, type + spot.getNameChannel(), calib);
+        setResultsAndRename(rawMeasures, resultsTableFinal, type + spot.getNameChannel(), calib);*/
     }
 
     public void setResultsAndRename(ResultsTable rawMeasures, ResultsTable customMeasures,  String preNameColumn, MeasureCalibration calib) {
@@ -132,5 +149,24 @@ public class MeasureRois {
                 customMeasures.addValue(preNameColumn + " " + measure, d2s(rawMeasures.getValue(measure, 0)));
             }
         }
+    }
+
+
+    public ArrayList<ResultsTable> getSpotsInNucleiTable() {
+        return spotsInNucleiTable;
+    }
+
+    public ArrayList<ResultsTable> getSpotsInCellsTable() {
+        return spotsInCellsTable;
+    }
+
+    public ArrayList<ResultsTable> getSpotsInCytoplasmsTable() {
+        return spotsInCytoplasmsTable;
+    }
+
+    public void setSpotsTables(ArrayList<ResultsTable> spotsInNucleiTable, ArrayList<ResultsTable> spotsInCellsTable, ArrayList<ResultsTable> spotsInCytoplasmsTable) {
+        this.spotsInNucleiTable = spotsInNucleiTable;
+        this.spotsInCellsTable = spotsInCellsTable;
+        this.spotsInCytoplasmsTable = spotsInCytoplasmsTable;
     }
 }

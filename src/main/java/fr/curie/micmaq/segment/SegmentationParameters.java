@@ -59,6 +59,8 @@ public class SegmentationParameters {
     int tileSize=-1;
     int tileOverlap=-1;
 
+    int ExpansionRadius = -1;
+
     public static SegmentationParameters createCellpose(String model, int diameter, double cellproba_threshold){
         SegmentationParameters param=new SegmentationParameters();
         param.setCellposeDiameter(diameter);
@@ -357,5 +359,13 @@ public class SegmentationParameters {
 
     public void setTileOverlap(int tileOverlap) {
         this.tileOverlap = tileOverlap;
+    }
+
+    public int getExpansionRadius() {
+        return ExpansionRadius;
+    }
+
+    public void setExpansionRadius(int expansionRadius) {
+        ExpansionRadius = expansionRadius;
     }
 }

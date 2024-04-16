@@ -1,5 +1,6 @@
 package fr.curie.micmaq.detectors;
 
+import fr.curie.micmaq.helpers.ExpandMask;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
@@ -9,9 +10,12 @@ import ij.gui.WaitForUserDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
+import ij.process.Blitter;
+import ij.process.ImageProcessor;
 
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * Author : Camille RABIER
@@ -53,6 +57,10 @@ public class NucleiDetector {
     private int measurements;
 
     protected String nameChannel="";
+
+    private boolean expand4Cells=false;
+    private int expandRadius = 10;
+    private ArrayList<Roi[]> roisExpanded;
 
     /**
      * Constructor with basic parameters, the other are initialized only if needed
@@ -425,6 +433,31 @@ public class NucleiDetector {
             if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures); /*set measurements and image to analyze*/
             nucleiRois = roiManagerNuclei.getRoisAsArray();
+            if(resultsDirectory!=null && expand4Cells && saveRois){
+                getExpandedRois();
+                RoiManager tmpCell=new RoiManager(true);
+                tmpCell.reset();
+                Roi[] cells=roisExpanded.get(1);
+                for(Roi r:cells) tmpCell.addRoi(r);
+                RoiManager tmpCyto=new RoiManager(true);
+                tmpCyto.reset();
+                Roi[] cytos=roisExpanded.get(2);
+                for(Roi r:cytos) tmpCyto.addRoi(r);
+
+                String extension=(roiManagerNuclei.getCount()==1)?".roi":".zip";
+                File dir=new File(resultsDirectory + "/ROI/AllDetected/");
+                if(!dir.exists()) dir.mkdirs();
+                if (tmpCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCell"+extension)) {
+                    IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
+                } else {
+                    IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                }
+                if (tmpCyto.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCyto"+extension)) {
+                    IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
+                } else {
+                    IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                }
+            }
 
             //imageToMeasure=null;
             return true;
@@ -525,5 +558,56 @@ public class NucleiDetector {
         return imageToMeasure;
     }
 
+    public boolean isExpand4Cells() {
+        return expand4Cells;
+    }
 
+    public void setExpand4Cells(boolean expand4Cells) {
+        this.expand4Cells = expand4Cells;
+        roisExpanded=null;
+    }
+
+    public int getExpandRadius() {
+        return expandRadius;
+    }
+
+    public void setExpandRadius(int expandRadius) {
+        this.expandRadius = expandRadius;
+        if(expandRadius>0) setExpand4Cells(true);
+        else setExpand4Cells(false);
+        roisExpanded=null;
+    }
+
+    /**
+     * get the differents rois corresponding to nuclei, expanded nuclei (cell) and cytoplasm (xor or the previous 2)
+     * @return
+     */
+    public ArrayList<Roi[]> getExpandedRois(){
+        if(expand4Cells && roisExpanded!=null) {
+            //IJ.log("return expanded roi already computed");
+            return roisExpanded;
+        }
+        IJ.log("compute expanded nuclei");
+        roisExpanded=new ArrayList<>(3);
+        roisExpanded.add(nucleiRois);
+        if(!expand4Cells) return roisExpanded;
+        // expand nuclei
+        ImagePlus mask= Detector.labeledImage(image.getWidth(),image.getHeight(),nucleiRois);
+        //mask.show();
+        ImageProcessor expanded= ExpandMask.expandsMask(mask.getProcessor(),expandRadius);
+        ImagePlus expandedIP= new ImagePlus("expanded",expanded);
+        //expandedIP.show();
+        RoiManager.getRoiManager().reset();
+        RoiManager cells = CellposeLauncher.label2Roi(expandedIP,0,0);
+        roisExpanded.add(cells.getRoisAsArray());
+        //xor
+        ImagePlus cytoIP=expandedIP.duplicate();
+        cytoIP.setTitle("cyto mask");
+        cytoIP.getProcessor().copyBits(mask.getProcessor(), 0,0, Blitter.SUBTRACT);
+        RoiManager.getRoiManager().reset();
+        RoiManager cyto = CellposeLauncher.label2Roi(cytoIP,0,0);
+        //cytoIP.show();
+        roisExpanded.add(cyto.getRoisAsArray());
+        return roisExpanded;
+    }
 }

@@ -147,6 +147,7 @@ public class ExperimentSettings {
         }
         nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
         nucleiDetector.setSegmentation(nucleiSegmentationParams.isUserValidation(),preview);
+        if(nucleiSegmentationParams.getExpansionRadius()>0) nucleiDetector.setExpandRadius(nucleiSegmentationParams.getExpansionRadius());
 
         return nucleiDetector;
 
@@ -252,7 +253,6 @@ public class ExperimentSettings {
                     tmp.setMeasurements(measureValue.getMeasure());
                     tmp.setPreprocessingMacroQuantif(measureValue.getPreprocessMacroQuantif());
 
-                    tmp.setNameChannel(measureValue.name);
 
                     //spots.set(i,tmp);
                     spots.add(tmp);

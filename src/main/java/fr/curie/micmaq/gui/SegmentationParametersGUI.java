@@ -68,6 +68,9 @@ public class SegmentationParametersGUI {
     private JSpinner stardistNMSthrSpinner;
     private JPanel stardistLoadModelPanel;
     private JSpinner stardistScaleSpinner;
+    private JCheckBox estimateCellsByNucleiCheckBox;
+    private JSpinner spinnerExpansionRadius;
+    private JPanel expansionPanel;
 
     private File cellposeModelPath;
     private File stardistModelPath;
@@ -119,7 +122,7 @@ public class SegmentationParametersGUI {
             minSizeLabel.setText("minimum size of cells (area in pixels)");
             cellposeDiameterLabel.setText("diameter of cells (pixel)");
         }
-        IJ.log("segmentationGUI constr"+thresholdingRadioButton.isSelected()+", "+cellposeRadioButton.isSelected());
+        IJ.log("segmentationGUI constr" + thresholdingRadioButton.isSelected() + ", " + cellposeRadioButton.isSelected());
         if (thresholdingRadioButton.isSelected()) {
             stardistPanel.setVisible(false);
             cellposePanel.setVisible(false);
@@ -251,6 +254,12 @@ public class SegmentationParametersGUI {
         end = Instant.now();
         IJ.log("segmentationGUI : add listener  " + Duration.between(start, end).toString());
 
+        estimateCellsByNucleiCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                spinnerExpansionRadius.setEnabled(estimateCellsByNucleiCheckBox.isSelected());
+            }
+        });
     }
 
     public void setType(String type) {
@@ -261,6 +270,7 @@ public class SegmentationParametersGUI {
             thresholdingRadioButton.setSelected(false);
             starDistRadioButton.setSelected(false);
             cellposeRadioButton.setSelected(true);
+            expansionPanel.setVisible(false);
             getPreferences();
         }
         if (type.equals(CELL_CYTO)) {
@@ -269,12 +279,18 @@ public class SegmentationParametersGUI {
             thresholdingRadioButton.setSelected(false);
             starDistRadioButton.setSelected(false);
             cellposeRadioButton.setSelected(true);
+            expansionPanel.setVisible(false);
             getPreferences();
         }
-        IJ.log("set Type "+type+", "+thresholdingRadioButton.isSelected()+", "+cellposeRadioButton.isSelected());
+        IJ.log("set Type " + type + ", " + thresholdingRadioButton.isSelected() + ", " + cellposeRadioButton.isSelected());
         thresholdParamsPanel.setVisible(thresholdingRadioButton.isSelected());
         cellposePanel.setVisible(cellposeRadioButton.isSelected());
         stardistPanel.setVisible(starDistRadioButton.isSelected());
+    }
+
+    public void setNucleiOnly(boolean onlynuclei) {
+        expansionPanel.setVisible(onlynuclei);
+        if (!onlynuclei) estimateCellsByNucleiCheckBox.setSelected(false);
     }
 
     public JPanel getMainPanel() {
@@ -322,6 +338,11 @@ public class SegmentationParametersGUI {
         if (type.equals(CELL_CYTO)) {
             result += "\n\tmin size overlap nucleus/cell: " + minOverlapSpinner.getValue();
             result += "\n\tmin size of cytoplasm: " + minCytoSizeSpinner.getValue();
+        }
+        if (type.equals(NUCLEI)) {
+            result += "\nexpand nuclei: " + ((estimateCellsByNucleiCheckBox.isSelected()) ? "yes" : "no");
+            if (estimateCellsByNucleiCheckBox.isSelected())
+                result += "\n\texpand radius: " + spinnerExpansionRadius.getValue();
         }
 
         return result;
@@ -452,13 +473,18 @@ public class SegmentationParametersGUI {
                     if (params.get(i).startsWith("min size of cytoplasm:")) {
                         minCytoSizeSpinner.setValue(new Double(params.get(i).split(": ")[1]));
                     }
-
-
+                    if (params.get(i).startsWith("expand nuclei:")) {
+                        estimateCellsByNucleiCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
+                    if (params.get(i).startsWith("expand radius:")) {
+                        spinnerExpansionRadius.setValue(new Double(params.get(i).split(": ")[1]));
+                    }
                 }
 
             }
             if (params.get(i).startsWith("Quantification  Parameters")) q = false;
 
+            spinnerExpansionRadius.setEnabled(estimateCellsByNucleiCheckBox.isSelected());
             mainPanel.repaint();
         }//end for
     }
@@ -503,6 +529,11 @@ public class SegmentationParametersGUI {
         if (this.type.equals(CELL_CYTO)) {
             params.setCytoplasmParameters((double) minOverlapSpinner.getValue(), (double) minCytoSizeSpinner.getValue());
         }
+
+        if (this.type.equals(NUCLEI)) {
+            if (estimateCellsByNucleiCheckBox.isSelected())
+                params.setExpansionRadius((int) spinnerExpansionRadius.getValue());
+        }
         setPreferences();
         return params;
     }
@@ -536,7 +567,7 @@ public class SegmentationParametersGUI {
 
 //        Segmentation
         int approach = (int) Prefs.get("MICMAQ.approach" + type, 2);
-        if(approach == 1 && (type.equals(CELLS)|| type.equals(CELL_CYTO))) approach=2;
+        if (approach == 1 && (type.equals(CELLS) || type.equals(CELL_CYTO))) approach = 2;
         switch (approach) {
             case 1:
             default:
@@ -617,6 +648,12 @@ public class SegmentationParametersGUI {
         minOverlapSpinner.setValue(Prefs.get("MICMAC.cytoplasmoverlap", 50.0));
         minCytoSizeSpinner.setValue(Prefs.get("MICMAC.cytoplasmminsize", 25.0));
 
+        // expansion
+        spinnerExpansionRadius.setValue((int) Prefs.get("MICMAQ.expansionRadius", 10));
+        estimateCellsByNucleiCheckBox.setSelected(Prefs.get("MICMAQ.expansionCell", false));
+
+        spinnerExpansionRadius.setEnabled(estimateCellsByNucleiCheckBox.isSelected());
+
     }
 
     /**
@@ -671,6 +708,9 @@ public class SegmentationParametersGUI {
         Prefs.set("MICMAQ.cytoplasmoverlap", (double) minOverlapSpinner.getValue());
         Prefs.set("MICMAQ.cytoplasmminsize", (double) minCytoSizeSpinner.getValue());
 
+        // expansion
+        Prefs.set("MICMAQ.expansionRadius", (int) spinnerExpansionRadius.getValue());
+        Prefs.set("MICMAQ.expansionCell", estimateCellsByNucleiCheckBox.isSelected());
 
     }
 
@@ -701,6 +741,9 @@ public class SegmentationParametersGUI {
         stardistNMSthrSpinner = new JSpinner(new SpinnerNumberModel(0.3, 0.0, 1.0, 0.01));
         stardistScaleSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.01, 100.0, 0.1));
 
+        //expansion spinner
+        spinnerExpansionRadius = new JSpinner(new SpinnerNumberModel(10, 0, 9999, 1));
+
     }
 
     /**
@@ -713,7 +756,7 @@ public class SegmentationParametersGUI {
     private void $$$setupUI$$$() {
         createUIComponents();
         mainPanel = new JPanel();
-        mainPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(8, 1, new Insets(0, 0, 0, 0), -1, -1));
+        mainPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(9, 1, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.setBorder(BorderFactory.createTitledBorder(null, "Segmentation parameters", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         final JPanel panel1 = new JPanel();
         panel1.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
@@ -849,7 +892,7 @@ public class SegmentationParametersGUI {
         cellposePanel.add(cellposeCellproba_thresholdSpinner, new com.intellij.uiDesigner.core.GridConstraints(3, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
-        mainPanel.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(6, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
+        mainPanel.add(panel5, new com.intellij.uiDesigner.core.GridConstraints(7, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         excludeOnEdgesCheckBox = new JCheckBox();
         excludeOnEdgesCheckBox.setText("exclude on edges");
         panel5.add(excludeOnEdgesCheckBox, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -878,7 +921,7 @@ public class SegmentationParametersGUI {
         cytoPanel.add(minCytoSizeSpinner, new com.intellij.uiDesigner.core.GridConstraints(0, 3, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         measurementsPanel = new JPanel();
         measurementsPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        mainPanel.add(measurementsPanel, new com.intellij.uiDesigner.core.GridConstraints(7, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
+        mainPanel.add(measurementsPanel, new com.intellij.uiDesigner.core.GridConstraints(8, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         measurementsPanel.setBorder(BorderFactory.createTitledBorder(null, "Measurements", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         setMeasurementsButton = new JButton();
         setMeasurementsButton.setText("set measurements");
@@ -929,6 +972,18 @@ public class SegmentationParametersGUI {
         label15.setText("image scale");
         stardistPanel.add(label15, new com.intellij.uiDesigner.core.GridConstraints(4, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         stardistPanel.add(stardistScaleSpinner, new com.intellij.uiDesigner.core.GridConstraints(4, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        expansionPanel = new JPanel();
+        expansionPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        mainPanel.add(expansionPanel, new com.intellij.uiDesigner.core.GridConstraints(6, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        expansionPanel.setBorder(BorderFactory.createTitledBorder(null, "expansion to cell", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        estimateCellsByNucleiCheckBox = new JCheckBox();
+        estimateCellsByNucleiCheckBox.setText("estimate cells by nuclei expansion : ");
+        expansionPanel.add(estimateCellsByNucleiCheckBox, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spinnerExpansionRadius.setEnabled(false);
+        expansionPanel.add(spinnerExpansionRadius, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label16 = new JLabel();
+        label16.setText("radius");
+        expansionPanel.add(label16, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         ButtonGroup buttonGroup;
         buttonGroup = new ButtonGroup();
         buttonGroup.add(cellposeRadioButton);

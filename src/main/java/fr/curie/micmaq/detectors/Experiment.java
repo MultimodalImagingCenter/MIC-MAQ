@@ -204,6 +204,7 @@ public class Experiment {
             }
         }
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
+        measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
 /*
         if (cell!=null && nuclei!=null && !interrupt){ //Get result table for all nuclei in addition to cell ResultTable
