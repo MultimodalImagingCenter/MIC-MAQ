@@ -80,7 +80,7 @@ public class SpotDetector {
     private int measurements = Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
 
     private int spotMeasurements =Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY+Measurements.SHAPE_DESCRIPTORS+Measurements.ELLIPSE+Measurements.FERET;
-    String nameChannel;
+
 
 
     /**
@@ -91,6 +91,8 @@ public class SpotDetector {
      *                         //     * @param showImage
      */
     public SpotDetector(ImagePlus image, String spotName, String nameExperiment, String resultsDirectory, boolean showPreprocessedImage) {
+        //IJ.log("SpotDetector constructor "+spotName);
+        //IJ.log("SpotDetector constructor "+nameExperiment);
 
         detector = new Detector(image, spotName);
         this.showPreprocessedImage = showPreprocessedImage;
@@ -487,7 +489,9 @@ public class SpotDetector {
 //        Measures of mean and raw intensities in the whole ROI are always done for spot images
         Analyzer analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures);
         analyzer.measure();
-        detector.setResultsAndRename(rawMeasures, resultsTableFinal, 0, type + "_" + spotName); /*always first line, because analyzer replace line*/
+        detector.setResultsAndRename(rawMeasures, resultsTableFinal, 0, type  + spotName); /*always first line, because analyzer replace line*/
+        //IJ.log("SpotDetector analysis per region : "+spotName);
+        //IJ.log("SpotDetector analysis per region : "+type);
 //        Detection and measurements
         if (spotByFindMaxima) {
             findMaximaPerRegion(regionROI, resultsTableFinal, type);
@@ -536,7 +540,7 @@ public class SpotDetector {
             }
         }
 //        Measurement
-        resultsTableToAdd.addValue(type + "_" + spotName + " threshold nr. spot", numberSpot);
+        resultsTableToAdd.addValue(type + spotName + " threshold nr. spot", numberSpot);
         if (numberSpot > 0) {
             ResultsTable resultsTable = new ResultsTable();
             Analyzer analyzer = new Analyzer(imageToMeasure, spotMeasurements, resultsTable);
@@ -555,12 +559,12 @@ public class SpotDetector {
                     }
                 }
             }
-            detector.setSummarizedResults(resultsTable, resultsTableToAdd, type + "_" + spotName);
+            detector.setSummarizedResults(resultsTable, resultsTableToAdd, type  + spotName);
         } else {
-            resultsTableToAdd.addValue(type + "_" + spotName + " threshold Area (pixel)", Double.NaN);
-            resultsTableToAdd.addValue(type + "_" + spotName + " threshold Area (" + measureCalibration.getUnit() + ")", Double.NaN);
-            resultsTableToAdd.addValue(type + "_" + spotName + " threshold Mean", Double.NaN);
-            resultsTableToAdd.addValue(type + "_" + spotName + " threshold RawIntDen", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " threshold Area (pixel)", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " threshold Area (" + measureCalibration.getUnit() + ")", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " threshold Mean", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " threshold RawIntDen", Double.NaN);
         }
     }
 
@@ -586,9 +590,9 @@ public class SpotDetector {
             mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
         }
         mean = mean / size;
-        resultsTableToAdd.addValue(type + "_" + spotName + " maxima prominence", prominence);
-        resultsTableToAdd.addValue(type + "_" + spotName + " maxima nr. spots", size);
-        resultsTableToAdd.addValue(type + "_" + spotName + " maxima mean", mean);
+        resultsTableToAdd.addValue(type + spotName + " maxima prominence", prominence);
+        resultsTableToAdd.addValue(type + spotName + " maxima nr. spots", size);
+        resultsTableToAdd.addValue(type + spotName + " maxima mean", mean);
     }
 
     /**
@@ -706,11 +710,5 @@ public class SpotDetector {
         return imageToMeasure;
     }
 
-    public String getNameChannel() {
-        return nameChannel;
-    }
 
-    public void setNameChannel(String nameChannel) {
-        this.nameChannel = nameChannel;
-    }
 }
