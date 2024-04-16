@@ -352,7 +352,7 @@ public class CellposeLauncher {
      * @param yoffset
      * @return
      */
-    public RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset) {
+    public static RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset) {
         if (cellposeIP == null) System.out.println("error cellposeIP is null!");
         ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
         Wand wand = new Wand(cellposeProc);
