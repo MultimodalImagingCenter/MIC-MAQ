@@ -15,6 +15,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.Blitter;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 
 import java.awt.*;
 import java.io.File;
@@ -203,10 +204,12 @@ public class CellposeLauncher {
             }
             IJ.showProgress(slice, tiles.getNSlices());
         }
+        //IJ.log("show masks");
         IJ.showStatus("combine masks");
         //new ImagePlus("tiles masks",masks).show();
 
         ImagePlus result = new ImagePlus(input.getTitle() + "TiledCellpose_mask", combineTileImage(masks));
+        //result.duplicate().show();
         return result;
     }
 
@@ -250,6 +253,8 @@ public class CellposeLauncher {
      * @return combined image
      */
     ImageProcessor combineTileImage(ImageStack is) {
+        IJ.log("combine tiles image");
+        RoiManager.getRoiManager().reset();
         int step = is.getWidth() - tileOverlap;
         ImageProcessor result = is.getProcessor(1).createProcessor(imagePlus.getWidth(), imagePlus.getHeight());
         int index = 1;
@@ -258,7 +263,8 @@ public class CellposeLauncher {
         for (int y = 0; y < result.getHeight() - tileOverlap; y += step) {
             for (int x = 0; x < result.getWidth() - tileOverlap; x += step) {
                 tmp.copyBits(is.getProcessor(index), x, y, Blitter.MAX);
-                label2Roi(new ImagePlus("", is.getProcessor(index)), x, y);
+                //new ImagePlus("combinedtile ("+index+", "+x+", "+y+")",tmp.duplicate()).show();
+                label2Roi(new ImagePlus("", is.getProcessor(index)), x, y,20);
                 tmp.copyBits(eraser, x, y, Blitter.COPY);
                 index++;
             }
@@ -342,7 +348,7 @@ public class CellposeLauncher {
      * Creates the RoiManager containing all particle Rois
      */
     public RoiManager label2Roi(ImagePlus cellposeIP) {
-        return label2Roi(cellposeIP, 0, 0);
+        return label2Roi(cellposeIP, 0, 0,20);
     }
 
     /***
@@ -352,7 +358,7 @@ public class CellposeLauncher {
      * @param yoffset
      * @return
      */
-    public static RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset) {
+    public static RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset,int minSize) {
         if (cellposeIP == null) System.out.println("error cellposeIP is null!");
         ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
         Wand wand = new Wand(cellposeProc);
@@ -379,7 +385,7 @@ public class CellposeLauncher {
 
         // will "erase" found ROI by setting them to 0
         cellposeProc.setColor(0);
-
+        IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi start: "+cellposeRoiManager.getCount());
         for (int y_coord : pixel_height) {
             for (int x_coord : pixel_width) {
                 if (cellposeProc.getPixel(x_coord, y_coord) > 0.0) {
@@ -388,22 +394,24 @@ public class CellposeLauncher {
 
                     // if there is a region , then it has npoints
 //                    There can be problems with very little ROIs, so threshold of 20 points
-                    if (wand.npoints > 20) {
+                    if (wand.npoints > minSize) {
                         // get the Polygon, fill with 0 and add to the manager
-                        Roi roi = new PolygonRoi(wand.xpoints, wand.ypoints, wand.npoints, Roi.TRACED_ROI);
+                        Roi roi = new ShapeRoi(new PolygonRoi(wand.xpoints, wand.ypoints, wand.npoints, Roi.TRACED_ROI));
                         roi.setPosition(cellposeIP.getCurrentSlice());
                         // ip.fill should use roi, otherwise make a rectangle that erases surrounding pixels
                         cellposeProc.fill(roi);
                         Rectangle r = roi.getBounds();
-
                         roi.setLocation(xoffset + r.x, yoffset + r.y);
                         cellposeRoiManager.addRoi(roi);
                     }
                 }
             }
         }
+        IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi end: "+cellposeRoiManager.getCount());
         return cellposeRoiManager;
     }
+
+
 
 
     /**

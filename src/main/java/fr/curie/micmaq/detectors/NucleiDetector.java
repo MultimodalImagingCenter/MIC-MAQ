@@ -5,13 +5,13 @@ import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
-import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
+import ij.gui.*;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.Blitter;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 
 import java.awt.*;
 import java.io.File;
@@ -198,7 +198,7 @@ public class NucleiDetector {
     public void setThresholdMethod(String thresholdMethod,double minSizeNucleus,boolean useWatershed,boolean excludeOnEdges) {
         this.cellpose = false;
         this.stardist = false;
-        detector.setThresholdParameters(thresholdMethod,excludeOnEdges,minSizeNucleus);
+        detector.setThresholdParameters(thresholdMethod,excludeOnEdges,minSizeNucleus,true);
         this.useWatershed = useWatershed;
         this.excludeOnEdges = excludeOnEdges;
     }
@@ -598,16 +598,88 @@ public class NucleiDetector {
         ImagePlus expandedIP= new ImagePlus("expanded",expanded);
         //expandedIP.show();
         RoiManager.getRoiManager().reset();
-        RoiManager cells = CellposeLauncher.label2Roi(expandedIP,0,0);
+        RoiManager cells = label2Roi(expandedIP,0,0,0, "Cell ");
         roisExpanded.add(cells.getRoisAsArray());
         //xor
         ImagePlus cytoIP=expandedIP.duplicate();
         cytoIP.setTitle("cyto mask");
         cytoIP.getProcessor().copyBits(mask.getProcessor(), 0,0, Blitter.SUBTRACT);
         RoiManager.getRoiManager().reset();
-        RoiManager cyto = CellposeLauncher.label2Roi(cytoIP,0,0);
+        RoiManager cyto = label2Roi(cytoIP,0,0,0, "Cyto ");
+        for(int r=0;r<cyto.getCount();r++){
+            ShapeRoi roiCyto=(ShapeRoi) cyto.getRoi(r);
+            roiCyto.xor(new ShapeRoi(nucleiRois[r]));
+        }
         //cytoIP.show();
         roisExpanded.add(cyto.getRoisAsArray());
         return roisExpanded;
+    }
+
+    /***
+     * convert label image into Rois
+     * @param cellposeIP
+     * @param xoffset
+     * @param yoffset
+     * @return
+     */
+    public static RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset,int minSize, String prefix) {
+        if (cellposeIP == null) System.out.println("error cellposeIP is null!");
+        ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
+        //cellposeIP.duplicate().show();
+        Wand wand = new Wand(cellposeProc);
+
+//        Set RoiManager
+        RoiManager cellposeRoiManager = RoiManager.getRoiManager();
+        //cellposeRoiManager.reset();
+
+
+        /*
+         * Will iterate through pixels, when getPixel > 0 ,
+         * then use the magic wand to create a roi
+         * finally set value to 0 and add to the roiManager
+         */
+
+        // will "erase" found ROI by setting them to 0
+        cellposeProc.setColor(0);
+        Roi tmp=new Roi(0,0,1,1);
+        tmp.setGroup(10);
+        ImageStatistics statistics=cellposeProc.getStatistics();
+        for(int i=0;i<statistics.max;i++) {
+            tmp.setName(prefix+(i+1));
+            cellposeRoiManager.addRoi(tmp);
+        }
+
+        for (int y_coord=0;y_coord<cellposeProc.getHeight();y_coord++) {
+            for (int x_coord =0; x_coord<cellposeProc.getWidth();x_coord++) {
+                int val=Math.round(cellposeProc.getPixelValue(x_coord, y_coord));
+                if (val > 0.0) {
+                    // use the magic wand at this coordinate
+                    wand.autoOutline(x_coord, y_coord);
+
+                    // if there is a region , then it has npoints
+//                    There can be problems with very little ROIs, so threshold of 20 points
+                    if (wand.npoints > minSize) {
+                        // get the Polygon, fill with 0 and add to the manager
+                        ShapeRoi roi = new ShapeRoi(new PolygonRoi(wand.xpoints, wand.ypoints, wand.npoints, Roi.TRACED_ROI));
+                        // ip.fill should use roi, otherwise make a rectangle that erases surrounding pixels
+                        cellposeProc.fill(roi);
+                        Rectangle r = roi.getBounds();
+                        roi.setLocation(xoffset + r.x, yoffset + r.y);
+                        if(cellposeRoiManager.getRoi(val-1).getGroup()==10) {
+                            roi.setName(prefix+val);
+                            cellposeRoiManager.setRoi(roi, val - 1);
+
+                        }else{
+                            Roi previous = cellposeRoiManager.getRoi(val-1);
+                            ShapeRoi prev=new ShapeRoi(previous);
+                            prev.or(roi);
+                            prev.setName(prefix+val);
+                            cellposeRoiManager.setRoi(prev,val-1);
+                        }
+                    }
+                }
+            }
+        }
+        return cellposeRoiManager;
     }
 }

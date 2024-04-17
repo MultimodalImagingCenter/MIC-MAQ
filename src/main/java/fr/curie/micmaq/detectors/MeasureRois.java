@@ -3,11 +3,18 @@ package fr.curie.micmaq.detectors;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.PolygonRoi;
 import ij.gui.Roi;
+import ij.gui.ShapeRoi;
+import ij.gui.Wand;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
+import ij.plugin.frame.RoiManager;
+import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 import static ij.IJ.d2s;
@@ -169,4 +176,6 @@ public class MeasureRois {
         this.spotsInCellsTable = spotsInCellsTable;
         this.spotsInCytoplasmsTable = spotsInCytoplasmsTable;
     }
+
+
 }
