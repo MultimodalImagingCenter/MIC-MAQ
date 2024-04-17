@@ -114,7 +114,7 @@ public class SpotsParametersGUI {
             @Override
             public void actionPerformed(ActionEvent e) {
                 userThresholdSpinner.setVisible(thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1);
-                darkBGCheckBox.setVisible(thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1);
+                //darkBGCheckBox.setVisible(thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1);
                 if (spotDetectorLive != null) updateLiveThreshold();
             }
         });
@@ -127,6 +127,8 @@ public class SpotsParametersGUI {
                     spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
                     if (isZStackCheckBox.isSelected())
                         spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+                    if(useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
+                    if(subtractBackgroundCheckBox.isSelected()) spotDetectorLive.setRollingBallSize((double)sbgSpinner.getValue());
                     spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue());
                 } else {
                     if (spotDetectorLive != null) {
@@ -189,12 +191,15 @@ public class SpotsParametersGUI {
         if (spotDetectorLive == null) return;
         if (isZStackCheckBox.isSelected())
             spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+        if(useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
+        if(subtractBackgroundCheckBox.isSelected()) spotDetectorLive.setRollingBallSize((double)sbgSpinner.getValue());
+
         String thMethod = (String) thresholdMethodCB.getSelectedItem();
         double thValue = (thresholdMethodCB.getSelectedIndex() == thresholdMethodCB.getItemCount() - 1) ? (double) userThresholdSpinner.getValue() : Double.NaN;
         int minArea = (int) minSizeSpinner.getValue();
         boolean useWatershed = useWatershedCheckBox.isSelected();
         boolean dark = darkBGCheckBox.isSelected();
-        spotDetectorLive.setSpotByThreshold(thMethod, dark ? thValue : -1.0E30D, dark ? 1.0E30D : thValue, minArea, useWatershed, false);
+        spotDetectorLive.setSpotByThreshold(thMethod, dark ? thValue : -1.0E30D, dark ? 1.0E30D : thValue, minArea, useWatershed,dark, false);
         spotDetectorLive.livePreviewThreshold();
     }
 
@@ -252,7 +257,7 @@ public class SpotsParametersGUI {
             double minTh = darkBGCheckBox.isSelected() ? (double) userThresholdSpinner.getValue() : -1.0E30D;
             double maxTh = darkBGCheckBox.isSelected() ? 1.0E30D : (double) userThresholdSpinner.getValue();
 
-            measureValue.setSpotThreshold((String) (thresholdMethodCB.getSelectedItem()), minTh, maxTh, (Integer) minSizeSpinner.getValue(), useWatershedCheckBox.isSelected());
+            measureValue.setSpotThreshold((String) (thresholdMethodCB.getSelectedItem()), minTh, maxTh, (Integer) minSizeSpinner.getValue(), useWatershedCheckBox.isSelected(),darkBGCheckBox.isSelected());
         }
         if (findMaximaCheckBox.isSelected()) {
             measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());
@@ -333,10 +338,10 @@ public class SpotsParametersGUI {
             result += "\nFind Spots by thresholding:";
             if (thresholdMethodCB.getSelectedIndex() == thresholdMethods.length - 1) {
                 result += "\n\tUser defined threshold: " + userThresholdSpinner.getValue();
-                result += "\n\tDark background: " + darkBGCheckBox.isSelected();
             } else {
                 result += "\n\tAutomatic threshold method: " + thresholdMethodCB.getSelectedItem();
             }
+            result += "\n\tDark background: " + darkBGCheckBox.isSelected();
 
             result += "\n\tMinimum spot diameter: " + (int) minSizeSpinner.getValue();
             result += "\n\tWatershed: " + (useWatershedCheckBox.isSelected() ? "yes" : "no");

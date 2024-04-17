@@ -178,7 +178,7 @@ public class SpotPanel {
             spotDetector.setSpotByFindMaxima((double) prominenceSpinner.getValue(), isPreview || showImageCheckBox.isSelected());
         }
         if (useThresholdCheckBox.isSelected()) {
-            spotDetector.setSpotByThreshold(threshMethodsCombo.getItemAt(threshMethodsCombo.getSelectedIndex()), (double) minSizeSpotSpinner.getValue(), useWatershedCheckBox.isSelected(), isPreview || showImageCheckBox.isSelected());
+            spotDetector.setSpotByThreshold(threshMethodsCombo.getItemAt(threshMethodsCombo.getSelectedIndex()), (double) minSizeSpotSpinner.getValue(), useWatershedCheckBox.isSelected(), true,isPreview || showImageCheckBox.isSelected());
         }
 
         return spotDetector;

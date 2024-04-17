@@ -246,7 +246,7 @@ public class ExperimentSettings {
                     if(measureValue.isSpotThreshold()) {
                         tmp.setSpotByThreshold(measureValue.getThresholdMethod(),
                                 measureValue.getMinThreshold(), measureValue.getMaxThreshold(),
-                                measureValue.getMinSizeSpot(), measureValue.isUseWatershed(), preview);
+                                measureValue.getMinSizeSpot(), measureValue.isUseWatershed(), measureValue.isDarkBg(), preview);
                         tmp.setSaving(true,true);
                     }
 

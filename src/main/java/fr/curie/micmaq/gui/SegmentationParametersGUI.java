@@ -89,11 +89,11 @@ public class SegmentationParametersGUI {
         $$$setupUI$$$();
         measurementsPanel.setVisible(false);
         Instant end = Instant.now();
-        IJ.log("segmentation GUI setupUI: " + Duration.between(start, end).toString());
+        //IJ.log("segmentation GUI setupUI: " + Duration.between(start, end).toString());
         start = Instant.now();
         getPreferences();
         end = Instant.now();
-        IJ.log("segmentationGUI preference: " + Duration.between(start, end).toString());
+        //IJ.log("segmentationGUI preference: " + Duration.between(start, end).toString());
         start = Instant.now();
         mainPanel.setBorder(BorderFactory.createTitledBorder("Segmentation parameters for " + type));
         cytoPanel.setVisible(false);
@@ -122,7 +122,7 @@ public class SegmentationParametersGUI {
             minSizeLabel.setText("minimum size of cells (area in pixels)");
             cellposeDiameterLabel.setText("diameter of cells (pixel)");
         }
-        IJ.log("segmentationGUI constr" + thresholdingRadioButton.isSelected() + ", " + cellposeRadioButton.isSelected());
+        //IJ.log("segmentationGUI constr" + thresholdingRadioButton.isSelected() + ", " + cellposeRadioButton.isSelected());
         if (thresholdingRadioButton.isSelected()) {
             stardistPanel.setVisible(false);
             cellposePanel.setVisible(false);
@@ -477,7 +477,7 @@ public class SegmentationParametersGUI {
                         estimateCellsByNucleiCheckBox.setSelected(params.get(i).endsWith("yes"));
                     }
                     if (params.get(i).startsWith("expand radius:")) {
-                        spinnerExpansionRadius.setValue(new Double(params.get(i).split(": ")[1]));
+                        spinnerExpansionRadius.setValue(new Integer(params.get(i).split(": ")[1]));
                     }
                 }
 

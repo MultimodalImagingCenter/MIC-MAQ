@@ -95,14 +95,14 @@ public class Detector {
      * @param minSizeParticle : minimum size of particle to analyze
      *                        Maximum size of particle if the max value possible
      */
-    public void setThresholdParameters(String thresholdMethod, boolean excludeOnEdges, double minSizeParticle) {
-        this.thresholdMethod = thresholdMethod + " dark";/*always dark background*/
+    public void setThresholdParameters(String thresholdMethod, boolean excludeOnEdges, double minSizeParticle,boolean darkBg) {
+        this.thresholdMethod = thresholdMethod + ((darkBg)? " dark":"");
         this.excludeOnEdges = excludeOnEdges;
         this.minSizeParticle = minSizeParticle;
     }
 
-    public void setThresholdParameters(String thresholdMethod, double minThreshold, double maxThreshold, boolean excludeOnEdges, double minSizeParticle) {
-        this.thresholdMethod = thresholdMethod + " dark";/*always dark background*/
+    public void setThresholdParameters(String thresholdMethod, double minThreshold, double maxThreshold, boolean excludeOnEdges,boolean darkBg, double minSizeParticle) {
+        this.thresholdMethod = thresholdMethod + ((darkBg)? " dark":"");
         this.excludeOnEdges = excludeOnEdges;
         this.minSizeParticle = minSizeParticle;
         this.minThreshold = minThreshold;

@@ -16,6 +16,8 @@ public class MeasureValue {
     protected String thresholdMethod;
     protected double minSizeSpot;
     protected boolean useWatershed=false;
+
+    protected boolean darkBg=true;
     protected double minThreshold=Integer.MIN_VALUE;
     protected double maxThreshold=Integer.MAX_VALUE;
 
@@ -60,13 +62,14 @@ public class MeasureValue {
         return spotThreshold;
     }
 
-    public void setSpotThreshold(String thresholdMethod,double minThreshold, double maxThreshold, double minSizeSpot, boolean useWatershed) {
+    public void setSpotThreshold(String thresholdMethod,double minThreshold, double maxThreshold, double minSizeSpot, boolean useWatershed, boolean darkBg) {
         this.spotThreshold = true;
         this.thresholdMethod = thresholdMethod;
         this.minSizeSpot = minSizeSpot;
         this.useWatershed=useWatershed;
         this.minThreshold=minThreshold;
         this.maxThreshold=maxThreshold;
+        this.darkBg=darkBg;
     }
 
     public String getThresholdMethod() {
@@ -196,5 +199,13 @@ public class MeasureValue {
 
     public void setSubtractBGRadius(double subtractBGRadius) {
         this.subtractBGRadius = subtractBGRadius;
+    }
+
+    public boolean isDarkBg() {
+        return darkBg;
+    }
+
+    public void setDarkBg(boolean darkBg) {
+        this.darkBg = darkBg;
     }
 }

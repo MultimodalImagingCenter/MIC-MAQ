@@ -189,12 +189,12 @@ public class SpotDetector {
      * @param useWatershed       : if true, use watershed method in addition to thresholding
      * @param showThresholdImage : chooice to show the resulting image
      */
-    public void setSpotByThreshold(String thresholdMethod, double minSizeSpot, boolean useWatershed, boolean showThresholdImage) {
+    public void setSpotByThreshold(String thresholdMethod, double minSizeSpot, boolean useWatershed, boolean darkBg, boolean showThresholdImage) {
         this.spotByThreshold = true;
         this.showThresholdImage = showThresholdImage;
         this.useWatershed = useWatershed;
         //macroText = null;
-        detector.setThresholdParameters(thresholdMethod, false, minSizeSpot); /*does not exclude spot on edges*/
+        detector.setThresholdParameters(thresholdMethod, false, minSizeSpot,darkBg); /*does not exclude spot on edges*/
     }
 
     /**
@@ -207,12 +207,12 @@ public class SpotDetector {
      * @param showThresholdImage : chooice to show the resulting image
      * @see Detector#setThresholdParameters(String, boolean, double)
      */
-    public void setSpotByThreshold(String thresholdMethod, double minTreshold, double maxThreshold, double minSizeSpot, boolean useWatershed, boolean showThresholdImage) {
+    public void setSpotByThreshold(String thresholdMethod, double minTreshold, double maxThreshold, double minSizeSpot, boolean useWatershed, boolean darkBg, boolean showThresholdImage) {
         this.spotByThreshold = true;
         this.showThresholdImage = showThresholdImage;
         this.useWatershed = useWatershed;
         //macroText = null;
-        detector.setThresholdParameters(thresholdMethod, minTreshold, maxThreshold, false, minSizeSpot); /*does not exclude spot on edges*/
+        detector.setThresholdParameters(thresholdMethod, minTreshold, maxThreshold, false, darkBg, minSizeSpot); /*does not exclude spot on edges*/
     }
 
 
