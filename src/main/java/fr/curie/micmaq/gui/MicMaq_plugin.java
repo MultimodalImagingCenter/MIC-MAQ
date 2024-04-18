@@ -171,8 +171,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         filePatternTextField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                filePattern = filePatternTextField.getText();
                 if (provider != null) {
-                    filePattern = filePatternTextField.getText();
                     provider.parseDirectory(filePattern);
                     updateChannels();
                     channelDefinitionChange(true);
@@ -1152,7 +1152,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
             bufferedWriter.append("\nFILES: ");
             String tmp = "\n\tDirectory : " + workingDirectory;
-            tmp += (filePattern != null && filePattern.equals("")) ? "\n\tFilter by image filename pattern: " + filePattern : "";
+            tmp += (filePattern != null && !filePattern.equals("")) ? "\n\tFilter by image filename pattern: " + filePattern : "";
             if (patterns != null && patterns.size() == correctNbChannels) {
                 tmp += "\n\tRearrange image file into channels with patterns:" + patterns.size();
                 for (int i = 0; i < patterns.size(); i++) {
