@@ -599,19 +599,24 @@ public class NucleiDetector {
         //expandedIP.show();
         RoiManager.getRoiManager().reset();
         RoiManager cells = label2Roi(expandedIP,0,0,0, "Cell ");
-        roisExpanded.add(cells.getRoisAsArray());
+        Roi[] cellRois=cells.getRoisAsArray();
+        roisExpanded.add(cellRois);
         //xor
-        ImagePlus cytoIP=expandedIP.duplicate();
-        cytoIP.setTitle("cyto mask");
-        cytoIP.getProcessor().copyBits(mask.getProcessor(), 0,0, Blitter.SUBTRACT);
+        //ImagePlus cytoIP=expandedIP.duplicate();
+        //cytoIP.setTitle("cyto mask");
+        //cytoIP.getProcessor().copyBits(mask.getProcessor(), 0,0, Blitter.SUBTRACT);
         RoiManager.getRoiManager().reset();
-        RoiManager cyto = label2Roi(cytoIP,0,0,0, "Cyto ");
-        for(int r=0;r<cyto.getCount();r++){
-            ShapeRoi roiCyto=(ShapeRoi) cyto.getRoi(r);
+        //RoiManager cyto = label2Roi(cytoIP,0,0,0, "Cyto ");
+        Roi[] cytoRois = new Roi[cellRois.length];
+        for(int r=0;r<cellRois.length;r++){
+            ShapeRoi roiCyto=new ShapeRoi(cellRois[r]);
             roiCyto.xor(new ShapeRoi(nucleiRois[r]));
+            roiCyto.setName("Cyto "+(r+1));
+            cytoRois[r]=roiCyto;
+            RoiManager.getRoiManager().addRoi(roiCyto);
         }
         //cytoIP.show();
-        roisExpanded.add(cyto.getRoisAsArray());
+        roisExpanded.add(cytoRois);
         return roisExpanded;
     }
 
