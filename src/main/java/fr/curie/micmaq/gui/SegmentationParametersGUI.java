@@ -555,7 +555,7 @@ public class SegmentationParametersGUI {
 
 
         //int maxSlices = imageProvider.getImagePlus(0, imageProvider.getCellChannel()).getNSlices();
-        int maxSlices = imageProvider.getFieldOfView(0).getNSlices(channel);
+        int maxSlices = imageProvider.getFirstValidFieldOfView().getNSlices(channel);
         int firstSlice = (int) Prefs.get("MICMAQ.firstSlice" + type, 1);
         int lastSlice = (int) Prefs.get("MICMAQ.lastSlice" + type, maxSlices);
         ImageToAnalyze.assertSlices(maxSlices, firstSlice, lastSlice, sliceMinSpinner, sliceMaxSpinner);

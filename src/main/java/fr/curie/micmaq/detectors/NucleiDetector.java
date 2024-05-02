@@ -83,6 +83,7 @@ public class NucleiDetector {
         File dir=new File(resultsDirectory);
         if(!dir.exists()) dir.mkdirs();
         rawMeasures = new ResultsTable();
+        IJ.log("nuclei detector : resultdir="+this.resultsDirectory);
     }
 
     public void setNucleiAssociatedRois(Roi[] associatedToCellNucleiRois){

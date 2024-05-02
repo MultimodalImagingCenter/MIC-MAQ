@@ -357,7 +357,7 @@ public class QuantificationParametersGUI {
             sliceMaxSpinner.setVisible(false);
         }
         int maxSlices = 1;
-        FieldOfView fov = provider.getFieldOfView(0);
+        FieldOfView fov = provider.getFirstValidFieldOfView();
         for (int i = 1; i <= fov.getNbAvailableChannels(); i++) {
             maxSlices = Math.max(maxSlices, fov.getNSlices(i));
         }

@@ -292,7 +292,7 @@ public class SpotsParametersGUI {
         }
         //ImagePlus imptmp = imageProvider.getImagePlus(0, channel);
         //int maxSlices = imptmp.getNSlices();
-        int maxSlices = imageProvider.getFieldOfView(0).getNSlices(channel);
+        int maxSlices = imageProvider.getFirstValidFieldOfView().getNSlices(channel);
         int firstSlice = (int) Prefs.get("MICMAQ.firstSliceSpot_" + id, 1);
         int lastSlice = (int) Prefs.get("MICMAQ.lastSliceSpot_" + id, maxSlices);
         ImageToAnalyze.assertSlices(maxSlices, firstSlice, lastSlice, sliceMinSpinner, sliceMaxSpinner);

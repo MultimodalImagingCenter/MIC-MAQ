@@ -22,6 +22,7 @@ public class FieldOfViewProvider {
     int cellChannel = -1;
 
     int previewImage = 0;
+    int validIndex=0;
 
     ArrayList<FieldOfView> fields;
     ArrayList<Integer> differentNumberOfChannels;
@@ -42,6 +43,10 @@ public class FieldOfViewProvider {
 
     public FieldOfView getFieldOfView(int index) {
         return fields.get(index);
+    }
+
+    public FieldOfView getFirstValidFieldOfView(){
+        return fields.get(validIndex);
     }
 
     public ArrayList<FieldOfView> getAllFields() {
@@ -279,4 +284,11 @@ public class FieldOfViewProvider {
         for (FieldOfView fov : fields) fov.setChannelsUserName(names);
     }
 
+    public int getFirstValidIndex() {
+        return validIndex;
+    }
+
+    public void setFirstValidIndex(int validIndex) {
+        this.validIndex = validIndex;
+    }
 }

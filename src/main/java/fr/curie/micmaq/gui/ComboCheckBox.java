@@ -43,11 +43,11 @@ public class ComboCheckBox {
     }
 
     public ComboCheckBox(FieldOfViewProvider provider){
-        int nb= provider.getNumberOfChannel(0);
+        int nb= provider.getFirstValidFieldOfView().getNbAvailableChannels();
         String[] names= new String[nb+1];
         names[0]="all";
         for(int i=0;i<nb;i++){
-            names[i+1]="C"+(i+1)+"_"+provider.getFieldOfView(0).getChannelUserName(i+1);
+            names[i+1]="C"+(i+1)+"_"+provider.getFirstValidFieldOfView().getChannelUserName(i+1);
         }
         init(names);
     }

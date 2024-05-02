@@ -624,10 +624,15 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             gd.showDialog();
             correctNbChannels = provider.getNumberOfChannel(gd.getNextChoiceIndex());
             ArrayList<FieldOfView> fovs = provider.getAllFields();
-            for (FieldOfView fov : fovs) {
+            int firstIndex=-1;
+            for (int fieldindex= 0; fieldindex<fovs.size();fieldindex++) {
+                FieldOfView fov=fovs.get(fieldindex);
+                if(firstIndex<0&&fov.getNbAvailableChannels()==correctNbChannels) firstIndex=fieldindex;
                 if (fov.getNbAvailableChannels() != correctNbChannels) fov.setUsed(false);
             }
             if (imagesTree instanceof ImagesTree) ((ImagesTree) imagesTree).updateTree();
+            provider.setFirstValidIndex(firstIndex);
+            PreviewSpinner.setValue(firstIndex);
         } else {
             correctNbChannels = provider.getNumberOfChannel(0);
         }

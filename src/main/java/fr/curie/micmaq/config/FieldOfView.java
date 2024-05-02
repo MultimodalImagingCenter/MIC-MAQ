@@ -136,6 +136,9 @@ public class FieldOfView {
             //IJ.log("original channel "+originalChannelNb.get(channel-1));
             //IJ.log("nb channels: "+tmp.getNChannels());
             ImagePlus chanImg=reduce(tmp,originalChannelNb.get(channel-1));
+            String title=chanImg.getTitle();
+            title=title.replaceAll("[\\\\/:,;*?\"<>|]","_");
+            chanImg.setTitle(title);
             return chanImg;
         } catch (Exception e) {
             e.printStackTrace();
@@ -243,7 +246,10 @@ public class FieldOfView {
     public String getChannelName(int channel){
         String file=channelsImagePlus.get(channel-1).getImageReader().getCurrentFile();
         String result=file.substring(file.lastIndexOf(File.separator)+1);
-        return result+"#"+channelsImagePlus.get(channel-1).getSeriesLabel(serieNb)+"#"+(originalChannelNb.get(channel-1)+1)+"_#_"+getChannelNameInFile(channel);
+        if(channel<channelsImagePlus.size()) {
+            return result + "#" + channelsImagePlus.get(channel - 1).getSeriesLabel(serieNb) + "#" + (originalChannelNb.get(channel - 1) + 1) + "_#_" + getChannelNameInFile(channel);
+        }
+        return result;
     }
 
     public double getPixelSize(int channel){

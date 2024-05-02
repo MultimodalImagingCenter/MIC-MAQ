@@ -60,7 +60,7 @@ public class Detector {
     public Detector(ImagePlus image, String nameObject) {
         this.image = image;
 //        this.image = image.duplicate();
-        this.nameImage = image.getTitle();
+        this.nameImage = image.getTitle().replaceAll("[\\\\/:,;*?\"<>|]","_");
         this.nameObject = nameObject;
     }
 
