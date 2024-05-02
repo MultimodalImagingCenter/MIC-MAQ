@@ -84,6 +84,7 @@ public class Detector {
         this.zStackProjMethod = zStackProjMethod;
         this.zStackFirstSlice = zStackFirstSlice;
         this.zStackLastSlice = zStackLastSlice;
+        //IJ.log("detector : zStack folowed by projection");
         projection();
     }
 
@@ -164,7 +165,7 @@ public class Detector {
      */
     private void projection() {
         if (this.image.getNSlices() > 1) {
-            IJ.log("projection " + zStackProjMethod);
+            IJ.log("detector projection " + zStackProjMethod);
             if (zStackProjMethod.equals("Maximum projection")) {
                 this.image = ZProjector.run(image, "max", zStackFirstSlice, zStackLastSlice); /*projects Stack to only one image by maximal intensity projection*/
             } else {

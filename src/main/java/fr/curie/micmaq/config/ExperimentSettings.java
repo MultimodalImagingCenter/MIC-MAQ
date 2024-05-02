@@ -116,8 +116,10 @@ public class ExperimentSettings {
         //IJ.log("nuclei detector : "+nucleiDetector.getNameChannel()+" should be "+nucleiSegmentationParams.getMeasurements().name);
         if(nucleiSegmentationParams.isZproject()){
             if(nucleiSegmentationParams.getProjectionSliceMin()>=0){
+                //IJ.log("experiments setings nuclei is zproject");
                 nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString(),nucleiSegmentationParams.getProjectionSliceMin(), nucleiSegmentationParams.getProjectionSliceMax());
             }else {
+                //IJ.log("experiments setings nuclei is zproject");
                 nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString());
             }
         }

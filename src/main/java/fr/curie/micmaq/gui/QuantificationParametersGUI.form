@@ -342,6 +342,7 @@
                           <model>
                             <item value="Maximum projection"/>
                             <item value="Standard deviation projection"/>
+                            <item value="Sum Slices"/>
                           </model>
                         </properties>
                       </component>

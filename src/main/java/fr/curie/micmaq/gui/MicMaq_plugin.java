@@ -1161,8 +1161,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             }
             tmp += "\n\tfiles used in analysis: ";
             ((ImagesTree) imagesTree).validateSelections();
-            for(int i=0; i<provider.getNbFielOfView();i++){
-                if(provider.getFieldOfView(i).isUsed()) tmp+=i+" ";
+            for (int i = 0; i < provider.getNbFielOfView(); i++) {
+                if (provider.getFieldOfView(i).isUsed()) tmp += i + " ";
             }
             bufferedWriter.append(tmp);
 

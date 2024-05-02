@@ -14,6 +14,7 @@ public class SegmentationParameters {
 
     static final public int PROJECTION_MAX=0;
     static final public int PROJECTION_STDDEV=1;
+    static final public int PROJECTION_SUM=2;
 
     int method=THRESHOLDING;
 
@@ -199,7 +200,7 @@ public class SegmentationParameters {
             default:
             case PROJECTION_MAX: return "Maximum projection";
             case PROJECTION_STDDEV: return "Standard deviation projection";
-
+            case PROJECTION_SUM: return "Sum Slices";
         }
     }
 

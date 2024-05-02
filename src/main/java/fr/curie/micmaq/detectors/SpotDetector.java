@@ -279,13 +279,15 @@ public class SpotDetector {
      * live preview for find maxima approach
      * @param prominence
      */
-    public void livePreviewFindMaxima(double prominence) {
+    public void livePreviewFindMaxima(double prominence,boolean show) {
         if (livePreview == null) livePreview = preprocessing();
         livePreview.show();
         livePreview.resetRoi();
-        PointRoi tmp = findMaxima(livePreview, prominence, "full");
-        IJ.log("live preview (" + prominence + ") nb points:" + tmp.getPolygon().npoints);
-        livePreview.setRoi(tmp, true);
+        if(show) {
+            PointRoi tmp = findMaxima(livePreview, prominence, "full");
+            IJ.log("live preview (" + prominence + ") nb points:" + tmp.getPolygon().npoints);
+            livePreview.setRoi(tmp, true);
+        }
         livePreview.updateAndRepaintWindow();
     }
 

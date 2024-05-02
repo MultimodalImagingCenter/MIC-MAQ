@@ -146,6 +146,7 @@ public class NucleiDetector {
      * @param zStackLastSlice Last slice of stack to use
      */
     public void setzStackParameters(String zStackProj, int zStackFirstSlice,int zStackLastSlice){
+        //IJ.log("nuclei detector setZstack(String,int,int)");
         detector.setzStackParameters(zStackProj,zStackFirstSlice,zStackLastSlice);
     }
 
@@ -154,6 +155,7 @@ public class NucleiDetector {
      * @param zStackProj Method of projection
      */
     public void setzStackParameters(String zStackProj) {
+        //IJ.log("nuclei detector setZstack(String)");
         setzStackParameters(zStackProj, 1, image.getNSlices());
     }
 
@@ -508,6 +510,7 @@ public class NucleiDetector {
 //      MACRO : apply custom commands of user
             if (useMacro){
                 imageToReturn.show();
+                IJ.log("macro: nslices:"+imageToReturn.getNSlices());
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);"+macroText+"setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
                 temp = WindowManager.getCurrentImage();

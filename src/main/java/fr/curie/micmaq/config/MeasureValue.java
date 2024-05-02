@@ -9,6 +9,8 @@ public class MeasureValue {
     static final public int PROJECTION_MAX=0;
     static final public int PROJECTION_STDDEV=1;
 
+    static final public int PROJECTION_SUM=2;
+
     public int measure;
     public String name;
 
@@ -165,7 +167,7 @@ public class MeasureValue {
             default:
             case PROJECTION_MAX: return "Maximum projection";
             case PROJECTION_STDDEV: return "Standard deviation projection";
-
+            case PROJECTION_SUM: return "Sum Slices";
         }
     }
     public void setProjection(int method){
