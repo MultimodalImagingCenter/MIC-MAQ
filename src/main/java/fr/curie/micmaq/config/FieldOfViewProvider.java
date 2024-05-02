@@ -95,9 +95,10 @@ public class FieldOfViewProvider {
         //System.out.println("filter " +fileExtension+" filter "+filter);
         File[] files = dir.listFiles(filter);
         if (files == null || files.length == 0) return;
-        //System.out.println("nb files "+files.length);
+        IJ.log("nb files "+files.length);
         for (File f : files) {
             if (!f.isDirectory()) {
+                System.out.println("########################################");
                 String path = f.getAbsolutePath();
                 IJ.showStatus("parsing " + path);
                 String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
@@ -119,27 +120,27 @@ public class FieldOfViewProvider {
                     int nSeries = process.getSeriesCount();
                     ImporterMetadata md = process.getOriginalMetadata();
                     IMetadata imd = process.getOMEMetadata();
-                    System.out.println(path + " Nseries " + nSeries + " channels:" + process.getCCount(0));
-                    System.out.println("nb dataset (metadata)=" + imd.getDatasetCount());
-                    System.out.println("nb experiment (metadata)=" + imd.getExperimentCount());
-                    System.out.println("nb image (metadata)=" + imd.getImageCount());
+                    System.out.println("\t"+path + " Nseries " + nSeries + " channels:" + process.getCCount(0));
+                    System.out.println("\t"+"nb dataset (metadata)=" + imd.getDatasetCount());
+                    System.out.println("\t"+"nb experiment (metadata)=" + imd.getExperimentCount());
+                    System.out.println("\t"+"nb image (metadata)=" + imd.getImageCount());
                     dateEnd = Instant.now();
                     duration = Duration.between(dateBegin, dateEnd).toMillis();
-                    IJ.log("get infos from metadata " + duration / 1000.0 + " seconds");
+                    IJ.log("\t"+"get infos from metadata " + duration / 1000.0 + " seconds");
                     for (int i = 0; i < imd.getImageCount(); i++) {
-                        System.out.println("nb channel (metadata)=" + imd.getChannelCount(i));
+                        System.out.println("\t\t"+"nb channel (metadata)=" + imd.getChannelCount(i));
                     }
-                    IJ.log(path + " Nseries " + nSeries + " channels:" + process.getCCount(0));
+                    IJ.log("\t"+path + " Nseries " + nSeries + " channels:" + process.getCCount(0));
                     for (int i = 0; i < nSeries; i++) {
                         IJ.showStatus("adding file " + (i + 1) + "/" + nSeries);
-                        IJ.log("adding field of view " + i);
+                        IJ.log("\t"+"adding field of view " + i);
                         Instant dateBegin2 = Instant.now();
                         FieldOfView fov = new FieldOfView();
                         fov.addAllChannels(path, i);
                         fields.add(fov);
                         Instant dateEnd2 = Instant.now();
                         long duration2 = Duration.between(dateBegin2, dateEnd2).toMillis();
-                        IJ.log("adding field " + i + ":    " + duration2 / 1000.0 + " seconds");
+                        IJ.log("\t"+"adding field " + i + ":    " + duration2 / 1000.0 + " seconds");
                     }
 
                 } catch (FormatException e) {
@@ -222,10 +223,11 @@ public class FieldOfViewProvider {
         };
         //System.out.println("filter " +fileExtension+" filter "+filter);
         File[] files = dir.listFiles(filter);
-        //System.out.println("nb files "+files.length);
+        IJ.log("nb files "+files.length);
         for (File f : files) {
             if (!f.isDirectory()) {
                 String path = f.getAbsolutePath();
+                IJ.log("############   opening"+f.getName());
                 String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
                 try {
                     ImporterOptions options = new ImporterOptions();
@@ -237,15 +239,15 @@ public class FieldOfViewProvider {
                     int nSeries = process.getSeriesCount();
                     IJ.log(path + " Nseries " + nSeries + " channels:" + process.getCCount(0));
                     for (int i = 0; i < nSeries; i++) {
-                        IJ.log("adding field of view " + i);
+                        IJ.log("\tadding field of view " + i);
                         FieldOfView fov = new FieldOfView();
                         fov.addChannel(path, i, 1, patterns.get(0));
                         for (int c = 1; c < patterns.size(); c++) {
                             String name = f.getName();
-                            IJ.log("original name " + name);
+                            IJ.log("\t\toriginal name " + name);
                             String f2 = name.replaceAll(patterns.get(0), patterns.get(c));
-                            IJ.log("after pattern replacement --> " + f2);
-                            IJ.log("path " + dir + File.separator + f2);
+                            IJ.log("\t\tafter pattern replacement --> " + f2);
+                            IJ.log("\t\tpath " + dir + File.separator + f2);
                             fov.addChannel(dir + File.separator + f2, i, 1, patterns.get(c));
                         }
                         fov.setFieldname(f.getName().replaceAll(patterns.get(0), ""));
