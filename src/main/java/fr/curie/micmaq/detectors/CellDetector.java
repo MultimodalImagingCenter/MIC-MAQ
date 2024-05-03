@@ -404,6 +404,7 @@ public class CellDetector {
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);"+macroText+"setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
                 temp = WindowManager.getCurrentImage();
+                imageToReturn.close();
                 imageToReturn = temp.duplicate();
                 imageToReturn.setTitle(imageToReturn.getTitle()+"afterMacro");
                 temp.changes=false;

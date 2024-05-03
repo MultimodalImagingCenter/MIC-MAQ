@@ -515,6 +515,7 @@ public class NucleiDetector {
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);"+macroText+"setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
                 temp = WindowManager.getCurrentImage();
+                imageToReturn.close();
                 imageToReturn = temp.duplicate();
                 temp.changes=false;
                 temp.close();

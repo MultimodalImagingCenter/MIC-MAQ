@@ -118,12 +118,13 @@ public class Detector {
      * @return image that either does not need a projection or is already projected or null if it needs projection
      */
     public ImagePlus getImage() {
-        if (image.getNSlices() > 1) {
+        return image.duplicate();
+        /*if (image.getNSlices() > 1) {
             IJ.error("The image " + image + " is a stack, please precise the Z-projection parameters");
             return null;
         } else {
             return image.duplicate();
-        }
+        }*/
     }
 
     /**
@@ -131,7 +132,7 @@ public class Detector {
      * @return
      */
     public ImagePlus getImageQuantification() {
-        if (image.getNSlices() > 1) projection();
+        //if (image.getNSlices() > 1) projection();
         //System.out.println("detector getimage quantif preprocess macro: "+quantifMacro);
         if (quantifMacro != null && !quantifMacro.isEmpty()) {
             ImagePlus imageToReturn = image.duplicate(); /*detector class does the projection if needed*/
@@ -141,6 +142,7 @@ public class Detector {
             IJ.selectWindow(imageToReturn.getID());
             IJ.runMacro("setBatchMode(true);" + quantifMacro + "setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
             temp = WindowManager.getCurrentImage();
+            imageToReturn.close();
             imageToReturn = temp.duplicate();
             temp.changes = false;
             temp.close();

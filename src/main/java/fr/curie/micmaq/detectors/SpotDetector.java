@@ -619,6 +619,7 @@ public class SpotDetector {
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);" + macroText + "setBatchMode(false);");
                 temp = WindowManager.getCurrentImage();
+                imageToReturn.close();
                 imageToReturn = temp.duplicate();
                 temp.changes = false;
                 temp.close();

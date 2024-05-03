@@ -45,6 +45,8 @@ public class SegmentationParameters {
     String preprocessMacro=null;
     String preprocessMacroQuantif=null;
     boolean Zproject=false;
+
+    boolean projectInMacro=false;
     int projectionMethod=PROJECTION_MAX;
     int projectionSliceMin=-1;
     int projectionSliceMax=-1;
@@ -368,5 +370,13 @@ public class SegmentationParameters {
 
     public void setExpansionRadius(int expansionRadius) {
         ExpansionRadius = expansionRadius;
+    }
+
+    public boolean isProjectInMacro() {
+        return projectInMacro;
+    }
+
+    public void setProjectInMacro(boolean projectInMacro) {
+        this.projectInMacro = projectInMacro;
     }
 }

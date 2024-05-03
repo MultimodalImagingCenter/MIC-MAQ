@@ -9,6 +9,7 @@ import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.*;
 import ij.gui.GenericDialog;
+import ij.gui.YesNoCancelDialog;
 import ij.io.OpenDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.BrowserLauncher;
@@ -624,10 +625,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             gd.showDialog();
             correctNbChannels = provider.getNumberOfChannel(gd.getNextChoiceIndex());
             ArrayList<FieldOfView> fovs = provider.getAllFields();
-            int firstIndex=-1;
-            for (int fieldindex= 0; fieldindex<fovs.size();fieldindex++) {
-                FieldOfView fov=fovs.get(fieldindex);
-                if(firstIndex<0&&fov.getNbAvailableChannels()==correctNbChannels) firstIndex=fieldindex;
+            int firstIndex = -1;
+            for (int fieldindex = 0; fieldindex < fovs.size(); fieldindex++) {
+                FieldOfView fov = fovs.get(fieldindex);
+                if (firstIndex < 0 && fov.getNbAvailableChannels() == correctNbChannels) firstIndex = fieldindex;
                 if (fov.getNbAvailableChannels() != correctNbChannels) fov.setUsed(false);
             }
             if (imagesTree instanceof ImagesTree) ((ImagesTree) imagesTree).updateTree();
@@ -793,8 +794,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
             int index = (Integer) PreviewSpinner.getValue();
             FieldOfView imgs = provider.getFieldOfView(index);
+            boolean[] checkproj = checkParameters();
 
-            Experiment exp = createExperiment(index, true);
+            Experiment exp = createExperiment(index, true, checkproj);
             IJ.log("#############################");
             IJ.log("##        preview          ##");
             IJ.log("#############################");
@@ -818,7 +820,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
         int index = (Integer) PreviewSpinner.getValue();
         FieldOfView imgs = provider.getFieldOfView(index);
-        Experiment exp = createExperiment(index, true);
+        boolean[] checkproj = checkParameters();
+        Experiment exp = createExperiment(index, true, checkproj);
 
         JPanel current = (JPanel) TabsPanel.getSelectedComponent();
         if (nucleiParam != null && current == nucleiParam.getMainPanel()) {
@@ -847,7 +850,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         Instant dateBegin = Instant.now();
         if (cellResults != null) cellResults = null;
         if (nucleusResults != null) nucleusResults = null;
-        if (!checkParameters()) return;
+        boolean[] projCheck = checkParameters();
+        if (projCheck[2]) return;
         ProgressMonitor progress = new ProgressMonitor(this, "computing for all images",
                 "", -1, provider.getNbFielOfView() * 100);
         progress.setMillisToDecideToPopup(1);
@@ -878,7 +882,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
                 progress.setNote(msg);
                 progress.setProgress(index * 100);
-                Experiment exp = createExperiment(index, false);
+                Experiment exp = createExperiment(index, false, projCheck);
                 exp.run();
                 if (progress.isCanceled()) {
                     exp.interruptProcess();
@@ -938,7 +942,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         progress.close();
     }
 
-    public Experiment createExperiment(int index, boolean preview) {
+    public Experiment createExperiment(int index, boolean preview, boolean[] checkproj) {
         IJ.log("create experiment");
         FieldOfView imgs = provider.getFieldOfView(index);
         ExperimentSettings settings = new ExperimentSettings(imgs);
@@ -954,8 +958,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 params.getMeasurements().setMeasure(tmp.getMeasure());
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationNuclei(i + 1, params);
-                if (!params.isZproject() && tmp.isZproject()) {
-                    params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
+                if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
+                    System.out.println("channel " + (i + 1) + "there should be projection!");
+                    if (checkproj[0]) {
+                        System.out.println("set projection to the one from quantification");
+                        params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
+                    } else {
+                        System.out.println("do nothing (should be in macro)!");
+                    }
                 }
                 nucleus = true;
             } else if (cp.isUsed() && cp.isCell()) {
@@ -966,8 +976,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationCell(i + 1, params);
-                if (!params.isZproject() && tmp.isZproject()) {
-                    params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
+                if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
+                    System.out.println("channel " + (i + 1) + "there should be projection!");
+                    if (checkproj[0]) {
+                        System.out.println("set projection to the one from quantification");
+                        params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
+                    } else {
+                        System.out.println("do nothing (should be in macro)!");
+                    }
                 }
                 cell = true;
             } else if (cp.isUsed()) {
@@ -980,10 +996,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     if (sp != null) {
                         measureValue = sp.getMeasure();
                         MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
-                        if (!measureValue.isZproject() && tmp.isZproject()) {
-                            measureValue.setProjection(tmp.getProjectionMethod());
-                            measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
-                            measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
+                        if (!measureValue.isZproject() && imgs.getNSlices(i + 1) > 1) {
+                            System.out.println("channel " + (i + 1) + "there should be projection!");
+                            if (checkproj[0]) {
+                                System.out.println("set projection to the one from quantification");
+                                measureValue.setProjection(tmp.getProjectionMethod());
+                                measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
+                                measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
+                            } else {
+                                System.out.println("do nothing (should be in macro)!");
+                            }
                         }
                     }
                 } else {
@@ -1039,7 +1061,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         return exp;
     }
 
-    private boolean checkParameters() {
+    private boolean[] checkParameters() {
         boolean warningN = false;
         boolean warningC = false;
         boolean warningS = false;
@@ -1085,12 +1107,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
 
         if (warningC || warningN || warningQ || warningS) {
-            GenericDialog genericDialog = new GenericDialog("warning");
-            genericDialog.addMessage(warningMessage);
-            genericDialog.showDialog();
-            return genericDialog.wasOKed();
+            warningMessage += "press No if projection is in macro";
+            YesNoCancelDialog genericDialog = new YesNoCancelDialog(this, "Projection configuration error", warningMessage);
+            boolean no = !genericDialog.yesPressed() && !genericDialog.cancelPressed();
+            //genericDialog.addMessage(warningMessage);
+            //genericDialog.showDialog();
+            return new boolean[]{genericDialog.yesPressed(), no, genericDialog.cancelPressed()};
         }
-        return true;
+        return new boolean[]{true, false, false};
     }
 
     private void recordInMacro() {
