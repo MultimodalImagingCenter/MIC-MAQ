@@ -69,6 +69,7 @@ public class MeasureRois {
         for (int cellID = 0; cellID < numberOfObject; cellID++) {
                 finalResultsCellSpot.addValue("Name experiment", experimentName);
                 finalResultsCellSpot.addValue("Cell nr.", "" + (cellID + 1));
+                if(cyto!=null) finalResultsCellSpot.addValue("Number of nuclei in Cell", cyto.getNumberOfNuclei(cellID));
                 if (cells!=null){
                     Roi[] roiscell= cells.getRoiArray();
                     measure(cellID, finalResultsCellSpot,roiscell[cellID],CELL, calibration);

@@ -336,4 +336,11 @@ public class CytoDetector {
             detector.setResultsAndRename(rawMeasures, resultsTableFinal, -1, "Cytoplasm");
         }
     }
+
+    public int getNumberOfNuclei(int index){
+        return trueNbNucleiPerCell[index];
+    }
+    public int[] getNumberOfNucleiPerCells(){
+        return trueNbNucleiPerCell;
+    }
 }
