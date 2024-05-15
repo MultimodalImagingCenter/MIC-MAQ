@@ -539,7 +539,7 @@ public class CellposeLauncher {
      * @param result
      * @return
      */
-    public ImageProcessor rois2Labels(ImageProcessor result) {
+    public static ImageProcessor rois2Labels(ImageProcessor result) {
         RoiManager rm = RoiManager.getRoiManager();
         IJ.log("rois2labels : " + rm.getCount());
         for (int r = 0; r < rm.getCount(); r++) {

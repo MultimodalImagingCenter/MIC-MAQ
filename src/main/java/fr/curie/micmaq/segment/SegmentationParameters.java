@@ -11,6 +11,7 @@ public class SegmentationParameters {
     static final public  int CELLPOSE=1;
     static final public int THRESHOLDING=2;
     static final public int STARDIST=3;
+    static final public int MACRO_SEGMENTATION=4;
 
     static final public int PROJECTION_MAX=0;
     static final public int PROJECTION_STDDEV=1;
@@ -36,6 +37,11 @@ public class SegmentationParameters {
     double stardistNmsThresh=0.0;
     String stardistModelFile=null;
     double stardistScale=1.0;
+
+    //other macro segmentation segmentation
+    String segmentationMacro="";
+    boolean macroOutputRoiManager=false;
+    boolean macroOutputImage=false;
 
     //cytoplasm extraction parameters
     double minOverlap=-1;
@@ -104,6 +110,18 @@ public class SegmentationParameters {
         param.setMethod(THRESHOLDING);
         param.setThresholdMethod(method);
         param.setThresholdingWatershed(watershed);
+        MeasureValue tmp=new MeasureValue(true);
+        tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
+        param.setMeasurements(tmp);
+        return param;
+    }
+
+    public static SegmentationParameters createMacroSegmentation(String macro, boolean ouputRoiManager, boolean outputImage){
+        SegmentationParameters param=new SegmentationParameters();
+        param.setMethod(MACRO_SEGMENTATION);
+        param.setSegmentationMacro(macro);
+        param.setMacroOutputRoiManager(ouputRoiManager);
+        param.setMacroOutputImage(outputImage);
         MeasureValue tmp=new MeasureValue(true);
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
@@ -378,5 +396,29 @@ public class SegmentationParameters {
 
     public void setProjectInMacro(boolean projectInMacro) {
         this.projectInMacro = projectInMacro;
+    }
+
+    public String getSegmentationMacro() {
+        return segmentationMacro;
+    }
+
+    public void setSegmentationMacro(String segmentationMacro) {
+        this.segmentationMacro = segmentationMacro;
+    }
+
+    public boolean isMacroOutputRoiManager() {
+        return macroOutputRoiManager;
+    }
+
+    public void setMacroOutputRoiManager(boolean macroOutputRoiManager) {
+        this.macroOutputRoiManager = macroOutputRoiManager;
+    }
+
+    public boolean isMacroOutputImage() {
+        return macroOutputImage;
+    }
+
+    public void setMacroOutputImage(boolean macroOutputImage) {
+        this.macroOutputImage = macroOutputImage;
     }
 }

@@ -45,6 +45,11 @@ public class NucleiDetector {
     double stardistNmsThresh;
     String stardistModelFile;
     double stardistScale;
+
+    private boolean macroSegmentation;
+    String segmentationMacro;
+    boolean macroOutputRoiManager;
+    boolean isMacroOutputImage;
     private boolean useWatershed;
     private Roi[] nucleiRois;
     private boolean finalValidation;
@@ -215,6 +220,7 @@ public class NucleiDetector {
     public void setCellposeMethod(int minSizeDLNuclei, double cellproba_threshold, String cellposeModel, boolean excludeOnEdges) {
         this.cellpose = true;
         this.stardist = false;
+        this.macroSegmentation=false;
         this.cellposeDiameter = minSizeDLNuclei;
         this.cellposeModel = cellposeModel;
         this.excludeOnEdges = excludeOnEdges;
@@ -231,6 +237,7 @@ public class NucleiDetector {
                                   boolean excludeOnEdges){
         this.cellpose = false;
         this.stardist = true;
+        this.macroSegmentation=false;
         this.stardistModel=model;
         this.stardistPercentileBottom=stardistPercentileBottom;
         this.stardistPercentileTop=stardistPercentileTop;
@@ -240,6 +247,17 @@ public class NucleiDetector {
         this.stardistScale=stardistScale;
         this.excludeOnEdges=excludeOnEdges;
 
+    }
+
+    public void setMacroSegmentation(String macro, boolean outputRoiManager, boolean outputImage, boolean excludeOnEdges){
+        this.cellpose = false;
+        this.stardist = false;
+        this.macroSegmentation = true;
+        this.segmentationMacro=macro;
+        this.macroOutputRoiManager=outputRoiManager;
+        this.isMacroOutputImage = outputImage;
+        this.excludeOnEdges=excludeOnEdges;
+        IJ.log("macro segmentation "+this.macroSegmentation);
     }
 
     /**
@@ -324,6 +342,7 @@ public class NucleiDetector {
      * @return true if no error
      */
     public boolean prepare(){
+        IJ.log("nuclei detector prepare "+macroSegmentation);
         //check saving directory
         if(saveRois){
             File tmp=new File(resultsDirectory + "/ROI/");
@@ -348,13 +367,15 @@ public class NucleiDetector {
 //            SEGMENTATION
             if (cellpose){
                 WindowManager.getWindow("Log").toFront();
+                IJ.log("run Cellpose");
                 analysisType = "cellpose";
                 CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
                 cellposeLauncher.analysis();
                 labeledImage = cellposeLauncher.getCellposeMask();
                 detector.renameImage(labeledImage,"cellpose");
                 roiManagerNuclei = cellposeLauncher.getCellposeRoiManager();
-            } else if(stardist){
+            } else if(stardist) {
+                IJ.log("run Stardist");
                 analysisType = "StarDist";
                 StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
                 starDistLauncher.setModel(stardistModel);
@@ -367,16 +388,50 @@ public class NucleiDetector {
                 starDistLauncher.setExcludeOnEdges(excludeOnEdges);
                 starDistLauncher.analysis();
                 labeledImage = starDistLauncher.getInstanceMask();
-                detector.renameImage(labeledImage,"stardist");
+                detector.renameImage(labeledImage, "stardist");
                 roiManagerNuclei = starDistLauncher.getStardistRoiManager();
+            }else if (macroSegmentation){
+                IJ.log("segmentation via macro");
+                analysisType = "macro segmentation";
+                ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
+                ImagePlus temp;
+//      MACRO : apply custom commands of user
 
-            }else {
+                imageToReturn.show();
+                IJ.selectWindow(imageToReturn.getID());
+                IJ.runMacro("//setBatchMode(true);\n"+segmentationMacro+"\n//setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
+                temp = WindowManager.getCurrentImage();
+                if(!showPreprocessingImage) imageToReturn.hide();
+                //imageToReturn.setTitle("image to return");
+                temp.changes=false;
+                temp.setTitle("temp");
+                temp.hide();
+                if(isMacroOutputImage && macroOutputRoiManager){
+                    labeledImage = temp;
+                    roiManagerNuclei = RoiManager.getRoiManager();
+                }else if(isMacroOutputImage){
+                    labeledImage = temp;
+                    RoiManager.getRoiManager().reset();
+                    roiManagerNuclei = CellposeLauncher.label2Roi(temp,0,0,0);
+                } else {
+                    roiManagerNuclei = RoiManager.getRoiManager();
+                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                }
+            }else {//threshold
+                IJ.log("run threshold");
                 analysisType = "threshold";
                 thresholding(preprocessed);
                 // Analyse particle
                 roiManagerNuclei =detector.analyzeParticles(imageToParticleAnalyze);
                 labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
             }
+            IJ.log("should do exclude on edge "+excludeOnEdges);
+            if(excludeOnEdges) {
+                if(excludeOnEdgesRois(roiManagerNuclei)){
+                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                }
+            }
+
             if (showBinaryImage){
                 labeledImage.show();
                 labeledImage.setDisplayRange(0,roiManagerNuclei.getCount()+5);
@@ -511,14 +566,17 @@ public class NucleiDetector {
 //      MACRO : apply custom commands of user
             if (useMacro){
                 imageToReturn.show();
-                IJ.log("macro: nslices:"+imageToReturn.getNSlices());
+                //IJ.log("macro: nslices:"+imageToReturn.getNSlices());
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);"+macroText+"setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
                 temp = WindowManager.getCurrentImage();
-                imageToReturn.close();
-                imageToReturn = temp.duplicate();
+                if(temp!=imageToReturn) {
+                    imageToReturn.changes=false;
+                    imageToReturn.hide();
+                    imageToReturn = temp.duplicate();
+                }
                 temp.changes=false;
-                temp.close();
+                temp.hide();
             }
             return imageToReturn;
         }else return null;
@@ -691,5 +749,24 @@ public class NucleiDetector {
             }
         }
         return cellposeRoiManager;
+    }
+
+    public boolean excludeOnEdgesRois(RoiManager roiManager){
+        boolean removed=false;
+        Roi[] keep = new Roi[roiManager.getCount()];
+        for (int r=roiManager.getCount()-1; r>=0;r--){
+            Roi roi=roiManager.getRoi(r);
+            Rectangle rec = roi.getBounds();
+            if (rec.x <= 1 || rec.y <= 1 || rec.x + rec.width >= image.getWidth() - 1 || rec.y + rec.height >= image.getHeight() - 1) {
+                removed=true;
+            }else {
+                keep[r]=roi;
+            }
+        }
+        roiManager.reset();
+        for(Roi roi: keep){
+            if(roi!=null) roiManager.addRoi(roi);
+        }
+        return removed;
     }
 }

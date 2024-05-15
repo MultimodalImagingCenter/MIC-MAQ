@@ -108,6 +108,7 @@ public class ExperimentSettings {
             nucleiDetector=null;
             return null;
         }
+        IJ.log("experiment settings get nuclei" + nucleiSegmentationParams.getSegmentationMacro());
         if(nucleiDetector!=null) return nucleiDetector;
         nucleiDetector=new NucleiDetector(imgs.getImagePlus(nucleiSegmentationChannel),imgs.getFieldname(), resultsDir, preview);
 
@@ -145,6 +146,11 @@ public class ExperimentSettings {
                     nucleiSegmentationParams.getStardistNmsThresh(),
                     nucleiSegmentationParams.getStardistModelFile(),
                     nucleiSegmentationParams.getStardistScale(),
+                    nucleiSegmentationParams.isExcludeOnEdge());
+        }else if(nucleiSegmentationParams.getMethod()==SegmentationParameters.MACRO_SEGMENTATION){
+            nucleiDetector.setMacroSegmentation(nucleiSegmentationParams.getSegmentationMacro(),
+                    nucleiSegmentationParams.isMacroOutputRoiManager(),
+                    nucleiSegmentationParams.isMacroOutputImage(),
                     nucleiSegmentationParams.isExcludeOnEdge());
         }
         nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
@@ -186,15 +192,21 @@ public class ExperimentSettings {
             IJ.log("cell detector initiation: add macro");
             cellDetector.setPreprocessingMacroQuantif(cellSegmentationParams.getPreprocessMacroQuantif());
         }
-
-
-
-        String cellposemodel=(cellSegmentationParams.getCellposeModel().equalsIgnoreCase("own model"))?cellSegmentationParams.getPathToModel().getAbsolutePath():cellSegmentationParams.getCellposeModel();
-        System.out.println("cellpose model (experimentsettings):"+cellposemodel);
-        cellDetector.setDeepLearning(cellSegmentationParams.getCellposeDiameter(),
-                cellSegmentationParams.getCellposeCellproba_trheshold(),
-                cellposemodel,
-                cellSegmentationParams.isExcludeOnEdge(),cellSegmentationParams.isUserValidation(), preview);
+        if(cellSegmentationParams.getMethod()==SegmentationParameters.MACRO_SEGMENTATION){
+            IJ.log("configure cell segmentation as macro");
+            cellDetector.setMacroSegmentation(cellSegmentationParams.getSegmentationMacro(),
+                    cellSegmentationParams.isMacroOutputRoiManager(),
+                    cellSegmentationParams.isMacroOutputImage(),
+                    cellSegmentationParams.isExcludeOnEdge());
+        }else{
+            IJ.log("configure cell segmentation as Cellpose");
+            String cellposemodel=(cellSegmentationParams.getCellposeModel().equalsIgnoreCase("own model"))?cellSegmentationParams.getPathToModel().getAbsolutePath():cellSegmentationParams.getCellposeModel();
+            System.out.println("cellpose model (experimentsettings):"+cellposemodel);
+            cellDetector.setDeepLearning(cellSegmentationParams.getCellposeDiameter(),
+                    cellSegmentationParams.getCellposeCellproba_trheshold(),
+                    cellposemodel,
+                    cellSegmentationParams.isExcludeOnEdge(),cellSegmentationParams.isUserValidation(), preview);
+        }
 
 //        Cytoplasm ?
         NucleiDetector nucleiDetector=getNucleiDetector(preview);
