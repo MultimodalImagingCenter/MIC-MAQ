@@ -694,9 +694,9 @@ public class SegmentationParametersGUI {
             }
         }
 //        --> macro segmentation
-        textAreaMacroSegment.setText(Prefs.get("MICMAQ.macroSegmentationCode" + type,""));
-        resultIsInRoiManagerCheckBox.setSelected(Prefs.get("MICMAQ.macroSegmentationRoi"+type, false));
-        resultIsAnInstanceCheckBox.setSelected(Prefs.get("MICMAQ.macroSegmentationImage"+type, false));
+        textAreaMacroSegment.setText(Prefs.get("MICMAQ.macroSegmentationCode" + type, ""));
+        resultIsInRoiManagerCheckBox.setSelected(Prefs.get("MICMAQ.macroSegmentationRoi" + type, false));
+        resultIsAnInstanceCheckBox.setSelected(Prefs.get("MICMAQ.macroSegmentationImage" + type, false));
 
 //      --> cytoplasm
         minOverlapSpinner.setValue(Prefs.get("MICMAC.cytoplasmoverlap", 50.0));
@@ -730,7 +730,7 @@ public class SegmentationParametersGUI {
         Prefs.set("MICMAQ.macro" + type, macroTextArea.getText());
 
 //        Segmentation
-        int approach = (thresholdingRadioButton.isSelected()) ? 1 : (cellposeRadioButton.isSelected()) ? 2 : (starDistRadioButton.isSelected())?3:4;
+        int approach = (thresholdingRadioButton.isSelected()) ? 1 : (cellposeRadioButton.isSelected()) ? 2 : (starDistRadioButton.isSelected()) ? 3 : 4;
         Prefs.set("MICMAQ.approach" + type, approach);
         Prefs.set("MICMAQ.userValidation" + type, userValidationCheckBox.isSelected());
         Prefs.set("MICMAQ.SaveROI" + type, saveROIsCheckBox.isSelected());
@@ -760,7 +760,7 @@ public class SegmentationParametersGUI {
 //        --> macro segmentation
         Prefs.set("MICMAQ.macroSegmentationCode" + type, textAreaMacroSegment.getText());
         Prefs.set("MICMAQ.macroSegmentationRoi" + type, resultIsInRoiManagerCheckBox.isSelected());
-        Prefs.set("MICMAQ.macroSegmentationImage" + type,  resultIsAnInstanceCheckBox.isSelected());
+        Prefs.set("MICMAQ.macroSegmentationImage" + type, resultIsAnInstanceCheckBox.isSelected());
 
 
 //        --> cytoplasm
