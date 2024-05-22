@@ -32,7 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class MicMaq_plugin extends JFrame implements PlugIn {
     private JTabbedPane TabsPanel;
@@ -584,7 +584,6 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             } else {
                 chosenDirectoryTextArea.setText(path);
             }
-
         }
         updateChannels();
         channelDefinitionChange(true);
@@ -873,13 +872,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 String msg = "working on " + (index + 1) + "/" + provider.getNbFielOfView();
                 if (index > 0) {
                     Instant dateTmp = Instant.now();
-                    long duration = Duration.between(dateBegin, dateTmp).toMillis();
-                    long remain = (duration / (index)) * (provider.getNbFielOfView() - (index));
-                    String remainString = String.format("%02d min %02d sec",
-                            TimeUnit.MILLISECONDS.toMinutes(remain),
-                            TimeUnit.MILLISECONDS.toSeconds(remain) -
-                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remain))
-                    );
+                    Duration duration = Duration.between(dateBegin, dateTmp);
+                    //IJ.log("duration computation:"+duration);
+                    duration = duration.dividedBy(index); // time of 1 step
+                    //IJ.log("duration per step="+duration);
+                    duration = duration.multipliedBy(provider.getNbFielOfView() - index);//time of remaining steps to compute
+                    //IJ.log("duration estimated "+duration);
+                    String remainString = formatDuration(duration);
                     msg += (", " + remainString + " remaining");
                 }
                 progress.setNote(msg);
@@ -1369,6 +1368,23 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             e.printStackTrace();
             return;
         }
+    }
+
+    public static String formatDuration(Duration d) {
+        long days = d.toDays();
+        d = d.minusDays(days);
+        long hours = d.toHours();
+        d = d.minusHours(hours);
+        long minutes = d.toMinutes();
+        d = d.minusMinutes(minutes);
+        long seconds = d.getSeconds();
+        //IJ.log("duration "+d);
+        IJ.log("days=" + days + ", hours=" + hours + ", min=" + minutes + ", sec=" + seconds);
+        return
+                (days == 0 ? "" : days + " days ") +
+                        (hours == 0 && days == 0 ? "" : hours + " h ") +
+                        (minutes == 0 && hours == 0 ? "" : minutes + " min ") +
+                        (days != 0 || hours != 0 ? "" : seconds + " sec");
     }
 
     private void createUIComponents() {
