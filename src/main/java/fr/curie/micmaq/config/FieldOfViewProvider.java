@@ -24,6 +24,8 @@ public class FieldOfViewProvider {
     int previewImage = 0;
     int validIndex=0;
 
+    double completion=0;
+
     ArrayList<FieldOfView> fields;
     ArrayList<Integer> differentNumberOfChannels;
     ArrayList<Integer> nbImgsPerChanNb;
@@ -83,6 +85,7 @@ public class FieldOfViewProvider {
 
     public void parseDirectory(final String filePattern) {
         IJ.log("parse directory " + directory);
+        completion=0;
         Instant dateTotalBegin = Instant.now();
         fields = new ArrayList<>();
         File dir = new File(directory);
@@ -96,10 +99,12 @@ public class FieldOfViewProvider {
         File[] files = dir.listFiles(filter);
         if (files == null || files.length == 0) return;
         IJ.log("nb files "+files.length);
-        for (File f : files) {
-            if (!f.isDirectory()) {
+        for (int f=0;f<files.length;f++){
+            File file =files[f];
+            if(completion<0) return;
+            if (!file.isDirectory()) {
                 System.out.println("########################################");
-                String path = f.getAbsolutePath();
+                String path = file.getAbsolutePath();
                 IJ.showStatus("parsing " + path);
                 String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
                 try {
@@ -114,7 +119,7 @@ public class FieldOfViewProvider {
 
                     Instant dateEnd = Instant.now();
                     long duration = Duration.between(dateBegin, dateEnd).toMillis();
-                    IJ.log("first read of file" + f + ". It took " + duration / 1000.0 + " seconds");
+                    IJ.log("first read of file" + file + ". It took " + duration / 1000.0 + " seconds");
 
                     dateBegin = Instant.now();
                     int nSeries = process.getSeriesCount();
@@ -150,6 +155,7 @@ public class FieldOfViewProvider {
                 }
             } else {
             }
+            completion=(f+1.0)/ files.length;
         }
         IJ.log("total number of field of view: " + fields.size());
         if (fields.size() == 0) return;
@@ -224,10 +230,12 @@ public class FieldOfViewProvider {
         //System.out.println("filter " +fileExtension+" filter "+filter);
         File[] files = dir.listFiles(filter);
         IJ.log("nb files "+files.length);
-        for (File f : files) {
-            if (!f.isDirectory()) {
-                String path = f.getAbsolutePath();
-                IJ.log("############   opening"+f.getName());
+        for (int f=0;f<files.length;f++){
+            File file =files[f];
+            if(completion<0) return;
+            if (!file.isDirectory()) {
+                String path = file.getAbsolutePath();
+                IJ.log("############   opening"+file.getName());
                 String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
                 try {
                     ImporterOptions options = new ImporterOptions();
@@ -243,14 +251,14 @@ public class FieldOfViewProvider {
                         FieldOfView fov = new FieldOfView();
                         fov.addChannel(path, i, 1, patterns.get(0));
                         for (int c = 1; c < patterns.size(); c++) {
-                            String name = f.getName();
+                            String name = file.getName();
                             IJ.log("\t\toriginal name " + name);
                             String f2 = name.replaceAll(patterns.get(0), patterns.get(c));
                             IJ.log("\t\tafter pattern replacement --> " + f2);
                             IJ.log("\t\tpath " + dir + File.separator + f2);
                             fov.addChannel(dir + File.separator + f2, i, 1, patterns.get(c));
                         }
-                        fov.setFieldname(f.getName().replaceAll(patterns.get(0), ""));
+                        fov.setFieldname(file.getName().replaceAll(patterns.get(0), ""));
                         fields.add(fov);
                     }
 
@@ -261,6 +269,7 @@ public class FieldOfViewProvider {
                 }
             } else {
             }
+            completion=(f+1.0)/ files.length;
         }
         IJ.log("total number of field of view: " + fields.size());
         checkChannels();
@@ -292,5 +301,13 @@ public class FieldOfViewProvider {
 
     public void setFirstValidIndex(int validIndex) {
         this.validIndex = validIndex;
+    }
+
+    public double getCompletion() {
+        return completion;
+    }
+
+    public void cancelLoading() {
+        this.completion = -1;
     }
 }
