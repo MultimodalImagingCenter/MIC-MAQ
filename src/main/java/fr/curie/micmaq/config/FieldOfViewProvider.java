@@ -24,7 +24,7 @@ public class FieldOfViewProvider {
     int previewImage = 0;
     int validIndex=0;
 
-    double completion=0;
+    double completion=-10;
 
     ArrayList<FieldOfView> fields;
     ArrayList<Integer> differentNumberOfChannels;
@@ -156,7 +156,9 @@ public class FieldOfViewProvider {
             } else {
             }
             completion=(f+1.0)/ files.length;
+            System.out.flush();
         }
+        completion=1.0;
         IJ.log("total number of field of view: " + fields.size());
         if (fields.size() == 0) return;
         Instant dateTotalEnd = Instant.now();

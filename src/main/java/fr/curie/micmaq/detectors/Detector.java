@@ -465,6 +465,7 @@ public class Detector {
                     break;
                 case "RawIntDen":
                     customMeasures.addValue(prenameColumn + " threshold " + measure, d2s(sum(rawMeasures.getColumn(measure))));
+                    break;
                 default:
                     customMeasures.addValue(prenameColumn + " threshold " + measure, d2s(mean(rawMeasures.getColumn(measure))));
                     break;

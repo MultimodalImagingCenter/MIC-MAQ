@@ -174,7 +174,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             public void actionPerformed(ActionEvent e) {
                 filePattern = filePatternTextField.getText();
                 if (provider != null) {
-                    provider.parseDirectory(filePattern);
+                    //provider.parseDirectory(filePattern);
+                    parseDirectory(filePattern);
                     updateChannels();
                     channelDefinitionChange(true);
                     ((ImagesTree) imagesTree).updateTree();
@@ -568,7 +569,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     protected void updateDirectory(String directory, String filePattern) {
         if (directory != null) {
             provider = new FieldOfViewProvider(directory);
-            provider.parseDirectory(filePattern);
+            parseDirectory(filePattern);
+            //provider.parseDirectory(filePattern);
             ((ImagesTree) imagesTree).setFieldOfViewProvider(provider);
             ((SpinnerNumberModel) PreviewSpinner.getModel()).setValue(0);
             ((SpinnerNumberModel) PreviewSpinner.getModel()).setMaximum(provider.getNbFielOfView());
@@ -594,8 +596,27 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
     }
 
+    protected void parseDirectory(String filePattern){
+        GenericDialog gd = new GenericDialog("loading files", this);
+        gd.setModal(false);
+        gd.hideCancelButton();
+        gd.setOKLabel("wait ! ");
+        gd.addMessage(" parsing files, please be patient ");
+        gd.showDialog();
+        provider.parseDirectory(filePattern);
+        gd.dispose();
+    }
+
     protected void rearrangeData() {
+        GenericDialog gd = new GenericDialog("loading files", this);
+        gd.setModal(false);
+        gd.hideCancelButton();
+        gd.setOKLabel("wait ! ");
+        gd.addMessage(" parsing files, please be patient ");
+        gd.showDialog();
         provider.reorganiseFiles(filePatternTextField.getText(), patterns);
+        gd.dispose();
+
         ((ImagesTree) imagesTree).updateTree();
         updateChannels();
         channelDefinitionChange(true);
