@@ -142,10 +142,13 @@ public class Detector {
             IJ.selectWindow(imageToReturn.getID());
             IJ.runMacro("setBatchMode(true);" + quantifMacro + "setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
             temp = WindowManager.getCurrentImage();
-            imageToReturn.close();
-            imageToReturn = temp.duplicate();
-            temp.changes = false;
-            temp.close();
+            if(temp!=imageToReturn) {
+                imageToReturn.changes=false;
+                imageToReturn.close();
+                imageToReturn = temp.duplicate();
+                temp.changes = false;
+                temp.close();
+            }
             return imageToReturn;
         }
         return image.duplicate();

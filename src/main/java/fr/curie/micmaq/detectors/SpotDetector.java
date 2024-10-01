@@ -619,10 +619,13 @@ public class SpotDetector {
                 IJ.selectWindow(imageToReturn.getID());
                 IJ.runMacro("setBatchMode(true);" + macroText + "setBatchMode(false);");
                 temp = WindowManager.getCurrentImage();
-                imageToReturn.close();
-                imageToReturn = temp.duplicate();
-                temp.changes = false;
-                temp.close();
+                if(temp!=imageToReturn) {
+                    imageToReturn.changes=false;
+                    imageToReturn.close();
+                    imageToReturn = temp.duplicate();
+                    temp.changes = false;
+                    temp.close();
+                }
             }
 //            SUBTRACT BACKGROUND : correct background with rolling ball algorithm
             if (useRollingBallSize) {

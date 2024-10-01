@@ -246,7 +246,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String path = IJ.getFilePath("parameters file location");
-                loadParameterFile(path, true);
+                loadParameterFile(path, false);
             }
         });
         menuf.add(itemf2);
@@ -596,7 +596,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
     }
 
-    protected void parseDirectory(String filePattern){
+    protected void parseDirectory(String filePattern) {
         GenericDialog gd = new GenericDialog("loading files", this);
         gd.setModal(false);
         gd.hideCancelButton();
@@ -868,6 +868,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     }
 
     public void runAllExperiments() {
+        spotsInNuclei = null;
+        spotsInCells = null;
+        spotsInCyto = null;
         ((ImagesTree) imagesTree).validateSelections();
         Instant dateBegin = Instant.now();
         if (cellResults != null) cellResults = null;
@@ -925,11 +928,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             if (spotPanels != null) {
                 for (int s = 0; s < spotPanels.size(); s++) {
                     if (spotPanels.get(s) != null) {
-                        if (spotsInNuclei != null && spotsInNuclei[s] != null)
+                        if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                             spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
-                        if (spotsInCells != null && spotsInCells[s] != null)
+                        if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                             spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
-                        if (spotsInCyto != null && spotsInCyto[s] != null)
+                        if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                             spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
                     }
                 }
@@ -948,12 +951,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (spotPanels != null) {
             for (int s = 0; s < spotPanels.size(); s++) {
                 if (spotPanels.get(s) != null) {
-                    if (spotsInNuclei != null && spotsInNuclei[s] != null)
+                    if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                         spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
-                    if (spotsInCells != null && spotsInCells[s] != null)
+                    if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                         spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
-                    if (spotsInCyto != null && spotsInCyto[s] != null)
+                    if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
                         spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+
+                    if (!spotPanels.get(s).getMeasure().isSpotThreshold()) {
+                        spotsInNuclei = null;
+                        spotsInCells = null;
+                        spotsInCyto = null;
+                    }
                 }
             }
         }
@@ -1150,7 +1159,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             Recorder.recordOption("filePattern", tmp);
         }
         Recorder.recordOption("calibration", calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
-        Recorder.recordOption("parameterpath", workingDirectory + "/Results/Parameters.txt");
+        Recorder.recordOption("parameterpath", tmpdir + "/Results/Parameters.txt");
+        if (CellposeLauncher.tileSize > 0) {
+            Recorder.recordOption("tileSize", "" + CellposeLauncher.tileSize);
+            Recorder.recordOption("tileOverlap", "" + CellposeLauncher.tileOverlap);
+        }
         Recorder.saveCommand();
     }
 
@@ -1180,6 +1193,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
         loadParameterFile(parameterFilePath, false);
         checkParameters();
+
+        //tiling?
+        String tileSize = Macro.getValue(options, "tileSize", null);
+        if (tileSize != null) {
+            CellposeLauncher.tileSize = Integer.parseInt(tileSize);
+            String tileOverlap = Macro.getValue(options, "tileOverlap", null);
+            CellposeLauncher.tileOverlap = Integer.parseInt(tileOverlap);
+        }
+
+
         createParametersFile();
         runAllExperiments();
 
