@@ -1,5 +1,6 @@
 package fr.curie.micmaq.gui;
 
+import ch.epfl.biop.wrappers.cellpose.ij2commands.Cellpose;
 import com.jgoodies.common.collect.ArrayListModel;
 import fr.curie.micmaq.config.*;
 import fr.curie.micmaq.detectors.CellposeLauncher;
@@ -252,7 +253,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         menuf.add(itemf2);
         bar.add(menuf);
 
-        /****************  edit menu   *****************/
+        /****************  options menu   *****************/
         JMenu menuEdit = new JMenu("Options");
         JMenuItem itemE1 = new JMenuItem("set Cellpose tiling");
         itemE1.addActionListener(new ActionListener() {
@@ -273,7 +274,34 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             }
         });
 
+        JMenuItem itemE2 = new JMenuItem("set Cellpose environment");
+        itemE2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                GenericDialog gd = new GenericDialog("Cellpose environment");
+                gd.addStringField("conda_environment_type", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda"));
+                gd.addStringField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()));
+                gd.addCheckbox("use_GPU", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", false));
+                gd.showDialog();
+
+                if (!gd.wasCanceled()) {
+                    String type = gd.getNextString();
+                    String path = gd.getNextString();
+                    boolean useGPU = gd.getNextBoolean();
+                    Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", type);
+                    Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", path, 80);
+                    Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", useGPU);
+
+                    IJ.log("changed Cellpose environment to :\ntype: " + Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda")
+                            + "\npath: " + Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath())
+                            + "\nuse Gpu: " + Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", false));
+                }
+
+            }
+        });
+
         menuEdit.add(itemE1);
+        menuEdit.add(itemE2);
         bar.add(menuEdit);
 
 
@@ -1248,6 +1276,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             for (int i = 0; i < channelPanels.size(); i++) {
                 ChannelPanel cp = channelPanels.get(i);
                 tmp = "\n\nCHANNEL " + (i + 1) + " (" + channelPanels.get(i).getProteinName() + "):" + (cp.isUsed() ? " used" : " NOT USED");
+                if (cp.getProteinName().length() > 0) tmp += "\nNAME: " + cp.getProteinName();
                 if (cp.isUsed() && cp.isNuclei()) {
                     tmp += nucleiParam.getParametersAsString();
                     tmp += quantifPanel.getParametersAsString(true, i + 1);
@@ -1376,6 +1405,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         ArrayList<String> channelParameters = new ArrayList<>();
                         channelParameters.add(line);
                         line = read.readLine().trim();
+                        String channelName = "";
+                        if (line.startsWith("NAME:")) {
+                            String[] split = line.split(":");
+                            if (split.length > 1) channelName = split[1];
+                            line = read.readLine().trim();
+                        }
                         channelParameters.add(line);
                         while (line != null && !line.startsWith("CHANNEL ")) {
                             line = read.readLine();
@@ -1403,6 +1438,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             spotPanels.get(chanNb - 1).setParameters(channelParameters);
                         }
                         quantifPanel.setMeasures(chanNb, channelParameters);
+                        channelPanels.get(chanNb - 1).setProteinName(channelName);
                     }
 
                 }// end if channel

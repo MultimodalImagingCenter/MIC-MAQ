@@ -1,10 +1,12 @@
 package fr.curie.micmaq.detectors;
 
+//import ch.epfl.biop.wrappers.cellpose.ij2commands.Cellpose;
 import ch.epfl.biop.wrappers.cellpose.CellposeTaskSettings;
 import ch.epfl.biop.wrappers.cellpose.DefaultCellposeTask;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.Prefs;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
@@ -285,7 +287,8 @@ public class CellposeLauncher {
      */
     private void setSettings(DefaultCellposeTask cellposeTask, File cellposeTempDir) {
         CellposeTaskSettings settings = new CellposeTaskSettings();
-        settings.setFromPrefs(); /* get info on if to use GPU or CPU and other particularities*/
+        //settings.setFromPrefs(); /* get info on if to use GPU or CPU and other particularities*/
+        setSettingsFromPrefs(settings);
         System.out.println("cellpose model:" + model);
         switch (model) {
             case "nuclei":
@@ -312,11 +315,31 @@ public class CellposeLauncher {
         settings.setModel(model);
         settings.setDatasetDir(cellposeTempDir.toString());
         settings.setDiameter(minSizeNucleus);
-        settings.setCellProbTh(cellproba_threshold);
-        settings.setDiamThreshold(12.0); /*default value*/
+        String additionalFlags="";
+        additionalFlags+=" --cellprob_threshold, "+cellproba_threshold;
+        if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --useGPU";
+
+        settings.setAdditionalFlags(additionalFlags);
 
         cellposeTask.setSettings(settings);
     }
+    private void setSettingsFromPrefs(CellposeTaskSettings settings){
+        settings.setEnvType(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType","conda"));
+        settings.setEnvPath(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath",null));
+    }
+
+    static public String getDefaultEnvPath(){
+        if (IJ.isLinux()) {
+            return "/home/biop/conda/envs/cellpose";
+        } else if (IJ.isWindows()) {
+            return "C:/Users/username/.conda/envs/cellpose";
+        } else if (IJ.isMacOSX()) {
+            return "/Users/username/.conda/envs/cellpose";
+        }
+        return null;
+    }
+
+
 
     /**
      * Created temporary directory to give to cellpose
