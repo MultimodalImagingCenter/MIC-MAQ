@@ -280,7 +280,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             public void actionPerformed(ActionEvent e) {
                 GenericDialog gd = new GenericDialog("Cellpose environment");
                 gd.addStringField("conda_environment_type", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda"));
-                gd.addStringField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()));
+                gd.addStringField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()),80);
                 gd.addCheckbox("use_GPU", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", false));
                 gd.showDialog();
 
@@ -289,7 +289,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     String path = gd.getNextString();
                     boolean useGPU = gd.getNextBoolean();
                     Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", type);
-                    Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", path, 80);
+                    Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", path);
                     Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", useGPU);
 
                     IJ.log("changed Cellpose environment to :\ntype: " + Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda")
