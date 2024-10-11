@@ -48,7 +48,7 @@
             <properties>
               <font size="18" style="1"/>
               <foreground color="-1"/>
-              <text value="version 1.08f (2024.10.10)"/>
+              <text value="version 1.09 (2024.10.11)"/>
             </properties>
           </component>
           <component id="7000e" class="javax.swing.JLabel">
