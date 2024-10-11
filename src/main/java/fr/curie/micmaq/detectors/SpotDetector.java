@@ -549,16 +549,17 @@ public class SpotDetector {
             for (int spot = 0; spot < numberSpot; spot++) {
                 roiManagerFoci.select(imageToMeasure, spot);
                 analyzer.measure();
-                if(spotMeasuresTable!=null) {
-                    String[] headings=resultsTable.getHeadings();
-                    //for(String head:headings) IJ.log(head);
-                    for(int r=0;r<resultsTable.getCounter();r++){
-                        spotMeasuresTable.addValue("Name experiment",nameExperiment);
-                        spotMeasuresTable.addValue(type+" nr",regionID);
-                        for(int c=0;c<headings.length;c++)
-                            spotMeasuresTable.addValue(headings[c],resultsTable.getValue(headings[c],r));
-                        spotMeasuresTable.incrementCounter();
-                    }
+
+            }
+            if(spotMeasuresTable!=null) {
+                String[] headings=resultsTable.getHeadings();
+                //for(String head:headings) IJ.log(head);
+                for(int r=0;r<resultsTable.getCounter();r++){
+                    spotMeasuresTable.addValue("Name experiment",nameExperiment);
+                    spotMeasuresTable.addValue(type+" nr",regionID);
+                    for(int c=0;c<headings.length;c++)
+                        spotMeasuresTable.addValue(headings[c],resultsTable.getValue(headings[c],r));
+                    spotMeasuresTable.incrementCounter();
                 }
             }
             detector.setSummarizedResults(resultsTable, resultsTableToAdd, type  + spotName);
