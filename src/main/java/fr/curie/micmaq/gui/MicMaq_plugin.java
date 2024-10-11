@@ -280,8 +280,9 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             public void actionPerformed(ActionEvent e) {
                 GenericDialog gd = new GenericDialog("Cellpose environment");
                 gd.addStringField("conda_environment_type", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda"));
-                gd.addStringField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()),80);
+                gd.addDirectoryField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()), 80);
                 gd.addCheckbox("use_GPU", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", false));
+
                 gd.showDialog();
 
                 if (!gd.wasCanceled()) {
@@ -957,11 +958,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 for (int s = 0; s < spotPanels.size(); s++) {
                     if (spotPanels.get(s) != null) {
                         if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                            spotsInNuclei[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
                         if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                            spotsInCells[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
                         if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                            spotsInCyto[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
                     }
                 }
             }
@@ -980,11 +981,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             for (int s = 0; s < spotPanels.size(); s++) {
                 if (spotPanels.get(s) != null) {
                     if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInNuclei[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                        spotsInNuclei[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
                     if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCells[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                        spotsInCells[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
                     if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCyto[s].save(workingDirectory + "/results/" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                        spotsInCyto[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
 
                     if (!spotPanels.get(s).getMeasure().isSpotThreshold()) {
                         spotsInNuclei = null;
