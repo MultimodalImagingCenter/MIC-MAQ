@@ -317,7 +317,7 @@ public class CellposeLauncher {
         settings.setDiameter(minSizeNucleus);
         String additionalFlags="";
         additionalFlags+=" --cellprob_threshold, "+cellproba_threshold;
-        if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --useGPU";
+        if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --use_gpu";
 
         settings.setAdditionalFlags(additionalFlags);
 
