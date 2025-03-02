@@ -14,6 +14,9 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Author : Camille RABIER
  * Date : 07/06/2022
@@ -37,6 +40,7 @@ public class CytoDetector {
     private final boolean showBinaryImage;
 
     private int[] associationCell2Nuclei;
+    private int[] associationCell2NucleiTrue;
     private final Roi[] cellRois;
     private Roi[] trueCellRois;
     private Roi[] cytoplasmRois;
@@ -168,10 +172,18 @@ public class CytoDetector {
 
     /**
      *
-     * @return table of association between cell and nuclei
+     * @return table of association between cell and nuclei with Cell IDs of detected cells
      */
     public int[] getAssociationCell2Nuclei() {
         return associationCell2Nuclei;
+    }
+
+    /**
+     *
+     * @return table of association between cell and nuclei with cell IDs of validated cells
+     */
+    public int[] getAssociationCell2NucleiTrue() {
+        return associationCell2NucleiTrue;
     }
 
     /**
@@ -200,6 +212,9 @@ public class CytoDetector {
         ArrayList<Integer> associatedNucleiToKeep = new ArrayList<>();
         ArrayList<Integer> numberNucleiToKeep = new ArrayList<>();
 
+        //int counttmp1=0;
+        //int counttmp2=0;
+        //int counttmp3=0;
 //        Iterate on each cell roi
         for (int cellID = 0; cellID < cellRois.length; cellID++) {
             Roi cellROI = cellRois[cellID];
@@ -220,6 +235,7 @@ public class CytoDetector {
 //                            If multiple nuclei in cell, consider it is a cell in division. The nuclei are thus combined to be considered as only one
 //                            To combine them : first we convert them to shape ROI, then use the function "or" and "tryToSimplify" of ShapeROI
                         numberOfNucleiPerCell[cellID]++;
+                        //counttmp1++;
 //                        Associate nuclei in same cell
                         if (associatedNucleiRois[cellID]!=null){
                             Roi roi1 = associatedNucleiRois[cellID];
@@ -234,6 +250,7 @@ public class CytoDetector {
 //                        Fill association table
                         if (associationCell2Nuclei[nucleusID] == -1) {
                             associationCell2Nuclei[nucleusID] = cellID+1;
+                            //counttmp2++;
                         } else {
                             //IJ.error("The nucleus :"+nucleusID+" is associated to multiple cells.");
                             IJ.log("##################################");
@@ -249,14 +266,29 @@ public class CytoDetector {
 
 
             if (numberOfNucleiPerCell[cellID]>0){
+                //counttmp3++;
                 cellRoisToKeep.add(cellID);
                 associatedNucleiToKeep.add(cellID);
                 numberNucleiToKeep.add(numberOfNucleiPerCell[cellID]);
             }
         }
-        System.out.println("associate nuclei to cells: before "+cellRois.length+" cells after "+cellRoisToKeep.size());
+        //System.out.println("validated: "+counttmp1);
+        //System.out.println("nuclei completed "+counttmp2);
+        //System.out.println("cells with at least one nucleus "+counttmp3);
+        int counttmp=0;
+        for(int tmp:associationCell2Nuclei) if(tmp>=0) counttmp++;
+        int counttmp4=0;
+        for(int tmp=0; tmp<numberOfNucleiPerCell.length; tmp++)  {
+            counttmp4+=numberOfNucleiPerCell[tmp];
+            if(numberOfNucleiPerCell[tmp]>1) System.out.println("cell "+tmp+" has "+numberOfNucleiPerCell[tmp]+" nuclei");
+        }
+        System.out.println("total number of nuclei in cells: "+counttmp4);
+        System.out.println("associate nuclei to cells: before "+cellRois.length+" cells after "+cellRoisToKeep.size()+"("+counttmp+")");
 //        If not all cells are kept, the ids in cellRois and associatedNucleiRois need to be changed
         if (cellRoisToKeep.size()!=cellRois.length){
+            int[] conversionCellID=new int[cellRois.length+1];
+            Arrays.fill(conversionCellID,-1);
+            //Map<Integer,Integer> conversionCellID=new HashMap<Integer,Integer>();
             trueCellRois = new Roi[cellRoisToKeep.size()];
             trueAssociatedRoi = new Roi[cellRoisToKeep.size()];
             trueNbNucleiPerCell = new int[cellRoisToKeep.size()];
@@ -264,8 +296,40 @@ public class CytoDetector {
                 trueCellRois[trueCellID] = cellRois[cellRoisToKeep.get(trueCellID)];
                 trueAssociatedRoi[trueCellID] = associatedNucleiRois[associatedNucleiToKeep.get(trueCellID)];
                 trueNbNucleiPerCell[trueCellID]=numberNucleiToKeep.get(trueCellID);
+                conversionCellID[cellRoisToKeep.get(trueCellID)]=trueCellID;
+                //conversionCellID.put(associatedNucleiToKeep.get(trueCellID),trueCellID);
             }
-            System.out.println(trueCellRois.length+" "+trueAssociatedRoi.length+" "+trueNbNucleiPerCell);
+            //System.out.println(trueCellRois.length+" "+trueAssociatedRoi.length+" "+trueNbNucleiPerCell);
+            //convert the associated cell number to nuclei to new ids
+            associationCell2NucleiTrue=new int[associationCell2Nuclei.length];
+            //int tmpcountfilter=0;
+            //int tmpcountfilterTrue=0;
+            //int tmpcountConverion=0;
+            //for(int tmp:associationCell2Nuclei) if(tmp>0) tmpcountfilter++;
+            //for(int tmp:associationCell2NucleiTrue) if(tmp>0) tmpcountfilterTrue++;
+            //for(int tmp:conversionCellID) if(tmp>0) tmpcountConverion++;
+            //System.out.println("before changing indexes : "+tmpcountfilter);
+            //System.out.println("before changing indexes (true): "+tmpcountfilterTrue);
+            //System.out.println("before changing indexes (conversion): "+tmpcountConverion);
+            //tmpcountfilter=0;
+            for(int nID=0;nID<associationCell2Nuclei.length;nID++){
+                //System.out.println("nuclei "+nID+" associated to "+associationCell2Nuclei[nID]);
+                if(associationCell2Nuclei[nID]>=0){
+                    //tmpcountfilter++;
+                    associationCell2NucleiTrue[nID]=conversionCellID[associationCell2Nuclei[nID]-1]+1;
+                    //System.out.println(" -> "+associationCell2NucleiTrue[nID]+"("+conversionCellID[associationCell2Nuclei[nID]]+")");
+                    //associationCell2NucleiTrue[nID]=conversionCellID.get(nID);
+                }else{
+                    associationCell2NucleiTrue[nID]=associationCell2Nuclei[nID];
+                }
+            }
+            //System.out.println("final size of rois "+trueCellRois.length+"("+tmpcountfilter+")");
+            //tmpcountfilter=0;
+            //tmpcountfilterTrue=0;
+            //for(int tmp:associationCell2Nuclei) if(tmp>0) tmpcountfilter++;
+            //for(int tmp:associationCell2NucleiTrue) if(tmp>0) tmpcountfilterTrue++;
+            //System.out.println("after changing indexes : "+tmpcountfilter);
+            //System.out.println("after changing indexes (true): "+tmpcountfilterTrue);
         }else {
             trueCellRois = cellRois;
             trueAssociatedRoi = associatedNucleiRois;
