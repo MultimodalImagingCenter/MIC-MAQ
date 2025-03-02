@@ -16,7 +16,6 @@ import ij.process.ImageProcessor;
 
 import java.awt.image.IndexColorModel;
 
-import static ij.IJ.d2s;
 
 /**
  * Created by : Camille RABIER
@@ -417,14 +416,14 @@ public class Detector {
                     customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", Double.NaN);
                     customMeasures.addValue(preNameColumn + " " + measure + " (" + measureCalibration.getUnit() + ")", Double.NaN);
                 } else {
-                    customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", d2s(rawMeasures.getValue(measure, nucleus)));
-                    customMeasures.addValue(preNameColumn + " " + measure + " (" + measureCalibration.getUnit() + ")", d2s(rawMeasures.getValue("Area", nucleus) * measureCalibration.getPixelArea()));
+                    customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", (rawMeasures.getValue(measure, nucleus)));
+                    customMeasures.addValue(preNameColumn + " " + measure + " (" + measureCalibration.getUnit() + ")", (rawMeasures.getValue("Area", nucleus) * measureCalibration.getPixelArea()));
                 }
             } else if (!measure.equals("IntDen")) {
                 if (nucleus == -1) {
                     customMeasures.addValue(preNameColumn + " " + measure, Double.NaN);
                 } else {
-                    customMeasures.addValue(preNameColumn + " " + measure, d2s(rawMeasures.getValue(measure, nucleus)));
+                    customMeasures.addValue(preNameColumn + " " + measure, (rawMeasures.getValue(measure, nucleus)));
                 }
             }
         }
@@ -433,12 +432,12 @@ public class Detector {
     public void setNullResultsAndRename(ResultsTable rawMeasures, ResultsTable customMeasures, String preNameColumn) {
         for (String measure : rawMeasures.getHeadings()) {
             if (measure.equals("Area")) {
-                customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", d2s(0));
-                customMeasures.addValue(preNameColumn + " " + measure + " (" + measureCalibration.getUnit() + ")", d2s(0));
+                customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", (0));
+                customMeasures.addValue(preNameColumn + " " + measure + " (" + measureCalibration.getUnit() + ")", (0));
             } else if (measure.equals("IntDen")) {
                 continue;
             } else {
-                customMeasures.addValue(preNameColumn + " " + measure, d2s(0));
+                customMeasures.addValue(preNameColumn + " " + measure, (0));
             }
         }
     }
@@ -459,23 +458,23 @@ public class Detector {
             switch (measure) {
                 case "Area":
                     double sumArea = sum(rawMeasures.getColumn(measure));
-                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (pixel)", d2s(sumArea));
-                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (" + measureCalibration.getUnit() + ")", d2s(sumArea * measureCalibration.getPixelArea()));
+                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (pixel)", (sumArea));
+                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (" + measureCalibration.getUnit() + ")", (sumArea * measureCalibration.getPixelArea()));
                     break;
                 case "IntDen":
                     continue;
                 case "Mean":
                     break;
                 case "RawIntDen":
-                    customMeasures.addValue(prenameColumn + " threshold " + measure, d2s(sum(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " threshold " + measure, (sum(rawMeasures.getColumn(measure))));
                     break;
                 default:
-                    customMeasures.addValue(prenameColumn + " threshold " + measure, d2s(mean(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " threshold " + measure, (mean(rawMeasures.getColumn(measure))));
                     break;
             }
         }
         /*Arithmetic mean*/
-        customMeasures.addValue(prenameColumn + " threshold Mean", d2s(sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area"))));
+        customMeasures.addValue(prenameColumn + " threshold Mean", (sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area"))));
     }
 
     /**
