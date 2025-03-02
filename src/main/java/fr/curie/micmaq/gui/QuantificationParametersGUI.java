@@ -45,6 +45,8 @@ public class QuantificationParametersGUI {
     private JCheckBox feretSDiametersCheckBox;
     private JComboBox comboBoxPreProc;
     private JComboBox comboBoxMeasure;
+    private JCheckBox summaryTableCheckBox;
+    private JCheckBox countOnlyPositiveCellsCheckBox;
 
     protected FieldOfViewProvider provider;
     protected MeasureValue measuresQuantif;
@@ -153,6 +155,7 @@ public class QuantificationParametersGUI {
                 if (useMacroCodeCheckBox.isSelected()) measure.setPreprocessMacro(macroTextArea.getText());
             }
         }
+        measure.setSummary(summaryTableCheckBox.isSelected());
         return measure;
     }
 
@@ -169,6 +172,7 @@ public class QuantificationParametersGUI {
                 if (useMacroCodeCheckBox.isSelected()) measure.setPreprocessMacro(macroTextArea.getText());
             }
         }
+        measure.setSummary(summaryTableCheckBox.isSelected());
         return measure;
 
     }
@@ -191,6 +195,7 @@ public class QuantificationParametersGUI {
 
         isZStackCheckBox.setSelected(false);
         useMacroCodeCheckBox.setSelected(false);
+        summaryTableCheckBox.setSelected(false);
     }
 
     public void setMeasures(int channel, ArrayList<String> params) {
@@ -392,6 +397,8 @@ public class QuantificationParametersGUI {
         shapeDescriptorCheckBox.setSelected((measurements & Measurements.SHAPE_DESCRIPTORS) != 0);
         feretSDiametersCheckBox.setSelected((measurements & Measurements.FERET) != 0);
 
+        summaryTableCheckBox.setSelected(Prefs.get("MICMAQ.summary", false));
+
     }
 
     public JPanel getRootPanel() {
@@ -417,6 +424,7 @@ public class QuantificationParametersGUI {
 //        Macro
         Prefs.set("MICMAQ.useMacro" + type, useMacroCodeCheckBox.isSelected());
         Prefs.set("MICMAQ.macro" + type, macroTextArea.getText());
+        Prefs.set("MICMAQ.summary", summaryTableCheckBox.isSelected());
 //      the checkbox is automaticaly saved in update measures
 
     }
@@ -464,6 +472,14 @@ public class QuantificationParametersGUI {
         return result;
     }
 
+    public boolean getSummary() {
+        return summaryTableCheckBox.isSelected();
+    }
+
+    public boolean getCountOnlyPositiveCells() {
+        return countOnlyPositiveCellsCheckBox.isSelected();
+    }
+
     public void updateComboCheckbox() {
         preprocComboCheck.updateTexts(provider);
         measureComboCheck.updateTexts(provider);
@@ -492,7 +508,7 @@ public class QuantificationParametersGUI {
     private void $$$setupUI$$$() {
         createUIComponents();
         rootPanel = new JPanel();
-        rootPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        rootPanel.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(3, 1, new Insets(0, 0, 0, 0), -1, -1));
         final JPanel panel1 = new JPanel();
         panel1.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(5, 1, new Insets(0, 0, 0, 0), -1, -1));
         rootPanel.add(panel1, new com.intellij.uiDesigner.core.GridConstraints(1, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
@@ -629,6 +645,19 @@ public class QuantificationParametersGUI {
         label3.setText("apply quantification preprocessing on");
         panel9.add(label3, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         panel9.add(comboBoxPreProc, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel10 = new JPanel();
+        panel10.setLayout(new com.intellij.uiDesigner.core.GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        rootPanel.add(panel10, new com.intellij.uiDesigner.core.GridConstraints(2, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel10.setBorder(BorderFactory.createTitledBorder(null, "summary", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        summaryTableCheckBox = new JCheckBox();
+        summaryTableCheckBox.setText("create summary table");
+        panel10.add(summaryTableCheckBox, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final com.intellij.uiDesigner.core.Spacer spacer5 = new com.intellij.uiDesigner.core.Spacer();
+        panel10.add(spacer5, new com.intellij.uiDesigner.core.GridConstraints(0, 2, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_HORIZONTAL, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        countOnlyPositiveCellsCheckBox = new JCheckBox();
+        countOnlyPositiveCellsCheckBox.setEnabled(false);
+        countOnlyPositiveCellsCheckBox.setText("count only positive cells to average spots");
+        panel10.add(countOnlyPositiveCellsCheckBox, new com.intellij.uiDesigner.core.GridConstraints(0, 1, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

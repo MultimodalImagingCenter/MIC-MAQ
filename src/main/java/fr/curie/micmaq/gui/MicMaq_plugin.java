@@ -71,6 +71,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
     ResultsTable cellResults;
     ResultsTable nucleusResults;
+    ResultsTable summary;
 
     ResultsTable[] spotsInNuclei;
     ResultsTable[] spotsInCells;
@@ -227,6 +228,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         });
 
 
+        PreviewSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                provider.setPreviewImage(((SpinnerNumberModel) PreviewSpinner.getModel()).getNumber().intValue());
+            }
+        });
     }
 
     private void addMenus() {
@@ -995,6 +1002,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
         }
+        if (summary != null) {
+            //summary.deleteRow(summary.size() - 1);
+            summary.show("summary");
+            summary.save(workingDirectory + "/results/summary.xls");
+
+        }
 
         Instant dateEnd = Instant.now();
         long duration = Duration.between(dateBegin, dateEnd).toMillis();
@@ -1016,6 +1029,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
+                params.getMeasurements().setSummary(tmp.isSummary());
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationNuclei(i + 1, params);
                 if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
@@ -1033,6 +1047,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 SegmentationParameters params = cellParam.getParameters();
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
+                params.getMeasurements().setSummary(tmp.isSummary());
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationCell(i + 1, params);
@@ -1079,6 +1094,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     }
                 }
                 measureValue.setMeasure(quantifPanel.getMeasuresQuantif(i + 1).getMeasure());
+                measureValue.setSummary(quantifPanel.getMeasuresQuantif(i + 1).isSummary());
                 measureValue.setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 measureValue.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setQuantification(i + 1, measureValue);
@@ -1092,6 +1108,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (cellResults == null) cellResults = new ResultsTable();
         if (nucleus && cell && nucleusResults == null) nucleusResults = new ResultsTable();
         Experiment exp = settings.createExperiment(workingDirectory, imgs, cellResults, nucleusResults, preview);
+        if (quantifPanel.getSummary()) {
+            summary = new ResultsTable();
+            boolean onlyPositive4Spots = quantifPanel.getCountOnlyPositiveCells();
+            exp.setSummaryTable(summary, onlyPositive4Spots);
+        }
         if (spotPanels != null) {
             IJ.log("there are spots");
             for (int s = 0; s < spotPanels.size(); s++) {

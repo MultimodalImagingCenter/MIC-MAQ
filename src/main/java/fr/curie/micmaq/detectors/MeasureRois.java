@@ -1,6 +1,7 @@
 package fr.curie.micmaq.detectors;
 
 import fr.curie.micmaq.helpers.MeasureCalibration;
+import fr.curie.micmaq.helpers.SummarizeResults;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PolygonRoi;
@@ -15,9 +16,10 @@ import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 
 import java.awt.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 
-import static ij.IJ.d2s;
 
 public class MeasureRois {
     public static String NUCLEI="Nuclei";
@@ -55,10 +57,12 @@ public class MeasureRois {
         if(cells!=null && nuclei!=null){
             Roi[] allNuclei = nuclei.getRoiArray();
             int[] association2Cell = cyto.getAssociationCell2Nuclei();
+            int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
             for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
                 finalResultsNuclei.addValue("Name experiment", experimentName);
-                finalResultsNuclei.addValue("Nucleus nr.", "" + (nucleusID + 1));
-                finalResultsNuclei.addValue("Cell associated",""+association2Cell[nucleusID]);
+                finalResultsNuclei.addValue("Nucleus ID", "" + (nucleusID + 1));
+                finalResultsNuclei.addValue("Cell ID associated (detection)",""+association2Cell[nucleusID]);
+                finalResultsNuclei.addValue("Cell ID associated (validated)",""+association2CellTrue[nucleusID]);
                 measure(nucleusID, finalResultsNuclei,allNuclei[nucleusID],NUCLEI,calibration);
                 finalResultsNuclei.incrementCounter();
             }
@@ -68,7 +72,7 @@ public class MeasureRois {
         int numberOfObject = cells!=null ? cells.getRoiArray().length : nuclei.getRoiArray().length;
         for (int cellID = 0; cellID < numberOfObject; cellID++) {
                 finalResultsCellSpot.addValue("Name experiment", experimentName);
-                finalResultsCellSpot.addValue("Cell nr.", "" + (cellID + 1));
+                finalResultsCellSpot.addValue("Cell ID", "" + (cellID + 1));
                 if(cyto!=null) finalResultsCellSpot.addValue("Number of nuclei in Cell", cyto.getNumberOfNuclei(cellID));
                 if (cells!=null){
                     Roi[] roiscell= cells.getRoiArray();
@@ -147,17 +151,33 @@ public class MeasureRois {
         setResultsAndRename(rawMeasures, resultsTableFinal, type + spot.getNameChannel(), calib);*/
     }
 
+    public void summary(ResultsTable summaryTable, ResultsTable Table, String experimentName){
+        System.out.println("summary "+experimentName);
+        SummarizeResults.summarize(summaryTable,Table,0);
+    }
+
+    public void summary(ResultsTable summaryTable, ResultsTable table1, ResultsTable table2, String experimentName,boolean onlyPositive4spots){
+        System.out.println("summary "+experimentName);
+        SummarizeResults.summarize(summaryTable,table1, 0, table2,0,onlyPositive4spots);
+    }
+
     public void setResultsAndRename(ResultsTable rawMeasures, ResultsTable customMeasures,  String preNameColumn, MeasureCalibration calib) {
         for (String measure : rawMeasures.getHeadings()) {
             if (measure.equals("Area")) {
-                customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", d2s(rawMeasures.getValue(measure, 0)));
-                customMeasures.addValue(preNameColumn + " " + measure + " (" + calib.getUnit() + ")", d2s(rawMeasures.getValue("Area", 0) * calib.getPixelArea()));
+                customMeasures.addValue(preNameColumn + " " + measure + " (pixel)", rawMeasures.getValue(measure, 0));
+                customMeasures.addValue(preNameColumn + " " + measure + " (" + calib.getUnit() + ")", rawMeasures.getValue("Area", 0) * calib.getPixelArea());
 
             } else if (!measure.equals("IntDen")) {
-                customMeasures.addValue(preNameColumn + " " + measure, d2s(rawMeasures.getValue(measure, 0)));
+                customMeasures.addValue(preNameColumn + " " + measure, rawMeasures.getValue(measure, 0));
             }
         }
     }
+
+    private double digit(double value, int digits){
+        BigDecimal bigDecimal = BigDecimal.valueOf(value);
+        return bigDecimal.setScale(digits, RoundingMode.HALF_UP).doubleValue();
+    }
+
 
 
     public ArrayList<ResultsTable> getSpotsInNucleiTable() {

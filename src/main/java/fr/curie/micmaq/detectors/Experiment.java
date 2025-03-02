@@ -23,6 +23,8 @@ public class Experiment {
     private  String experimentName;
     private  ResultsTable finalResultsNuclei;
     private  ResultsTable finalResultsCellSpot;
+    private ResultsTable summary;
+    private boolean onlyPositive4Spots=false;
 
     private ArrayList<ResultsTable> spotsInNucleiTable;
     private ArrayList<ResultsTable> spotsInCellsTable;
@@ -124,6 +126,10 @@ public class Experiment {
         if(spotsInCytoplasmsTable!=null) IJ.log("spots in nuclei size:"+spotsInCytoplasmsTable.size());
     }
 
+    public void setSummaryTable(ResultsTable summary,boolean onlyPositive4Spots) {
+        this.summary = summary;
+        this.onlyPositive4Spots=onlyPositive4Spots;
+    }
 
     /**
      *
@@ -206,6 +212,13 @@ public class Experiment {
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
         measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
+
+        /*@TODO */
+        if(summary!=null) {
+            if(finalResultsNuclei!=null && finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsNuclei, finalResultsCellSpot,experimentName, onlyPositive4Spots);
+            else if(finalResultsNuclei!=null) measureRois.summary(summary,finalResultsNuclei,experimentName);
+            else if(finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsCellSpot,experimentName);
+        }
 /*
         if (cell!=null && nuclei!=null && !interrupt){ //Get result table for all nuclei in addition to cell ResultTable
             Roi[] allNuclei = nuclei.getRoiArray();

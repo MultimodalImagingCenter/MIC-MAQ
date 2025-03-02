@@ -44,3 +44,4 @@ target/classes/plugins.config
 README.md.backup
 README.md.backup
 MIC-MAQ.iml
+target/maven-archiver/pom.properties

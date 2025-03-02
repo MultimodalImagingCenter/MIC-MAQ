@@ -14,6 +14,8 @@ public class MeasureValue {
     public int measure;
     public String name;
 
+    protected boolean summary=false;
+
     protected boolean spotThreshold=false;
     protected String thresholdMethod;
     protected double minSizeSpot;
@@ -58,6 +60,14 @@ public class MeasureValue {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isSummary() {
+        return summary;
+    }
+
+    public void setSummary(boolean summary) {
+        this.summary = summary;
     }
 
     public boolean isSpotThreshold() {
