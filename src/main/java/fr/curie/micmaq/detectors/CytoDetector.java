@@ -183,7 +183,8 @@ public class CytoDetector {
      * @return table of association between cell and nuclei with cell IDs of validated cells
      */
     public int[] getAssociationCell2NucleiTrue() {
-        return associationCell2NucleiTrue;
+        if(associationCell2NucleiTrue!=null) return associationCell2NucleiTrue;
+        return associationCell2Nuclei;
     }
 
     /**
