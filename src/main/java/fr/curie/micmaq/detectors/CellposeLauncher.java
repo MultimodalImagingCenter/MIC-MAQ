@@ -425,6 +425,7 @@ public class CellposeLauncher {
                         cellposeProc.fill(roi);
                         Rectangle r = roi.getBounds();
                         roi.setLocation(xoffset + r.x, yoffset + r.y);
+                        roi.setPosition(0,0,0);
                         cellposeRoiManager.addRoi(roi);
                     }
                 }
