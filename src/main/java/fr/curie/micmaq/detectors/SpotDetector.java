@@ -542,7 +542,7 @@ public class SpotDetector {
             }
         }
 //        Measurement
-        resultsTableToAdd.addValue(type + spotName + " threshold nr. spot", numberSpot);
+        resultsTableToAdd.addValue(type + spotName + " threshold nr. spots", numberSpot);
         if (numberSpot > 0) {
             ResultsTable resultsTable = new ResultsTable();
             Analyzer analyzer = new Analyzer(imageToMeasure, spotMeasurements, resultsTable);

@@ -62,10 +62,7 @@ public class MeasureRois {
                 finalResultsNuclei.addValue("Name experiment", experimentName);
                 finalResultsNuclei.addValue("Nucleus ID", "" + (nucleusID + 1));
                 finalResultsNuclei.addValue("Cell ID associated (detection)",""+association2Cell[nucleusID]);
-                if(association2CellTrue!=null)finalResultsNuclei.addValue("Cell ID associated (validated)",""+association2CellTrue[nucleusID]);
-                else{
-                    finalResultsNuclei.addValue("Cell ID associated (validated)","NaN");
-                }
+                finalResultsNuclei.addValue("Cell ID associated (validated)",""+association2CellTrue[nucleusID]);
                 measure(nucleusID, finalResultsNuclei,allNuclei[nucleusID],NUCLEI,calibration);
                 finalResultsNuclei.incrementCounter();
             }

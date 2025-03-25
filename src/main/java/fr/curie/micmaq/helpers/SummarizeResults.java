@@ -108,22 +108,40 @@ public class SummarizeResults implements PlugIn {
 
         public static void summarize(ResultsTable summaryTable, ResultsTable nucleiResultTable, int experimentNameColumn1, ResultsTable cellResultsTable, int experimentNameColumn2,boolean onlyPositiveSpot) {
             // Create a map to store the summary
+            IJ.log("summary only positives spot:"+onlyPositiveSpot);
             Map<String, double[]> summaryMap1 = new HashMap<>();
             Map<String, double[]> summaryMap2 = new HashMap<>();
             int columnCount1 = nucleiResultTable.getLastColumn() + 1;
             int columnCount2 = cellResultsTable.getLastColumn() + 1;
+            boolean maxima=false;
+            boolean thresh=false;
 
             // Iterate over the rows in the first ResultsTable
             for (int i = 0; i < nucleiResultTable.getCounter(); i++) {
                 String experimentName = nucleiResultTable.getStringValue(experimentNameColumn1, i);
-                double[] values = new double[columnCount1];
+                double[] values = new double[columnCount1+2];
 
                 // Retrieve values for each column in the row
                 for (int j = 0; j < columnCount1; j++) {
                     if(nucleiResultTable.getColumnHeading(j).equals("Nucleus ID")){
                         values[j]=1;
+                    }else if(nucleiResultTable.getColumnHeading(j).endsWith("maxima nr. spots")){
+                        double val=nucleiResultTable.getValue(j, i);
+                        if(val>0) values[columnCount1]++;
+                        values[j] = val;
+                        maxima=true;
+                    }else if(nucleiResultTable.getColumnHeading(j).endsWith("threshold nr. spots")){
+                        double val=nucleiResultTable.getValue(j, i);
+                        if(val>0) values[columnCount1+1]++;
+                        values[j] = val;
+                        thresh=true;
                     }else {
-                        values[j] = nucleiResultTable.getValue(j, i);
+                        double val=nucleiResultTable.getValue(j, i);
+                        if(Double.isNaN(val)) {
+                            values[j] = 0;
+                        }else{
+                            values[j] = val;
+                        }
                     }
 
                 }
@@ -141,16 +159,28 @@ public class SummarizeResults implements PlugIn {
             // Iterate over the rows in the second ResultsTable
             for (int i = 0; i < cellResultsTable.getCounter(); i++) {
                 String experimentName = cellResultsTable.getStringValue(experimentNameColumn2, i);
-                double[] values = new double[columnCount2];
+                double[] values = new double[columnCount2+2];
 
                 // Retrieve values for each column in the row
                 for (int j = 0; j < columnCount2; j++) {
                     if(cellResultsTable.getColumnHeading(j).equals("Cell ID")){
                         values[j]=1;
+                    }else if(cellResultsTable.getColumnHeading(j).startsWith("Cell")&& cellResultsTable.getColumnHeading(j).endsWith("maxima nr. spots")){
+                        double val=cellResultsTable.getValue(j, i);
+                        if(val>0) values[columnCount2]++;
+                        values[j] = val;
+                    }else if(cellResultsTable.getColumnHeading(j).startsWith("Cell")&&cellResultsTable.getColumnHeading(j).endsWith("threshold nr. spots")){
+                        double val=cellResultsTable.getValue(j, i);
+                        if(val>0) values[columnCount2+1]++;
+                        values[j] = val;
                     }else {
-                        values[j] = cellResultsTable.getValue(j, i);
+                        double val=cellResultsTable.getValue(j, i);
+                        if(Double.isNaN(val)) {
+                            values[j] = 0;
+                        }else{
+                            values[j] = val;
+                        }
                     }
-
                 }
 
                 // Summarize the values
@@ -170,30 +200,65 @@ public class SummarizeResults implements PlugIn {
             for (Map.Entry<String, double[]> entry : summaryMap1.entrySet()) {
                 summaryTable.incrementCounter();
                 summaryTable.addValue(nucleiResultTable.getColumnHeading(experimentNameColumn1), entry.getKey());
+                System.out.println(entry.getKey());
+                System.out.println("positive Nuclei count maxima: "+entry.getValue()[columnCount1]);
+                System.out.println("positive Nuclei count threshold: "+entry.getValue()[columnCount1+1]);
                 double[] entry2=summaryMap2.get(entry.getKey());
-                for (int i = 0; i < entry.getValue().length; i++) {
-                    int index=nucleiResultTable.getColumnIndex("Cell ID");
-                    if(index<0) index= nucleiResultTable.getColumnIndex("Nucleus ID");
+                for (int i = 0; i < entry.getValue().length-2; i++) {
+                    int index=nucleiResultTable.getColumnIndex("Nucleus ID");
+                    if(index<0) index= nucleiResultTable.getColumnIndex("Cell ID");
                     double nbCells=entry.getValue()[index];
                     if(i!=experimentNameColumn1) {
-                        if(nucleiResultTable.getColumnHeading(i).equals("Cell ID")||nucleiResultTable.getColumnHeading(i).equals("Nucleus ID")) {
-                            summaryTable.addValue(nucleiResultTable.getColumnHeading(i), nbCells);
+                        if(nucleiResultTable.getColumnHeading(i).equals("Nucleus ID")) {
+                            summaryTable.addValue("Nuclei nr.", nbCells);
+                            if(onlyPositiveSpot&&maxima) summaryTable.addValue("Nuclei positive maxima spots nr.", entry.getValue()[columnCount1]);
+                            if(onlyPositiveSpot&&thresh) summaryTable.addValue("Nuclei positive threshold spots nr.", entry.getValue()[columnCount1+1]);
                         }else{
-                            summaryTable.addValue(nucleiResultTable.getColumnHeading(i), entry.getValue()[i]/nbCells);
+                            if(nucleiResultTable.getColumnHeading(i).contains("Cell ID")){
+
+                            }else {
+                                double nbCellstmp = nbCells;
+
+                                summaryTable.addValue(nucleiResultTable.getColumnHeading(i), entry.getValue()[i] / nbCellstmp);
+                                if (nucleiResultTable.getColumnHeading(i).contains("threshold") && entry.getValue()[columnCount1+1] > 0) {
+                                    nbCellstmp = entry.getValue()[columnCount1+1];
+                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i) +"(only positive)", entry.getValue()[i] / nbCellstmp);
+                                } else if (nucleiResultTable.getColumnHeading(i).contains("max")&& !nucleiResultTable.getColumnHeading(i).contains("prominence")  && entry.getValue()[columnCount1] > 0) {
+                                    nbCellstmp = entry.getValue()[columnCount1];
+                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i)+"(only positive)", entry.getValue()[i] / nbCellstmp);
+                                }
+                            }
                         }
                     }
                 }
-                for (int i = 0; i < entry2.length; i++) {
+
+
+                System.out.println(entry.getKey());
+                System.out.println("positive Cell count maxima: "+entry2[columnCount2]);
+                System.out.println("positive Cell count threshold: "+entry2[columnCount2+1]);
+                for (int i = 0; i < entry2.length-2; i++) {
                     int index=cellResultsTable.getColumnIndex("Cell ID");
                     if(index<0) index= cellResultsTable.getColumnIndex("Nucleus ID");
                     double nbCells=entry2[index];
                     if(i!=experimentNameColumn2) {
-                        if(cellResultsTable.getColumnHeading(i).equals("Cell ID")){
+                        if(cellResultsTable.getColumnHeading(i).equals("Cell ID")) {
                             summaryTable.addValue("Cell nr.", nbCells);
-                        }else if(cellResultsTable.getColumnHeading(i).equals("Nucleus ID")) {
-                            summaryTable.addValue("Nuclei nr.", nbCells);
+                            if(onlyPositiveSpot&&maxima) summaryTable.addValue("Cell positive maxima spots nr.", entry2[columnCount2]);
+                            if(onlyPositiveSpot&&thresh) summaryTable.addValue("Cell positive threshold spots nr.", entry2[columnCount2+1]);
                         }else{
-                            summaryTable.addValue(cellResultsTable.getColumnHeading(i), entry2[i]/nbCells);
+                            if(cellResultsTable.getColumnHeading(i).contains("Nuclei ID")){
+
+                            }else {
+                                double nbCellstmp = nbCells;
+                                summaryTable.addValue(cellResultsTable.getColumnHeading(i), entry2[i] / nbCellstmp);
+                                if (cellResultsTable.getColumnHeading(i).contains("threshold") && entry2[columnCount2+1] > 0) {
+                                    nbCellstmp = entry2[columnCount2+1];
+                                    summaryTable.addValue(cellResultsTable.getColumnHeading(i) +"(only positive)", entry2[i] / nbCellstmp);
+                                } else if (cellResultsTable.getColumnHeading(i).contains("max")&& !cellResultsTable.getColumnHeading(i).contains("prominence")  && entry2[columnCount2] > 0) {
+                                    nbCellstmp = entry2[columnCount2];
+                                    summaryTable.addValue(cellResultsTable.getColumnHeading(i)+"(only positive)", entry2[i] / nbCellstmp);
+                                }
+                            }
                         }
                     }
                 }

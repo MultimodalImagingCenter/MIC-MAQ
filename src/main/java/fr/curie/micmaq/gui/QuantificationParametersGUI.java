@@ -139,6 +139,12 @@ public class QuantificationParametersGUI {
         feretSDiametersCheckBox.addActionListener(e -> {
             updateMeasures();
         });
+        summaryTableCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                countOnlyPositiveCellsCheckBox.setEnabled(summaryTableCheckBox.isSelected());
+            }
+        });
     }
 
     public MeasureValue getMeasuresQuantif(int channel) {
@@ -398,6 +404,8 @@ public class QuantificationParametersGUI {
         feretSDiametersCheckBox.setSelected((measurements & Measurements.FERET) != 0);
 
         summaryTableCheckBox.setSelected(Prefs.get("MICMAQ.summary", false));
+        countOnlyPositiveCellsCheckBox.setEnabled(summaryTableCheckBox.isSelected());
+        countOnlyPositiveCellsCheckBox.setSelected(Prefs.get("MICMAQ.summaryPositive", false));
 
     }
 
@@ -425,6 +433,7 @@ public class QuantificationParametersGUI {
         Prefs.set("MICMAQ.useMacro" + type, useMacroCodeCheckBox.isSelected());
         Prefs.set("MICMAQ.macro" + type, macroTextArea.getText());
         Prefs.set("MICMAQ.summary", summaryTableCheckBox.isSelected());
+        Prefs.set("MICMAQ.summaryPositive", countOnlyPositiveCellsCheckBox.isSelected());
 //      the checkbox is automaticaly saved in update measures
 
     }
