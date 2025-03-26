@@ -282,24 +282,29 @@ public class SpotDetector {
     public void livePreviewFindMaxima(double prominence,boolean show) {
         if (livePreview == null) livePreview = preprocessing();
         livePreview.show();
+        Roi old=livePreview.getRoi();
         livePreview.resetRoi();
+        livePreview.setHideOverlay(true);
         if(show) {
             PointRoi tmp = findMaxima(livePreview, prominence, "full");
             IJ.log("live preview (" + prominence + ") nb points:" + tmp.getPolygon().npoints);
-            livePreview.setRoi(tmp, true);
+            //livePreview.setRoi(tmp, true);
+            livePreview.setOverlay(new Overlay(tmp));
         }
+        livePreview.setRoi(old);
         livePreview.updateAndRepaintWindow();
     }
 
     /**
      * live preview for Threhold approach. needs to set parameters by using setSpotByThreshold method
-     * @see SpotDetector#setSpotByThreshold(String, double, double, double, boolean, boolean)
+     *
      */
     public void livePreviewThreshold() {
         if (livePreview == null) {
             livePreview = preprocessing();
             autocontrast(livePreview);
         }
+        Roi old=livePreview.getRoi();
         livePreview.resetRoi();
         livePreview.show();
 
@@ -315,8 +320,10 @@ public class SpotDetector {
         livePreview.setOverlay(null);
         livePreview.getCanvas().setShowAllList(null);
 
-        livePreview.setRoi(roi);
+        //livePreview.setRoi(roi);
+        livePreview.setOverlay(new Overlay(roi));
         //test.setOverlay(roi,Color.RED,1,Color.RED);
+        livePreview.setRoi(old);
         livePreview.updateAndRepaintWindow();
 
     }
