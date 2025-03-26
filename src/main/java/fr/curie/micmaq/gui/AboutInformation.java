@@ -60,7 +60,7 @@ public class AboutInformation {
         Font label2Font = this.$$$getFont$$$(null, Font.BOLD, 18, label2.getFont());
         if (label2Font != null) label2.setFont(label2Font);
         label2.setForeground(new Color(-1));
-        label2.setText("version 1.11 (2025.03.25)");
+        label2.setText("version 1.11b (2025.03.26)");
         panel2.add(label2, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 2, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label3 = new JLabel();
         Font label3Font = this.$$$getFont$$$(null, Font.BOLD, 16, label3.getFont());
