@@ -73,10 +73,12 @@ public class FieldOfView {
         this.serieNb=serieNb;
         try {
 
-            fieldname= importProcess.getIdName()+"#"+importProcess.getSeriesLabel(serieNb);
+            fieldname= importProcess.getIdName()+"#"+importProcess.getOMEMetadata().getImageName(serieNb);
             fieldname=fieldname.replaceAll("[\\\\/:*?\"<>|]","_");
             IJ.log("idname: "+importProcess.getIdName()+"\nserieslabel: "+importProcess.getSeriesLabel(serieNb));
             IJ.log("fieldname: "+fieldname);
+            IJ.log("getImageName(serieNb)"+importProcess.getOMEMetadata().getImageName(serieNb));
+            //IJ.log("getImageName(channelNb)"+importProcess.getOMEMetadata().getImageName(channelNb-1));
             channelsImagePlus.add(importProcess);
             originalChannelNb.add(channelNb);
             //IJ.log("add channel : "+path+"   serieNb:"+serieNb+"    channel:"+channelNb);
@@ -138,6 +140,7 @@ public class FieldOfView {
             ImagePlus chanImg=reduce(tmp,originalChannelNb.get(channel-1));
             String title=chanImg.getTitle();
             title=title.replaceAll("[\\\\/:,;*?\"<>|]","_");
+            //IJ.log(process.getOMEMetadata().getImageName(originalChannelNb.get(channel-1)));
             chanImg.setTitle(title);
             return chanImg;
         } catch (Exception e) {
