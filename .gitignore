@@ -47,3 +47,4 @@ MIC-MAQ.iml
 target/maven-archiver/pom.properties
 target/maven-archiver/pom.properties
 target/maven-archiver/pom.properties
+src/main/scripts/Macro_SummaryWithThreshold.ijm
