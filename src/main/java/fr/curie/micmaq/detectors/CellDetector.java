@@ -10,6 +10,8 @@ import ij.measure.ResultsTable;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
+import ij.process.ByteProcessor;
+import ij.process.ColorProcessor;
 
 import java.awt.*;
 import java.io.File;
@@ -277,6 +279,14 @@ public class CellDetector {
                 if (nucleiProcessedImage != null) {
 //                    Create composite
                     ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{preprocessed, nucleiDetector.getPreprocessing()}, true);
+                    if(cellposeModel!=null && cellposeModel.equals("cpsam")) {
+                        ColorProcessor tmp=new ColorProcessor(preprocessed.getWidth(),preprocessed.getHeight());
+                        ByteProcessor r=preprocessed.getProcessor().convertToByteProcessor(true);
+                        ByteProcessor g=nucleiDetector.getPreprocessing().getProcessor().convertToByteProcessor(true);
+                        ByteProcessor b=new ByteProcessor(preprocessed.getWidth(),preprocessed.getHeight());
+                        tmp.setRGB((byte[]) r.getPixels(),(byte[]) g.getPixels(),(byte[]) b.getPixels());
+                        composite = new ImagePlus("rgb",tmp);
+                    }
                     if (showCompositeImage) {
                         composite.setTitle(nameExperiment + "_composite");
                         composite.show();

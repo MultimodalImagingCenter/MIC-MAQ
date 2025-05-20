@@ -917,6 +917,7 @@ public class SegmentationParametersGUI {
         cellposePanel.add(label4, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST, com.intellij.uiDesigner.core.GridConstraints.FILL_NONE, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposeModelCB = new JComboBox();
         final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
+        defaultComboBoxModel2.addElement("cpsam");
         defaultComboBoxModel2.addElement("nuclei");
         defaultComboBoxModel2.addElement("cyto");
         defaultComboBoxModel2.addElement("cyto2");
