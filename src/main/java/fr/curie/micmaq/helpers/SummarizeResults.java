@@ -2,39 +2,79 @@ package fr.curie.micmaq.helpers;
 
 import ij.IJ;
 import ij.ImageJ;
+import ij.Prefs;
+import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class SummarizeResults implements PlugIn {
+    private static final String PREF_IMAGE_NAME = "summarize.imageName";
     @Override
     public void run(String arg) {
+
+        // Fetch open table titles
+        String[] openTables = WindowManager.getNonImageTitles(); // Gets all open non-image windows
+        ArrayList<String> resultsTableTitles = new ArrayList<>();
+
+        // Collect results table names
+        for (String title : openTables) {
+            if (ResultsTable.getResultsTable(title) != null) {
+                resultsTableTitles.add(title);
+            }
+        }
+
+        // If no tables are open, exit
+        if (resultsTableTitles.isEmpty()) {
+            IJ.error("No Results Tables are currently open!");
+            return;
+        }
+
+        // Convert list of table titles to array
+        String[] tableTitles = resultsTableTitles.toArray(new String[0]);
+
+
+        String titleOri =  tableTitles[0];
+        if(tableTitles.length>1){
+            // Show a dialog to select the table and configure inputs
+            GenericDialog gd = new GenericDialog("choose result window");
+            gd.addChoice("Select Table", tableTitles, titleOri);
+            gd.showDialog();
+            if (gd.wasCanceled()) return;
+
+            // Get the user's selected table
+            titleOri = gd.getNextChoice();
+
+        }
+
+        ResultsTable rt = ResultsTable.getResultsTable(titleOri);
+        // Get column headings
+        String[] headings = rt.getHeadings();
+        if (headings.length == 0) {
+            IJ.error("No headings found in the Results Table.");
+            return;
+        }
+
+        // Load preferences (or use defaults if not set)
+        String defaultImageName = Prefs.get(PREF_IMAGE_NAME, headings[0]); // Default to 1rst column
+
+        // Show the dialog to configure inputs
         GenericDialog gd = new GenericDialog("Summarize Results");
-        //String[] windowTitles = ResultsTable.getAllResultsWindowTitles();
-        //gd.addChoice("Select Results Window", windowTitles, windowTitles[0]);
-        gd.addStringField("Results Window Title", "");
-        gd.addStringField("Experiment Name Column", "Name experiment");
+        gd.addChoice("Name of images", headings, defaultImageName);
         gd.showDialog();
+        if (gd.wasCanceled()) return;
 
-        if (gd.wasCanceled()) {
-            return;
-        }
+        // Extract user input from dialog
+        String experimentNameColumnName = gd.getNextChoice();
 
-        // Get the selected Results window and column name
-        //String selectedWindow = gd.getNextChoice();
-        String selectedWindow = gd.getNextString();
-        String experimentNameColumnName = gd.getNextString();
+        // Save preferences for future use
+        Prefs.set(PREF_IMAGE_NAME, experimentNameColumnName);
 
-        // Get the selected ResultsTable
-        ResultsTable rt = ResultsTable.getResultsTable(selectedWindow);
 
-        if (rt == null) {
-            IJ.error("No Results Table", "There is no active Results Table.");
-            return;
-        }
 
         // Check if the "experiment name" column exists
         int experimentNameColumn = rt.getColumnIndex(experimentNameColumnName);
@@ -45,7 +85,7 @@ public class SummarizeResults implements PlugIn {
 
         ResultsTable summaryTable = new ResultsTable();
         summarize(summaryTable,rt,experimentNameColumn);
-        summaryTable.show("Summary Results");
+        summaryTable.show("Summary of "+titleOri);
     }
 
     public static void summarize(ResultsTable summaryTable, ResultsTable rt, int experimentNameColumn){
@@ -54,6 +94,7 @@ public class SummarizeResults implements PlugIn {
         Map<String, double[]> summaryMap = new HashMap<>();
         Map<String, double[]> summaryPoints = new HashMap<>();
         int columnCount = rt.getLastColumn() + 1;
+        ArrayList<String> names=new ArrayList<>();
 
         // Iterate over the rows in the ResultsTable
         for (int i = 0; i < rt.getCounter(); i++) {
@@ -78,25 +119,28 @@ public class SummarizeResults implements PlugIn {
                 }
             } else {
                 summaryMap.put(experimentName, values.clone());
+                if(!experimentName.equals("0")) names.add(experimentName);
             }
         }
 
         // Display the summary
         summaryMap.remove("0");
-        for (Map.Entry<String, double[]> entry : summaryMap.entrySet()) {
+        //for (Map.Entry<String, double[]> entry : summaryMap.entrySet()) {
+        for(String name : names){
+            double[] entry=summaryMap.get(name);
             summaryTable.incrementCounter();
-            summaryTable.addValue(rt.getColumnHeading(experimentNameColumn), entry.getKey());
-            for (int i = 0; i < entry.getValue().length; i++) {
+            summaryTable.addValue(rt.getColumnHeading(experimentNameColumn), name);
+            for (int i = 0; i < entry.length; i++) {
                 int index=rt.getColumnIndex("Cell ID");
                 if(index<0) index= rt.getColumnIndex("Nucleus ID");
-                double nbCells=entry.getValue()[index];
+                double nbCells=entry[index];
                 if(i!=experimentNameColumn) {
                     if(rt.getColumnHeading(i).equals("Cell ID")){
                         summaryTable.addValue("Cell nr.", nbCells);
                     }else if(rt.getColumnHeading(i).equals("Nucleus ID")) {
                         summaryTable.addValue("Nuclei nr.", nbCells);
                     }else{
-                        summaryTable.addValue(rt.getColumnHeading(i), entry.getValue()[i]/nbCells);
+                        summaryTable.addValue(rt.getColumnHeading(i), entry[i]/nbCells);
                     }
                 }
             }
@@ -115,6 +159,7 @@ public class SummarizeResults implements PlugIn {
             int columnCount2 = cellResultsTable.getLastColumn() + 1;
             boolean maxima=false;
             boolean thresh=false;
+            ArrayList<String> names=new ArrayList<>();
 
             // Iterate over the rows in the first ResultsTable
             for (int i = 0; i < nucleiResultTable.getCounter(); i++) {
@@ -154,6 +199,7 @@ public class SummarizeResults implements PlugIn {
                     }
                 } else {
                     summaryMap1.put(experimentName, values.clone());
+                    if(! experimentName.equals("0")) names.add(experimentName);
                 }
             }
             // Iterate over the rows in the second ResultsTable
@@ -197,35 +243,37 @@ public class SummarizeResults implements PlugIn {
             // Display the summary
             summaryMap1.remove("0");
             summaryMap2.remove("0");
-            for (Map.Entry<String, double[]> entry : summaryMap1.entrySet()) {
+            //for (Map.Entry<String, double[]> entry : summaryMap1.entrySet()) {
+            for(String name : names){
+                double[] entry=summaryMap1.get(name);
                 summaryTable.incrementCounter();
-                summaryTable.addValue(nucleiResultTable.getColumnHeading(experimentNameColumn1), entry.getKey());
-                System.out.println(entry.getKey());
-                System.out.println("positive Nuclei count maxima: "+entry.getValue()[columnCount1]);
-                System.out.println("positive Nuclei count threshold: "+entry.getValue()[columnCount1+1]);
-                double[] entry2=summaryMap2.get(entry.getKey());
-                for (int i = 0; i < entry.getValue().length-2; i++) {
+                summaryTable.addValue(nucleiResultTable.getColumnHeading(experimentNameColumn1), name);
+                System.out.println(name);
+                System.out.println("positive Nuclei count maxima: "+entry[columnCount1]);
+                System.out.println("positive Nuclei count threshold: "+entry[columnCount1+1]);
+                double[] entry2=summaryMap2.get(name);
+                for (int i = 0; i < entry.length-2; i++) {
                     int index=nucleiResultTable.getColumnIndex("Nucleus ID");
                     if(index<0) index= nucleiResultTable.getColumnIndex("Cell ID");
-                    double nbCells=entry.getValue()[index];
+                    double nbCells=entry[index];
                     if(i!=experimentNameColumn1) {
                         if(nucleiResultTable.getColumnHeading(i).equals("Nucleus ID")) {
                             summaryTable.addValue("Nuclei nr.", nbCells);
-                            if(onlyPositiveSpot&&maxima) summaryTable.addValue("Nuclei positive maxima spots nr.", entry.getValue()[columnCount1]);
-                            if(onlyPositiveSpot&&thresh) summaryTable.addValue("Nuclei positive threshold spots nr.", entry.getValue()[columnCount1+1]);
+                            if(onlyPositiveSpot&&maxima) summaryTable.addValue("Nuclei positive maxima spots nr.", entry[columnCount1]);
+                            if(onlyPositiveSpot&&thresh) summaryTable.addValue("Nuclei positive threshold spots nr.", entry[columnCount1+1]);
                         }else{
                             if(nucleiResultTable.getColumnHeading(i).contains("Cell ID")){
 
                             }else {
                                 double nbCellstmp = nbCells;
 
-                                summaryTable.addValue(nucleiResultTable.getColumnHeading(i), entry.getValue()[i] / nbCellstmp);
-                                if (nucleiResultTable.getColumnHeading(i).contains("threshold") && entry.getValue()[columnCount1+1] > 0) {
-                                    nbCellstmp = entry.getValue()[columnCount1+1];
-                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i) +"(only positive)", entry.getValue()[i] / nbCellstmp);
-                                } else if (nucleiResultTable.getColumnHeading(i).contains("max")&& !nucleiResultTable.getColumnHeading(i).contains("prominence")  && entry.getValue()[columnCount1] > 0) {
-                                    nbCellstmp = entry.getValue()[columnCount1];
-                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i)+"(only positive)", entry.getValue()[i] / nbCellstmp);
+                                summaryTable.addValue(nucleiResultTable.getColumnHeading(i), entry[i] / nbCellstmp);
+                                if (nucleiResultTable.getColumnHeading(i).contains("threshold") && entry[columnCount1+1] > 0) {
+                                    nbCellstmp = entry[columnCount1+1];
+                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i) +"(only positive)", entry[i] / nbCellstmp);
+                                } else if (nucleiResultTable.getColumnHeading(i).contains("max")&& !nucleiResultTable.getColumnHeading(i).contains("prominence")  && entry[columnCount1] > 0) {
+                                    nbCellstmp = entry[columnCount1];
+                                    summaryTable.addValue(nucleiResultTable.getColumnHeading(i)+"(only positive)", entry[i] / nbCellstmp);
                                 }
                             }
                         }
@@ -233,7 +281,7 @@ public class SummarizeResults implements PlugIn {
                 }
 
 
-                System.out.println(entry.getKey());
+                System.out.println(name);
                 System.out.println("positive Cell count maxima: "+entry2[columnCount2]);
                 System.out.println("positive Cell count threshold: "+entry2[columnCount2+1]);
                 for (int i = 0; i < entry2.length-2; i++) {
