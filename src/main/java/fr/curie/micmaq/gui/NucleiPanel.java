@@ -383,7 +383,7 @@ public class NucleiPanel extends JPanel {
         macroAreaScroll = new JScrollPane();
         macroPanel.add(macroAreaScroll, new com.intellij.uiDesigner.core.GridConstraints(0, 0, 1, 1, com.intellij.uiDesigner.core.GridConstraints.ANCHOR_CENTER, com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_CAN_SHRINK | com.intellij.uiDesigner.core.GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         macroArea = new JTextArea();
-        macroArea.setPreferredSize(new Dimension(1, 34));
+        macroArea.setPreferredSize(new Dimension(1, 36));
         macroArea.setRows(2);
         macroAreaScroll.setViewportView(macroArea);
         final com.intellij.uiDesigner.core.Spacer spacer1 = new com.intellij.uiDesigner.core.Spacer();

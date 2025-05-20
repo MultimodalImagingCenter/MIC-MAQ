@@ -170,7 +170,7 @@
                   <component id="d9abe" class="javax.swing.JTextArea" binding="macroArea">
                     <constraints/>
                     <properties>
-                      <preferredSize width="1" height="34"/>
+                      <preferredSize width="1" height="36"/>
                       <rows value="2"/>
                     </properties>
                   </component>
