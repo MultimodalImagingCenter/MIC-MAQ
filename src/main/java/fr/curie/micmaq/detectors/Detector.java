@@ -148,6 +148,7 @@ public class Detector {
                 temp.changes = false;
                 temp.close();
             }
+            if(temp.isVisible()) temp.hide();
             return imageToReturn;
         }
         return image.duplicate();
