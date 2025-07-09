@@ -1026,6 +1026,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             if (cp.isUsed() && cp.isNuclei()) {
                 System.out.println("nuclei channel: " + (i + 1));
                 SegmentationParameters params = nucleiParam.getParameters();
+                if(params.getMethod()==SegmentationParameters.CELLPOSE){
+                    //@TODO
+                    if(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath",null)==null){
+                        IJ.error("Cellpose configuration error", "Error: The path to access Cellpose is not defined. Please specify a valid path in the menu Options.");
+                        return null;
+                    }
+                }
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
@@ -1045,6 +1052,13 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             } else if (cp.isUsed() && cp.isCell()) {
                 System.out.println("cell channel: " + (i + 1));
                 SegmentationParameters params = cellParam.getParameters();
+                if(params.getMethod()==SegmentationParameters.CELLPOSE){
+                    //@TODO
+                    if(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath",null)==null){
+                        IJ.error("Cellpose configuration error", "Error: The path to access Cellpose is not defined. Please specify a valid path in the menu Options.");
+                        return null;
+                    }
+                }
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                 params.getMeasurements().setMeasure(tmp.getMeasure());
                 params.getMeasurements().setSummary(tmp.isSummary());
