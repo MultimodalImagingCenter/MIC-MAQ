@@ -58,12 +58,34 @@ public class MeasureRois {
             Roi[] allNuclei = nuclei.getRoiArray();
             int[] association2Cell = cyto.getAssociationCell2Nuclei();
             int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
+            ResultsTable tmp =new ResultsTable();
+            int padding=(""+allNuclei.length).length();
             for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
-                finalResultsNuclei.addValue("Name experiment", experimentName);
-                finalResultsNuclei.addValue("Nucleus ID", "" + (nucleusID + 1));
-                finalResultsNuclei.addValue("Cell ID associated (detection)",""+association2Cell[nucleusID]);
-                finalResultsNuclei.addValue("Cell ID associated (validated)",""+association2CellTrue[nucleusID]);
-                measure(nucleusID, finalResultsNuclei,allNuclei[nucleusID],NUCLEI,calibration);
+                tmp.addValue("Name experiment", experimentName);
+                tmp.addValue("Nucleus ID",  IJ.pad(nucleusID + 1,padding));
+                tmp.addValue("Cell ID associated (detection)",IJ.pad(association2Cell[nucleusID],padding));
+                tmp.addValue("Cell ID associated (validated)",IJ.pad(association2CellTrue[nucleusID],padding));
+                measure(nucleusID, tmp,allNuclei[nucleusID],NUCLEI,calibration);
+                if(nucleusID< allNuclei.length-1) tmp.incrementCounter();
+            }
+
+            tmp.sort("Cell ID associated (validated)");
+            String[] headings= tmp.getHeadings();
+            for (int ind=0;ind<tmp.getCounter();ind++){
+                for(int col=0;col<headings.length;col++) {
+                    String val=tmp.getStringValue(col,ind);
+                    try{
+                        try{
+                            int valI = Integer.parseInt(val);
+                            finalResultsNuclei.addValue(headings[col],valI);
+                        }catch (NumberFormatException nfeI) {
+                            double valD = Double.parseDouble(val);
+                            finalResultsNuclei.addValue(headings[col], valD);
+                        }
+                    }catch (Exception e){
+                        finalResultsNuclei.addValue(headings[col],val);
+                    }
+                }
                 finalResultsNuclei.incrementCounter();
             }
 
