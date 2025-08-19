@@ -314,9 +314,9 @@ public class CellposeLauncher {
         }
         settings.setModel(model);
         settings.setDatasetDir(cellposeTempDir.toString());
-        //settings.setDiameter(minSizeNucleus);
-        String additionalFlags=" --diameter, "+minSizeNucleus;
-        additionalFlags+=", --cellprob_threshold, "+cellproba_threshold;
+        settings.setDiameter(minSizeNucleus);
+        //String additionalFlags=" --diameter, "+minSizeNucleus;
+        String additionalFlags=", --cellprob_threshold, "+cellproba_threshold;
         if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --use_gpu";
 
         settings.setAdditionalFlags(additionalFlags);
