@@ -1049,7 +1049,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     }
                 }
                 nucleus = true;
-            } else if (cp.isUsed() && cp.isCell()) {
+            }
+            if (cp.isUsed() && cp.isCell()) {
                 System.out.println("cell channel: " + (i + 1));
                 SegmentationParameters params = cellParam.getParameters();
                 if (params.getMethod() == SegmentationParameters.CELLPOSE) {
@@ -1075,7 +1076,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     }
                 }
                 cell = true;
-            } else if (cp.isUsed()) {
+            }
+            if (cp.isUsed()) {
                 System.out.println("quantification channel: " + (i + 1));
                 IJ.log("quantification channel: " + (i + 1) + " is spot " + cp.isSpot());
                 //IJ.log("number of slices: " + imgs.getNSlices(i + 1));

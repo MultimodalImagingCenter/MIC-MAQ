@@ -29,7 +29,7 @@ public class ChannelPanel extends JPanel {
         quantificationRadioButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
+                //spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
                 int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
                 parent.firePropertyChange("channel", 1, 2 + offset);
             }
@@ -44,7 +44,7 @@ public class ChannelPanel extends JPanel {
         nucleiRadioButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
+                //spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
                 int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
                 parent.firePropertyChange("channel", 1, 2 + offset);
             }
@@ -52,7 +52,7 @@ public class ChannelPanel extends JPanel {
         entireCellRadioButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
+                //spotsMeasureCheckBox.setEnabled(quantificationRadioButton.isSelected());
                 int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
                 parent.firePropertyChange("channel", 1, 2 + offset);
             }
@@ -64,7 +64,8 @@ public class ChannelPanel extends JPanel {
                 nucleiRadioButton.setEnabled(channelCheckBox.isSelected());
                 entireCellRadioButton.setEnabled(channelCheckBox.isSelected());
                 quantificationRadioButton.setEnabled(channelCheckBox.isSelected());
-                spotsMeasureCheckBox.setEnabled(channelCheckBox.isSelected() && quantificationRadioButton.isSelected());
+                //spotsMeasureCheckBox.setEnabled(channelCheckBox.isSelected() && quantificationRadioButton.isSelected());
+                spotsMeasureCheckBox.setEnabled(channelCheckBox.isSelected());
 
                 int offset = ((e.getModifiers() & ActionEvent.CTRL_MASK) == ActionEvent.CTRL_MASK) ? 10 : 0;
                 parent.firePropertyChange("channel", 1, 2 + offset);
@@ -106,12 +107,13 @@ public class ChannelPanel extends JPanel {
     }
 
     public void setSpot(boolean val) {
-        if (val) quantificationRadioButton.setSelected(true);
+        //if (val) quantificationRadioButton.setSelected(true);
         spotsMeasureCheckBox.setSelected(val);
     }
 
     public boolean isSpot() {
-        return isQuantification() && spotsMeasureCheckBox.isSelected();
+        //return isQuantification() && spotsMeasureCheckBox.isSelected();
+        return spotsMeasureCheckBox.isSelected();
     }
 
     public String getProteinName() {
