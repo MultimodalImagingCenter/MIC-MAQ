@@ -40,6 +40,7 @@ public class ExperimentSettings {
     public void setSegmentationNuclei(int channel, SegmentationParameters params){
         this.nucleiSegmentationChannel=channel;
         this.nucleiSegmentationParams=params;
+        System.out.println("###### experimentSettings setSegmentationNuclei measures: "+params.getMeasurements().measure);
         //params.getMeasurements().setName("Nuclei");
         //quantificationChannels.set(channel-1,params.getMeasurements());
     }
@@ -111,7 +112,7 @@ public class ExperimentSettings {
         IJ.log("experiment settings get nuclei" + nucleiSegmentationParams.getSegmentationMacro());
         if(nucleiDetector!=null) return nucleiDetector;
         nucleiDetector=new NucleiDetector(imgs.getImagePlus(nucleiSegmentationChannel),imgs.getFieldname(), resultsDir, preview);
-
+        System.out.println("###### Experiment settings : nuclei measures "+nucleiSegmentationParams.getMeasurements().measure);
         nucleiDetector.setMeasurements(nucleiSegmentationParams.getMeasurements().measure);
         nucleiDetector.setNameChannel(nucleiSegmentationParams.getMeasurements().name);
         //IJ.log("nuclei detector : "+nucleiDetector.getNameChannel()+" should be "+nucleiSegmentationParams.getMeasurements().name);

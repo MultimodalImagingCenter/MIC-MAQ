@@ -80,6 +80,7 @@ public class SegmentationParameters {
         MeasureValue tmp=new MeasureValue(true);
         tmp.setMeasure(Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY); /*Default measurements*/
         param.setMeasurements(tmp);
+        System.out.println("###### SegmentationParameters : create Cellpose measurements:"+param.getMeasurements().getMeasure());
         return param;
     }
 

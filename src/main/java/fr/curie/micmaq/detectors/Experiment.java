@@ -209,11 +209,12 @@ public class Experiment {
                 IJ.log("only spots");
             }
         }
+        IJ.log("measurements launch");
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
         measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
 
-        /*@TODO */
+
         if(summary!=null) {
             if(finalResultsNuclei!=null && finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsNuclei, finalResultsCellSpot,experimentName, onlyPositive4Spots);
             else if(finalResultsNuclei!=null) measureRois.summary(summary,finalResultsNuclei,experimentName);

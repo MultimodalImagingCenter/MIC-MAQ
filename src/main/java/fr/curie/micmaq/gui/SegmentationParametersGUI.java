@@ -565,6 +565,7 @@ public class SegmentationParametersGUI {
         params.setSaveROIs(saveROIsCheckBox.isSelected());
         params.setSaveMasks(saveSegmentationMaskCheckBox.isSelected());
         params.setMeasurements(measures);
+        System.out.println("#### segmentationGUI : getParameters measure " + measures.getMeasure());
 
         if (this.type.equals(CELL_CYTO)) {
             params.setCytoplasmParameters((double) minOverlapSpinner.getValue(), (double) minCytoSizeSpinner.getValue());

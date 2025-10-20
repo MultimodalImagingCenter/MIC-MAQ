@@ -50,10 +50,11 @@ public class MeasureRois {
         this.spots = spots;
 
         rawMeasures = new ResultsTable();
+        //IJ.log("MeasureRois");
     }
 
     public void measureAll(ResultsTable finalResultsNuclei, ResultsTable finalResultsCellSpot, String experimentName, MeasureCalibration calibration){
-
+        //IJ.log("measureAll");
         if(cells!=null && nuclei!=null){
             Roi[] allNuclei = nuclei.getRoiArray();
             int[] association2Cell = cyto.getAssociationCell2Nuclei();
@@ -139,6 +140,7 @@ public class MeasureRois {
         ImagePlus tmp=cells.getImageToMeasure();
         tmp.setRoi(measureRoi);
         int measures=cells.getMeasurements();
+        System.out.println("############### measureCell "+measures+"\t "+(measures&Measurements.AREA)+" ##############");
         if(type.equals(NUCLEI)) measures= measures&intensityMeasures;
         //IJ.log("measure cell :"+type+" : "+measures+" ("+cells.getMeasurements()+")");
         rawMeasures.reset();
@@ -151,6 +153,7 @@ public class MeasureRois {
         ImagePlus tmp=nuclei.getImageToMeasure();
         tmp.setRoi(measureRoi);
         int measures=nuclei.getMeasurements();
+        System.out.println("######### measureNuclei "+measures+"\t "+(measures&Measurements.AREA)+" ############");
         if(type.equals(CELL)||type.equals(CYTO)) measures= measures&intensityMeasures;
         //IJ.log("measure nuclei :"+type+" : "+measures+" ("+cells.getMeasurements()+")");
         rawMeasures.reset();

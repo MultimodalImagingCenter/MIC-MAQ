@@ -1035,6 +1035,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
                 params.getMeasurements().setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
+                System.out.println("MIC-MAQ_plugin create experiment cpnuclei params:" + tmp.getMeasure());
                 params.getMeasurements().setMeasure(tmp.getMeasure());
                 params.getMeasurements().setSummary(tmp.isSummary());
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
@@ -1099,7 +1100,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             }
                         }
                     }
-                } else {
+                } else if (!cp.isNuclei() && !cp.isCell()) {
                     //TODO check that MAX projection is what should be done by default
                     if (imgs.getNSlices(i + 1) > 1) {
                         MeasureValue tmp = quantifPanel.getMeasuresQuantif(i + 1);

@@ -11,7 +11,7 @@
 
     <groupId>fr.curie.mic-maq</groupId>
     <artifactId>MIC-MAQ</artifactId>
-    <version>1.14-SNAPSHOT</version>
+    <version>1.14b-SNAPSHOT</version>
 
     <name>MIC-MAQ</name>
     <description>MIC-MAQ is an ImageJ plugin to segment nuclei/cells and provide measurements on many channels including foci detection</description>
@@ -100,7 +100,7 @@
         <license.licenseName>mit</license.licenseName>
         <license.copyrightOwners>Multimodal-Imaging-Center</license.copyrightOwners>
         <license.excludes>**/resources/**</license.excludes>
-        <scijava.app.directory>C:/applications/Fiji.app</scijava.app.directory>
+        <scijava.app.directory>C:/applications/Fiji</scijava.app.directory>
         <scijava.app.subdirectory>plugins</scijava.app.subdirectory>
         <!-- NB: Deploy releases to the SciJava Maven repository. -->
         <releaseProfiles>sign,deploy-to-scijava</releaseProfiles>

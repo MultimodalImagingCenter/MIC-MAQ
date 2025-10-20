@@ -70,8 +70,11 @@ public class QuantificationParametersGUI {
         measuresQuantif.setMeasure(measurements); /*Default measurements*/
 
         type = SEGMENTATION;
-        int measurements2 = (int) Prefs.get("MICMAQ.Measurements_" + type, (Measurements.MEAN + Measurements.INTEGRATED_DENSITY));
+        int measurements2 = (int) Prefs.get("MICMAQ.Measurements_" + type, (Measurements.MEAN + Measurements.INTEGRATED_DENSITY + Measurements.AREA));
         measuresSegmentation.setMeasure(measurements2); /*Default measurements*/
+
+        System.out.println("#### QuantificationparameterGUI creation : " + measuresQuantif.getMeasure());
+        System.out.println("#### QuantificationparameterGUI creation : " + measuresSegmentation.getMeasure());
 
         isZStackCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -179,6 +182,8 @@ public class QuantificationParametersGUI {
             }
         }
         measure.setSummary(summaryTableCheckBox.isSelected());
+        System.out.println("####### quantificationParameterGUI getmeasuresegmentation : " + measure.getMeasure());
+        System.out.println("####### quantificationParameterGUI getmeasuresegmentation measureSegmentation : " + measuresSegmentation.getMeasure());
         return measure;
 
     }
