@@ -66,6 +66,7 @@ public class NucleiDetector {
     private boolean expand4Cells=false;
     private int expandRadius = 10;
     private ArrayList<Roi[]> roisExpanded;
+    protected ImagePlus expandedIP;
 
     /**
      * Constructor with basic parameters, the other are initialized only if needed
@@ -491,29 +492,47 @@ public class NucleiDetector {
             if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures); /*set measurements and image to analyze*/
             nucleiRois = roiManagerNuclei.getRoisAsArray();
-            if(resultsDirectory!=null && expand4Cells && saveRois){
+            if(resultsDirectory!=null && expand4Cells ) {
                 getExpandedRois();
-                RoiManager tmpCell=new RoiManager(true);
-                tmpCell.reset();
-                Roi[] cells=roisExpanded.get(1);
-                for(Roi r:cells) tmpCell.addRoi(r);
-                RoiManager tmpCyto=new RoiManager(true);
-                tmpCyto.reset();
-                Roi[] cytos=roisExpanded.get(2);
-                for(Roi r:cytos) tmpCyto.addRoi(r);
+                if (saveRois) {
+                    RoiManager tmpCell = new RoiManager(true);
+                    tmpCell.reset();
+                    Roi[] cells = roisExpanded.get(1);
+                    for (Roi r : cells) tmpCell.addRoi(r);
+                    RoiManager tmpCyto = new RoiManager(true);
+                    tmpCyto.reset();
+                    Roi[] cytos = roisExpanded.get(2);
+                    for (Roi r : cytos) tmpCyto.addRoi(r);
 
-                String extension=(roiManagerNuclei.getCount()==1)?".roi":".zip";
-                File dir=new File(resultsDirectory + "/ROI/AllDetected/");
-                if(!dir.exists()) dir.mkdirs();
-                if (tmpCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCell"+extension)) {
-                    IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
-                } else {
-                    IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                    String extension = (roiManagerNuclei.getCount() == 1) ? ".roi" : ".zip";
+                    File dir = new File(resultsDirectory + "/ROI/AllDetected/");
+                    if (!dir.exists()) dir.mkdirs();
+                    if (tmpCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCell" + extension)) {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
+                    } else {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                    }
+                    if (tmpCyto.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCyto" + extension)) {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
+                    } else {
+                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                    }
                 }
-                if (tmpCyto.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCyto"+extension)) {
-                    IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
-                } else {
-                    IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
+                if( saveMask) {
+                    //IJ.log("expand 4 cells save masks");
+                    ImagePlus tmp= getExpandedMask();
+                    if (tmp!=null) {
+                        //IJ.log("mask is not empty");
+                        detector.renameImage(tmp,analysisType+"_expandedMask");
+                        detector.setLUT(tmp);
+                        File dir=new File(resultsDirectory + "/Images/AllDetected/");
+                        if(!dir.exists()) dir.mkdirs();
+                        if(IJ.saveAsTiff(tmp, resultsDirectory +"/Images/AllDetected/" + "Nuclei_ExpandedToCell_" +tmp.getTitle())){
+                            IJ.log("The expanded mask "+tmp.getTitle() + " was saved in "+ resultsDirectory+"/Images/AllDetected/");
+                        } else {
+                            IJ.log("The nuclei segmentation mask "+tmp.getTitle() + " could not be saved in "+ resultsDirectory+"/Images/AllDetected/");
+                        }
+                    }
                 }
             }
 
@@ -640,6 +659,17 @@ public class NucleiDetector {
         else setExpand4Cells(false);
         roisExpanded=null;
     }
+    //create expanded Mask
+    public ImageProcessor getExpandedMask(int radius){
+        ImagePlus expandedIP= Detector.labeledImage(image.getWidth(),image.getHeight(),nucleiRois);
+        ImageProcessor expanded= ExpandMask.expandsMask(expandedIP.getProcessor(),radius);
+        return expanded;
+    }
+
+    public ImagePlus getExpandedMask(){
+        if(! isExpand4Cells()) return null;
+        return expandedIP;
+    }
 
     /**
      * get the differents rois corresponding to nuclei, expanded nuclei (cell) and cytoplasm (xor or the previous 2)
@@ -655,10 +685,8 @@ public class NucleiDetector {
         roisExpanded.add(nucleiRois);
         if(!expand4Cells) return roisExpanded;
         // expand nuclei
-        ImagePlus mask= Detector.labeledImage(image.getWidth(),image.getHeight(),nucleiRois);
-        //mask.show();
-        ImageProcessor expanded= ExpandMask.expandsMask(mask.getProcessor(),expandRadius);
-        ImagePlus expandedIP= new ImagePlus("expanded",expanded);
+        ImageProcessor expanded=getExpandedMask(expandRadius);
+        expandedIP= new ImagePlus("expanded",expanded);
         //expandedIP.show();
         RoiManager.getRoiManager().reset();
         RoiManager cells = label2Roi(expandedIP,0,0,0, "Cell ");
