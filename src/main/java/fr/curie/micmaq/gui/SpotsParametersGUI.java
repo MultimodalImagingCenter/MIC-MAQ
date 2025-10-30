@@ -300,7 +300,7 @@ public class SpotsParametersGUI {
 //        Macro
         useMacroCodeCheckBox.setSelected(Prefs.get("MICMAQ.useMacroSpot_" + id, false));
         if (!useMacroCodeCheckBox.isSelected()) macroPanel.setVisible(false);
-        macroArea.append(Prefs.get("MICMAQ.macroSpot_" + id, " "));
+        macroArea.setText(Prefs.get("MICMAQ.macroSpot_" + id, " "));
 
 //        Rolling ball
         subtractBackgroundCheckBox.setSelected(Prefs.get("MICMAQ.rollingballCheckSpot_" + id, true));

@@ -404,7 +404,7 @@ public class SegmentationParametersGUI {
                     //System.out.println("stop macro");
                 }
                 if (m) {
-                    macro += params.get(i) + "\n";
+                    macro += params.get(i);
                     //System.out.println("add text to macro " + params.get(i));
                     //System.out.println("macro becomes :\n" + macro);
                     macroTextArea.setText(macro);
@@ -604,7 +604,7 @@ public class SegmentationParametersGUI {
 //        Macro
         useMacroCodeCheckBox.setSelected(Prefs.get("MICMAQ.useMacro" + type, false));
         if (!useMacroCodeCheckBox.isSelected()) macroTextPanel.setVisible(false);
-        macroTextArea.append(Prefs.get("MICMAQ.macro" + type, " "));
+        macroTextArea.setText(Prefs.get("MICMAQ.macro" + type, " "));
 
 //        Segmentation
         int approach = (int) Prefs.get("MICMAQ.approach" + type, 2);
