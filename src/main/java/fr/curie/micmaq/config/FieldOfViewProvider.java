@@ -170,6 +170,7 @@ public class FieldOfViewProvider {
 
     public void checkChannels() {
         IJ.log("check channels");
+        validIndex=0;
         differentNumberOfChannels = new ArrayList<>();
         for (FieldOfView fov : fields) {
             int channels = fov.getNbAvailableChannels();
@@ -251,14 +252,16 @@ public class FieldOfViewProvider {
                     for (int i = 0; i < nSeries; i++) {
                         IJ.log("\tadding field of view " + i);
                         FieldOfView fov = new FieldOfView();
-                        fov.addChannel(path, i, 1, patterns.get(0));
+                        fov.addAllChannels(path, i);
+                        //fov.addChannel(path, i, 1, patterns.get(0));
                         for (int c = 1; c < patterns.size(); c++) {
                             String name = file.getName();
                             IJ.log("\t\toriginal name " + name);
                             String f2 = name.replaceAll(patterns.get(0), patterns.get(c));
                             IJ.log("\t\tafter pattern replacement --> " + f2);
                             IJ.log("\t\tpath " + dir + File.separator + f2);
-                            fov.addChannel(dir + File.separator + f2, i, 1, patterns.get(c));
+                            //fov.addChannel(dir + File.separator + f2, i, 1, patterns.get(c));
+                            fov.addAllChannels(dir + File.separator + f2, i);
                         }
                         fov.setFieldname(file.getName().replaceAll(patterns.get(0), ""));
                         fields.add(fov);

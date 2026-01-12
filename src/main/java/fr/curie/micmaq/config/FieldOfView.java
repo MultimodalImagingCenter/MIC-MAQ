@@ -94,6 +94,7 @@ public class FieldOfView {
         IJ.log("add all channels for "+path+" : "+serieNb);
         String args = "location[local machine] windowless=true groupFiles=true id=[" + path + "]";
         ImporterOptions options = null;
+        int nbchannelOffset=channelsImagePlus.size();
         try {
             options = new ImporterOptions();
             options.parseArg(args);
@@ -114,7 +115,7 @@ public class FieldOfView {
                 addChannel(process,serieNb,c);
                 Instant end = Instant.now();
                 long duration= Duration.between(start, end).toMillis();
-                IJ.log("FoV adding channel "+c+" : "+duration+"ms");
+                IJ.log("FoV adding channel "+(nbchannelOffset+c)+" : "+duration+"ms");
 
             }
         } catch (Exception e) {
