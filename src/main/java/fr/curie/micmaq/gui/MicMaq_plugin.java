@@ -77,6 +77,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     ResultsTable[] spotsInCells;
     ResultsTable[] spotsInCyto;
     String workingDirectory;
+    String resultDirectory;
 
     boolean resized = false;
     int sizeflag = 0;
@@ -671,6 +672,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         } else {
             numberOfImageLabel.setText(provider.getNbFielOfView() + " images found");
         }
+        provider.setFirstValidIndex(0);
+        PreviewSpinner.setValue(0);
         correctNbChannels = 0;
         if (provider.getDifferentNumberOfChannels() > 1) {
             GenericDialog gd = new GenericDialog("information needed!");
@@ -907,6 +910,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         spotsInNuclei = null;
         spotsInCells = null;
         spotsInCyto = null;
+        if(resultDirectory==null) resultDirectory=workingDirectory+"/Results/";
         ((ImagesTree) imagesTree).validateSelections();
         Instant dateBegin = Instant.now();
         if (cellResults != null) cellResults = null;
@@ -956,20 +960,20 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 IJ.log("User removed this field of view from analysis\nnothing done!");
             }
             if (cellResults != null) {
-                cellResults.save(workingDirectory + "/results/Results.xls");
+                cellResults.save(resultDirectory + "Results.xls");
             }
             if (nucleusResults != null) {
-                nucleusResults.save(workingDirectory + "/results/Cells-Nuclei-Association.xls");
+                nucleusResults.save(resultDirectory + "Cells-Nuclei-Association.xls");
             }
             if (spotPanels != null) {
                 for (int s = 0; s < spotPanels.size(); s++) {
                     if (spotPanels.get(s) != null) {
                         if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInNuclei[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                            spotsInNuclei[s].save(resultDirectory  + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
                         if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInCells[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                            spotsInCells[s].save(resultDirectory  + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
                         if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                            spotsInCyto[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                            spotsInCyto[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
                     }
                 }
             }
@@ -977,22 +981,22 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (cellResults != null) {
             cellResults.deleteRow(cellResults.size() - 1);
             cellResults.show("Results");
-            cellResults.save(workingDirectory + "/results/Results.xls");
+            cellResults.save(resultDirectory + "Results.xls");
         }
         if (nucleusResults != null) {
             nucleusResults.deleteRow(nucleusResults.size() - 1);
             nucleusResults.show("Cells-Nuclei Association");
-            nucleusResults.save(workingDirectory + "/results/Cells-Nuclei-Association.xls");
+            nucleusResults.save(resultDirectory + "Cells-Nuclei-Association.xls");
         }
         if (spotPanels != null) {
             for (int s = 0; s < spotPanels.size(); s++) {
                 if (spotPanels.get(s) != null) {
                     if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInNuclei[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                        spotsInNuclei[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
                     if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCells[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                        spotsInCells[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
                     if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCyto[s].save(workingDirectory + "/results/" + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+                        spotsInCyto[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
 
                     if (!spotPanels.get(s).getMeasure().isSpotThreshold()) {
                         spotsInNuclei = null;
@@ -1005,7 +1009,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (summary != null) {
             //summary.deleteRow(summary.size() - 1);
             summary.show("summary");
-            summary.save(workingDirectory + "/results/summary.xls");
+            summary.save(resultDirectory + "summary.xls");
 
         }
 
@@ -1279,9 +1283,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (!new File(workingDirectory).exists()) {
             ImageToAnalyze.createResultsDirectory(workingDirectory);
         }
-        File resultdircheck = new File(workingDirectory + "/Results/");
+        if(resultDirectory==null) resultDirectory = workingDirectory + "/Results/";
+        File resultdircheck = new File(resultDirectory);
         if (!resultdircheck.exists()) resultdircheck.mkdirs();
-        String parameterFilename = workingDirectory + "/Results/Parameters.txt";
+        String parameterFilename = resultDirectory + "Parameters.txt";
         File parametersFile = new File(parameterFilename);
         try {
             if (parametersFile.createNewFile()) {
