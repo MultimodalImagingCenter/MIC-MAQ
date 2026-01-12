@@ -492,7 +492,7 @@ public class NucleiDetector {
             if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures); /*set measurements and image to analyze*/
             nucleiRois = roiManagerNuclei.getRoisAsArray();
-            if(resultsDirectory!=null && expand4Cells ) {
+            if(resultsDirectory!=null && expand4Cells && nucleiRois.length>0) {
                 getExpandedRois();
                 if (saveRois) {
                     RoiManager tmpCell = new RoiManager(true);
