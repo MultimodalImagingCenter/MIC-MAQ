@@ -39,7 +39,7 @@ more complete information to install MIC-MAQ is available in the [MIC-MAQ_Instal
 
 run >Plugin>MIC-MAQ>MIC-MAQ
 
-full explanation of the workflow and parameters is available in [MIC-MAQ_Manual.pdf](https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/documentations/MIC-MAQ_Manual_v1.2.pdf)
+full explanation of the workflow and parameters is available in [MIC-MAQ_Manual.pdf](https://github.com/MultimodalImagingCenter/MIC-MAQ/blob/main/documentations/MIC-MAQ_Manual_v1.4.pdf)
 
 Tutorials are Available on the [youtube channel of the Multimodal Imaging Center](https://www.youtube.com/channel/UCVhGRHCSjIdgD__1yYVIhoA)
 
