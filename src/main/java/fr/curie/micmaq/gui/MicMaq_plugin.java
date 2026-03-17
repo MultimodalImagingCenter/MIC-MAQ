@@ -910,7 +910,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         spotsInNuclei = null;
         spotsInCells = null;
         spotsInCyto = null;
-        if(resultDirectory==null) resultDirectory=workingDirectory+"/Results/";
+        resultDirectory=workingDirectory+"/Results/";
         ((ImagesTree) imagesTree).validateSelections();
         Instant dateBegin = Instant.now();
         if (cellResults != null) cellResults = null;
@@ -1283,7 +1283,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         if (!new File(workingDirectory).exists()) {
             ImageToAnalyze.createResultsDirectory(workingDirectory);
         }
-        if(resultDirectory==null) resultDirectory = workingDirectory + "/Results/";
+        if(resultDirectory==null || !resultDirectory.startsWith(workingDirectory)) resultDirectory = workingDirectory + "/Results/";
         File resultdircheck = new File(resultDirectory);
         if (!resultdircheck.exists()) resultdircheck.mkdirs();
         String parameterFilename = resultDirectory + "Parameters.txt";
