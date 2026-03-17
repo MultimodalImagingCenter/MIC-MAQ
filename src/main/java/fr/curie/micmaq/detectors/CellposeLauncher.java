@@ -18,6 +18,13 @@ import ij.process.Blitter;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
+import mcib3d.geom2.Objects3DIntPopulation;
+import mcib3d.image3d.ImageHandler;
+import mcib_plugins.Manager3D.ImportImage;
+import mcib_plugins.Manager3D.Manager3DMeasurements;
+import mcib_plugins.Manager3D.ResultsFrame;
+import mcib_plugins.Manager3D.RoiManager3D_3;
+import mcib_plugins.tools.RoiManager3D_2;
 
 import java.awt.*;
 import java.io.File;
@@ -49,6 +56,8 @@ public class CellposeLauncher {
 
     public static int tileSize = -1;
     public static int tileOverlap = -1;
+
+    Objects3DIntPopulation roi3D=null;
 //    CONSTRUCTOR
 
     /**
@@ -107,7 +116,7 @@ public class CellposeLauncher {
         cellposeMask = runCellpose();
         //cellposeRoiManager=label2Roi(cellposeMask);
         cellposeRoiManager = RoiManager.getRoiManager();
-        cellposeMask = Detector.labeledImage(cellposeMask.getWidth(), cellposeMask.getHeight(), cellposeRoiManager.getRoisAsArray());
+        cellposeMask = Detector.labeledImage(cellposeMask.getWidth(), cellposeMask.getHeight(),cellposeMask.getNSlices(), cellposeRoiManager.getRoisAsArray());
         cellposeMask.setTitle(imagePlus.getShortTitle() + "-cellpose");
     }
 
@@ -141,12 +150,16 @@ public class CellposeLauncher {
     public ImagePlus runCellposeImage(ImagePlus input) {
         DefaultCellposeTask cellposeTask = new DefaultCellposeTask();
         File cellposeTempDir = getCellposeTempDir();
-        setSettings(cellposeTask, cellposeTempDir);
+        setSettings(cellposeTask, cellposeTempDir, input);
         try {
 //              Save image in CellposeTempDir
             File t_imp_path = new File(cellposeTempDir, input.getShortTitle() + ".tif");
             FileSaver fs = new FileSaver(input);
-            fs.saveAsTiff(t_imp_path.getAbsolutePath());
+            if(input.getNSlices()>1){
+                fs.saveAsTiffStack(t_imp_path.getAbsolutePath());
+            }else {
+                fs.saveAsTiff(t_imp_path.getAbsolutePath());
+            }
 
 //              Prepare path for mask output
             File cellpose_imp_path = new File(cellposeTempDir, input.getShortTitle() + "_cp_masks.tif");
@@ -166,7 +179,15 @@ public class CellposeLauncher {
             cellpose_imp_path.delete();
             cellpose_outlines_path.delete();
             cellposeTempDir.delete();
-            label2Roi(cellposeMask);
+            if(input.getNSlices()>1){
+                IJ.log("convert to ROI_3D and measure");
+                label2Roi3D(cellposeMask);
+                IJ.log("should display measures");
+            }else {
+                label2Roi(cellposeMask);
+            }
+
+            IJ.log("RoiManager size: "+RoiManager.getInstance().getCount());
             return cellposeMask;
         } catch (Exception e) {
             e.printStackTrace();
@@ -285,7 +306,7 @@ public class CellposeLauncher {
      * @param cellposeTask:   launcher of cellpose
      * @param cellposeTempDir : temporary directory that contains cellpose temporary files
      */
-    private void setSettings(DefaultCellposeTask cellposeTask, File cellposeTempDir) {
+    private void setSettings(DefaultCellposeTask cellposeTask, File cellposeTempDir, ImagePlus imagePlus) {
         CellposeTaskSettings settings = new CellposeTaskSettings();
         //settings.setFromPrefs(); /* get info on if to use GPU or CPU and other particularities*/
         setSettingsFromPrefs(settings);
@@ -317,6 +338,7 @@ public class CellposeLauncher {
         settings.setDiameter(minSizeNucleus);
         //String additionalFlags=" --diameter, "+minSizeNucleus;
         String additionalFlags=", --cellprob_threshold, "+cellproba_threshold;
+        if(imagePlus.getNSlices()>1){ additionalFlags+= ", --do_3D";}
         if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --use_gpu";
 
         settings.setAdditionalFlags(additionalFlags);
@@ -383,60 +405,89 @@ public class CellposeLauncher {
      */
     public static RoiManager label2Roi(ImagePlus cellposeIP, int xoffset, int yoffset,int minSize) {
         if (cellposeIP == null) System.out.println("error cellposeIP is null!");
-        ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
-        Wand wand = new Wand(cellposeProc);
-
-//        Set RoiManager
+        //Set RoiManager
         RoiManager cellposeRoiManager = RoiManager.getRoiManager();
-        //cellposeRoiManager.reset();
+        IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
+
+        for(int slice=0;slice<cellposeIP.getNSlices();slice++){
+            ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
+            if(cellposeIP.getNSlices()>1){
+                cellposeProc = cellposeIP.getStack().getProcessor(slice+1).duplicate();
+            }
+
+            Wand wand = new Wand(cellposeProc);
+
+//
+            //cellposeRoiManager.reset();
 
 //        Create range list
-        int width = cellposeProc.getWidth();
-        int height = cellposeProc.getHeight();
+            int width = cellposeProc.getWidth();
+            int height = cellposeProc.getHeight();
 
-        int[] pixel_width = new int[width];
-        int[] pixel_height = new int[height];
+            int[] pixel_width = new int[width];
+            int[] pixel_height = new int[height];
 
-        IntStream.range(0, width - 1).forEach(val -> pixel_width[val] = val);
-        IntStream.range(0, height - 1).forEach(val -> pixel_height[val] = val);
+            IntStream.range(0, width - 1).forEach(val -> pixel_width[val] = val);
+            IntStream.range(0, height - 1).forEach(val -> pixel_height[val] = val);
 
-        /*
-         * Will iterate through pixels, when getPixel > 0 ,
-         * then use the magic wand to create a roi
-         * finally set value to 0 and add to the roiManager
-         */
+            /*
+             * Will iterate through pixels, when getPixel > 0 ,
+             * then use the magic wand to create a roi
+             * finally set value to 0 and add to the roiManager
+             */
 
-        // will "erase" found ROI by setting them to 0
-        cellposeProc.setColor(0);
-        IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi start: "+cellposeRoiManager.getCount());
-        for (int y_coord : pixel_height) {
-            for (int x_coord : pixel_width) {
-                if (cellposeProc.getPixel(x_coord, y_coord) > 0.0) {
-                    // use the magic wand at this coordinate
-                    wand.autoOutline(x_coord, y_coord);
+            // will "erase" found ROI by setting them to 0
+            cellposeProc.setColor(0);
+            IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi start: "+cellposeRoiManager.getCount());
+            for (int y_coord : pixel_height) {
+                for (int x_coord : pixel_width) {
+                    if (cellposeProc.getPixel(x_coord, y_coord) > 0.0) {
+                        // use the magic wand at this coordinate
+                        wand.autoOutline(x_coord, y_coord);
 
-                    // if there is a region , then it has npoints
+                        // if there is a region , then it has npoints
 //                    There can be problems with very little ROIs, so threshold of 20 points
-                    if (wand.npoints > minSize) {
-                        // get the Polygon, fill with 0 and add to the manager
-                        Roi roi = new ShapeRoi(new PolygonRoi(wand.xpoints, wand.ypoints, wand.npoints, Roi.TRACED_ROI));
-                        roi.setPosition(cellposeIP.getCurrentSlice());
-                        // ip.fill should use roi, otherwise make a rectangle that erases surrounding pixels
-                        cellposeProc.fill(roi);
-                        Rectangle r = roi.getBounds();
-                        roi.setLocation(xoffset + r.x, yoffset + r.y);
-                        roi.setPosition(0,0,0);
-                        cellposeRoiManager.addRoi(roi);
+                        if (wand.npoints > minSize) {
+                            // get the Polygon, fill with 0 and add to the manager
+                            Roi roi = new ShapeRoi(new PolygonRoi(wand.xpoints, wand.ypoints, wand.npoints, Roi.TRACED_ROI));
+                            roi.setPosition(slice+1);
+                            // ip.fill should use roi, otherwise make a rectangle that erases surrounding pixels
+                            cellposeProc.fill(roi);
+                            Rectangle r = roi.getBounds();
+                            roi.setLocation(xoffset + r.x, yoffset + r.y);
+
+                            //roi.setPosition(0,slice+1,0);
+                            IJ.log("label2Roi ("+roi.getZPosition()+" )");
+                            cellposeRoiManager.addRoi(roi);
+                        }
                     }
                 }
             }
         }
+
         IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi end: "+cellposeRoiManager.getCount());
+        IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
         return cellposeRoiManager;
     }
 
+    public void label2Roi3D(ImagePlus cellposeIP) {
+        IJ.log("label2Roi3D");
+        Objects3DIntPopulation population1 = new ImportImage(ImageHandler.wrap(cellposeIP.getImageStack())).importImage();
+        IJ.log("label2Roi3D nb objects: "+population1.getObjects3DInt().size());
+        //RoiManager3D_2
+        if(roi3D == null){
+            roi3D=population1;
+        }else{
+            roi3D.addObjects(population1.getObjects3DInt(),true);
+        }
+        IJ.log("label2Roi3D nb objects after add: "+roi3D.getObjects3DInt().size()+"\nmeasure3D");
+        ResultsFrame tableResultsMeasure = Manager3DMeasurements.measurements3D(roi3D.getObjects3DInt());
+        IJ.log("frame created "+(tableResultsMeasure!=null));
+        if (tableResultsMeasure != null) {
+            tableResultsMeasure.showFrame();
+        }
 
-
+    }
 
     /**
      * check if ROIs are inside overlaps areas in tiling computation and dispatch in the two given arraylist
