@@ -661,8 +661,12 @@ public class NucleiDetector {
     }
     //create expanded Mask
     public ImageProcessor getExpandedMask(int radius){
-        ImagePlus expandedIP= Detector.labeledImage(image.getWidth(),image.getHeight(),nucleiRois);
+        //IJ.log("nb nuclei: "+nucleiRois.length);
+        int nsl = detector.isProjection() ? 1 : image.getNSlices();
+        ImagePlus expandedIP= Detector.labeledImage(image.getWidth(),image.getHeight(),nsl,nucleiRois);
+        //IJ.log("nb cells nuclei(maskFromRoi): "+expandedIP.getRawStatistics().max);
         ImageProcessor expanded= ExpandMask.expandsMask(expandedIP.getProcessor(),radius);
+        //IJ.log("nb cells expanded(mask): "+expanded.getStats().max);
         return expanded;
     }
 
@@ -680,7 +684,7 @@ public class NucleiDetector {
             //IJ.log("return expanded roi already computed");
             return roisExpanded;
         }
-        IJ.log("compute expanded nuclei");
+        IJ.log("compute expanded nuclei " + nucleiRois.length);
         roisExpanded=new ArrayList<>(3);
         roisExpanded.add(nucleiRois);
         if(!expand4Cells) return roisExpanded;
@@ -688,6 +692,7 @@ public class NucleiDetector {
         ImageProcessor expanded=getExpandedMask(expandRadius);
         expandedIP= new ImagePlus("expanded",expanded);
         //expandedIP.show();
+        IJ.log("nb cells expanded(mask): "+expanded.getStats().max);
         RoiManager.getRoiManager().reset();
         RoiManager cells = label2Roi(expandedIP,0,0,0, "Cell ");
         Roi[] cellRois=cells.getRoisAsArray();

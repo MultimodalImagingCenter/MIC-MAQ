@@ -11,9 +11,6 @@ import ij.gui.Wand;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
-import ij.plugin.frame.RoiManager;
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
 
 import java.awt.*;
 import java.math.BigDecimal;
@@ -105,8 +102,10 @@ public class MeasureRois {
                     measure(cellID, finalResultsCellSpot,rois[cellID],NUCLEI, calibration);
                     if(nuclei.isExpand4Cells()){
                         ArrayList<Roi[]> roisExpanded= nuclei.getExpandedRois();
-                        measure(cellID, finalResultsCellSpot,roisExpanded.get(1)[cellID],NUCLEI_EXP_CELL, calibration);
-                        measure(cellID, finalResultsCellSpot,roisExpanded.get(2)[cellID],NUCLEI_EXP_CYTO, calibration);
+                        if(roisExpanded.get(1).length>cellID) {
+                            measure(cellID, finalResultsCellSpot, roisExpanded.get(1)[cellID], NUCLEI_EXP_CELL, calibration);
+                            measure(cellID, finalResultsCellSpot, roisExpanded.get(2)[cellID], NUCLEI_EXP_CYTO, calibration);
+                        }
                     }
                 }
                 if (cyto!=null){

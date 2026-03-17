@@ -47,6 +47,22 @@ public class StarDistLauncher {
     }
 
 
+    /**
+     * Performs the core analysis processing using the StarDist2D model.
+     *
+     * This method prepares and processes an input image for the StarDist2D model by:
+     * - Scaling the input image based on a predefined scale factor.
+     * - Initializing ImageJ and preparing a temporary dataset for analysis.
+     * - Configuring model parameters, including normalization, percentile thresholds,
+     *   probability and non-maximum suppression thresholds, output type, tiles, and boundary exclusions.
+     * - Running the StarDist2D model with these parameters.
+     * - Managing and validating the resulting ROIs (Regions of Interest) using the RoiManager,
+     *   including optional rescaling and filtering ROIs based on boundary conditions.
+     * - Generating a labeled output mask based on the detected ROIs.
+     * - Cleaning up temporary files created during the process.
+     *
+     * Exception handling is implemented to capture any errors occurring during the process.
+     */
     public void analysis(){
 
         ImagePlus scaledImg=imagePlus;
@@ -106,7 +122,7 @@ public class StarDistLauncher {
             System.out.println("nb rois after validation: "+stardistRoiManager.getCount());
 
 
-            stardistMask = Detector.labeledImage(imagePlus.getWidth(), imagePlus.getHeight(), stardistRoiManager.getRoisAsArray());
+            stardistMask = Detector.labeledImage(imagePlus.getWidth(), imagePlus.getHeight(), imagePlus.getNSlices(), stardistRoiManager.getRoisAsArray());
             stardistMask.setTitle(imagePlus.getShortTitle() + "-stardist");
 
             t_imp_path.delete();
@@ -116,6 +132,20 @@ public class StarDistLauncher {
 
     }
 
+    /**
+     * Validates the regions of interest (ROIs) managed by the stardistRoiManager. If the
+     * excludeOnEdges flag is enabled, ROIs that are located on the very edges of the current
+     * image (i.e., where their bounding box either touches or exceeds the edge boundaries)
+     * are excluded from the validation process.
+     *
+     * The method operates as follows:
+     * - It first checks if excludeOnEdges is false. In that case, the method exits immediately.
+     * - Otherwise, it iterates through all ROIs managed by stardistRoiManager.
+     * - For each ROI, the coordinates of its bounding box are verified against the edges of
+     *   the image. ROIs intersecting with the edges are skipped.
+     * - The ROIs that pass the validation are stored in a temporary list.
+     * - The stardistRoiManager is then reset, and the validated ROIs are added back to it.
+     */
     public void validateRoi(){
         if(!excludeOnEdges) return;
         ArrayList<Roi> validated=new ArrayList<>();

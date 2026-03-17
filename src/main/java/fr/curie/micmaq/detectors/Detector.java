@@ -47,6 +47,7 @@ public class Detector {
 
     private double minThreshold = Integer.MIN_VALUE;
     private double maxThreshold = Integer.MAX_VALUE;
+    protected boolean isProjection = false;
 
 //    CONSTRUCTOR
 
@@ -84,7 +85,12 @@ public class Detector {
         this.zStackFirstSlice = zStackFirstSlice;
         this.zStackLastSlice = zStackLastSlice;
         //IJ.log("detector : zStack folowed by projection");
+        isProjection = true;
         projection();
+    }
+
+    public boolean isProjection() {
+        return isProjection;
     }
 
     /**
@@ -325,11 +331,19 @@ public class Detector {
      * @param rois        : : region of all the objects segmented
      * @return image with an intensity per object
      */
-    public static ImagePlus labeledImage(int imageWidth, int imageHeight, Roi[] rois) {
-        ImagePlus imagePlus = NewImage.createShortImage("labeledImage", imageWidth, imageHeight, 1, NewImage.FILL_BLACK);
+    public static ImagePlus labeledImage(int imageWidth, int imageHeight,int nslices, Roi[] rois) {
+        //IJ.log("detector labeledImage nbrois:"+rois.length +"nslices:"+nslices);
+        ImagePlus imagePlus = NewImage.createShortImage("labeledImage", imageWidth, imageHeight, nslices, NewImage.FILL_BLACK);
         for (int i = 0; i < rois.length; i++) {
-            imagePlus.getProcessor().setColor(i + 1);
-            imagePlus.getProcessor().fill(rois[i]);
+            if(nslices>1) {
+                int z=rois[i].getZPosition();
+                imagePlus.getImageStack().getProcessor(z).setColor(i + 1);
+                imagePlus.getImageStack().getProcessor(z).fill(rois[i]);
+            }else {
+                //IJ.log("detector labeledImage nbrois:"+rois.length+" i:"+i);
+                imagePlus.getProcessor().setColor(i + 1);
+                imagePlus.getProcessor().fill(rois[i]);
+            }
         }
         return imagePlus;
     }
