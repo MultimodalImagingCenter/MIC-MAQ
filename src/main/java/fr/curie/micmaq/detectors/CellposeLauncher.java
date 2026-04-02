@@ -181,7 +181,7 @@ public class CellposeLauncher {
             cellposeTempDir.delete();
             if(input.getNSlices()>1){
                 IJ.log("convert to ROI_3D and measure");
-                label2Roi3D(cellposeMask);
+                label2Roi3D(cellposeMask,input);
                 IJ.log("should display measures");
             }else {
                 label2Roi(cellposeMask);
@@ -470,8 +470,9 @@ public class CellposeLauncher {
         return cellposeRoiManager;
     }
 
-    public void label2Roi3D(ImagePlus cellposeIP) {
+    public void label2Roi3D(ImagePlus cellposeIP, ImagePlus input) {
         IJ.log("label2Roi3D");
+        cellposeIP.show();
         Objects3DIntPopulation population1 = new ImportImage(ImageHandler.wrap(cellposeIP.getImageStack())).importImage();
         IJ.log("label2Roi3D nb objects: "+population1.getObjects3DInt().size());
         //RoiManager3D_2
@@ -484,9 +485,15 @@ public class CellposeLauncher {
         ResultsFrame tableResultsMeasure = Manager3DMeasurements.measurements3D(roi3D.getObjects3DInt());
         IJ.log("frame created "+(tableResultsMeasure!=null));
         if (tableResultsMeasure != null) {
+            tableResultsMeasure.setTitle("Cellpose 3D measurements");
             tableResultsMeasure.showFrame();
         }
-
+        ResultsFrame tableResultsQuantif = Manager3DMeasurements.quantif3D(roi3D.getObjects3DInt(), ImageHandler.wrap(input));
+        IJ.log("frame created "+(tableResultsQuantif!=null));
+        if (tableResultsQuantif != null) {
+            tableResultsQuantif.setTitle("Cellpose 3D quantification");
+            tableResultsQuantif.showFrame();
+        }
     }
 
     /**
