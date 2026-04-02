@@ -145,8 +145,10 @@
                         <properties>
                           <model>
                             <item value="Maximum projection"/>
-                            <item value="Standard deviation projection"/>
+                            <item value="Standard Deviation projection"/>
                             <item value="Sum Slices"/>
+                            <item value="Best Focal slice"/>
+                            <item value="Maximum of 3 best Focal slices"/>
                           </model>
                         </properties>
                       </component>

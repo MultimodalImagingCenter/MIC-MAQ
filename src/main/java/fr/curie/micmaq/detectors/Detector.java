@@ -3,6 +3,7 @@ package fr.curie.micmaq.detectors;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.NewImage;
 import ij.gui.Roi;
@@ -13,8 +14,14 @@ import ij.plugin.filter.EDM;
 import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
+import org.checkerframework.checker.units.qual.A;
 
 import java.awt.image.IndexColorModel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 
 /**
@@ -179,13 +186,46 @@ public class Detector {
             IJ.log("detector projection " + zStackProjMethod);
             if (zStackProjMethod.equals("Maximum projection")) {
                 this.image = ZProjector.run(image, "max", zStackFirstSlice, zStackLastSlice); /*projects Stack to only one image by maximal intensity projection*/
-            } else {
+            } else if (zStackProjMethod.equals("Standard Deviation projection")){
                 this.image = ZProjector.run(image, "sd", zStackFirstSlice, zStackLastSlice); /*projects Stack to only one image by standard deviation projection*/
+            } else if (zStackProjMethod.equals("Sum Slices")) {
+                this.image = ZProjector.run(image, "sum", zStackFirstSlice, zStackLastSlice);
+            }else if (zStackProjMethod.equals("Best Focal slice")){
+                bestFocus(1);
+            }else if (zStackProjMethod.equals("Maximum of 3 best Focal slices")){
+                bestFocus(3);
+            }else {
+                bestFocus(1);
             }
             renameImage(this.image, "projection");
         } else {
             //IJ.log("The image "+ this.image+" is not a stack.");
         }
+    }
+
+    private void bestFocus(int nb){
+        double[] means = new double[this.image.getNSlices()];
+
+        //compute the mean of edges of each slice
+        for (int slice=1;slice<=this.image.getNSlices();slice++){
+            this.image.setSlice(slice);
+            ImageProcessor edges = this.image.getProcessor().duplicate();
+            edges.findEdges();
+            //new ImagePlus("edges",edges).show();
+            ImageStatistics stats = edges.getStatistics();
+            means[slice-1] = stats.mean;
+            //IJ.log("Mean of edges of slice "+slice+" = "+stats.mean);
+        }
+        int[] best = topNIndices(means,nb);
+        ImageStack stack = new ImageStack(this.image.getWidth(), this.image.getHeight());
+        for (int i=0;i<nb;i++){
+            int bestSlice = best[i];
+            //IJ.log("Best slice #"+i+"= "+bestSlice);
+            this.image.setSlice(bestSlice+1);
+            stack.addSlice(this.image.getProcessor().duplicate());
+        }
+        this.image = ZProjector.run(new ImagePlus("tmpfocal",stack), "max", zStackFirstSlice, zStackLastSlice);
+
     }
 
 
@@ -504,5 +544,48 @@ public class Detector {
             sum += value;
         }
         return sum;
+    }
+
+    /**
+     * Returns the indices of the 3 largest values in the given array.
+     * - If the array has fewer than 3 elements, returns as many indices as available.
+     * - The returned indices are ordered from the largest value to the smaller ones.
+     * - Stable tie-handling: if values are equal, the smaller index comes first.
+     *
+     * FR: Renvoie les index correspondant aux N meilleures valeurs d'un tableau de double.
+     * @param arr input array of doubles
+     * @param n number of best values to return
+     *
+     * @return indices of the top N values (length in [0..n])
+     */
+    public static int[] topNIndices(double[] arr, int n) {
+        if (arr == null || arr.length == 0) return new int[0];
+        int size = arr.length;
+        int k = Math.min(size, n);
+
+        int[] bestIdx = new int[k];
+        double[] bestVal = new double[k];
+        Arrays.fill(bestIdx, -1);
+        Arrays.fill(bestVal, Double.NEGATIVE_INFINITY);
+
+        for (int i = 0; i < size; i++) {
+            double v = arr[i];
+            int pos = -1;
+            for (int j = 0; j < k; j++) {
+                if (v > bestVal[j] || (v == bestVal[j] && i < bestIdx[j])) {
+                    pos = j;
+                    break;
+                }
+            }
+            if (pos != -1) {
+                for (int j = k - 1; j > pos; j--) {
+                    bestVal[j] = bestVal[j - 1];
+                    bestIdx[j] = bestIdx[j - 1];
+                }
+                bestVal[pos] = v;
+                bestIdx[pos] = i;
+            }
+        }
+        return bestIdx;
     }
 }
