@@ -336,7 +336,7 @@ public class SpotsParametersGUI {
             }
         }
         if (useMacroCodeCheckBox.isSelected()) {
-            result += "\n\tMacro:\n" + macroArea.getText();
+            result += "\n\tMacro:\n" + macroArea.getText()+"\n\tend Macro";
         }
         if (subtractBackgroundCheckBox.isSelected())
             result += "\n\tSubtract Background: radius " + sbgSpinner.getValue();
@@ -368,7 +368,8 @@ public class SpotsParametersGUI {
         findMaximaCheckBox.setSelected(false);
         thresholdCheckBox.setSelected(false);
         subtractBackgroundCheckBox.setSelected(false);
-        isZStackCheckBox.setSelected(false);
+        isZStackCheckBox.setSelected(true);
+        isZStackCheckBox.doClick();
         useMacroCodeCheckBox.setSelected(false);
 
         for (int i = 0; i < params.size(); i++) {
@@ -379,36 +380,48 @@ public class SpotsParametersGUI {
                     //System.out.println("stop macro");
                 }
                 if (m) {
-                    macro += params.get(i) + "\n";
-                    //System.out.println("add text to macro " + params.get(i));
-                    //System.out.println("macro becomes :\n" + macro);
-                    macroArea.setText(macro);
+                    if(params.get(i).startsWith("end Macro") ){
+                        m=false;
+                    }else {
+                        macro += params.get(i) + "\n";
+                        //System.out.println("add text to macro " + params.get(i));
+                        //System.out.println("macro becomes :\n" + macro);
+                        macroArea.setText(macro);
+                        macroArea.setVisible(true);
+                    }
                 } else {
 
                     if (params.get(i).startsWith("Macro:")) {
                         m = true;
                         //System.out.println("start macro and activate in GUI");
-                        useMacroCodeCheckBox.setSelected(true);
+                        useMacroCodeCheckBox.setSelected(false);
+                        useMacroCodeCheckBox.doClick();
                         macroArea.setVisible(true);
                     }
 
                     if (params.get(i).startsWith("Projection")) {
-                        isZStackCheckBox.setSelected(true);
+                        isZStackCheckBox.setSelected(false);
+                        isZStackCheckBox.doClick();
+                        String model = params.get(i ).split(": ")[1];
+                        projectionMethodCB.setSelectedItem(model);
                         //System.out.println("change projection");
                     }
                     if (params.get(i).startsWith("Subtract Background:")) {
-                        subtractBackgroundCheckBox.setSelected(true);
+                        subtractBackgroundCheckBox.setSelected(false);
+                        subtractBackgroundCheckBox.doClick();
                         sbgSpinner.setValue(new Double(params.get(i).split(": ")[1].split(" ")[1]));
                     }
 
                     if (params.get(i).endsWith("Local Maxima:")) {
                         //System.out.println("spots using local maxima");
-                        findMaximaCheckBox.setSelected(true);
+                        findMaximaCheckBox.setSelected(false);
+                        findMaximaCheckBox.doClick();
                         prominenceSpinner.setValue(new Double(params.get(i + 1).split(": ")[1]));
                     }
                     if (params.get(i).endsWith("thresholding:")) {
                         //System.out.println("spots using thresholds");
-                        thresholdCheckBox.setSelected(true);
+                        thresholdCheckBox.setSelected(false);
+                        thresholdCheckBox.doClick();
                         int offset = 1;
                         String model = params.get(i + offset).split(": ")[1];
                         //System.out.println("model to put = "+model);

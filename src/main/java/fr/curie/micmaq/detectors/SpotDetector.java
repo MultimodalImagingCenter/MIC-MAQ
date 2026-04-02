@@ -637,8 +637,11 @@ public class SpotDetector {
             }
 //            SUBTRACT BACKGROUND : correct background with rolling ball algorithm
             if (useRollingBallSize) {
-                imageToReturn = getSubtractBackground();
+                ImagePlus tmp= getSubtractBackground(imageToReturn);
+                imageToReturn.close();
+                imageToReturn = tmp;
             }
+            imageToReturn.setTitle("test");
             return imageToReturn;
         } else return null;
     }
@@ -648,8 +651,8 @@ public class SpotDetector {
      *
      * @return image with corrected background
      */
-    private ImagePlus getSubtractBackground() {
-        ImagePlus wobkgIP = imageToMeasure.duplicate();
+    private ImagePlus getSubtractBackground(ImagePlus image) {
+        ImagePlus wobkgIP = image.duplicate();
         detector.renameImage(wobkgIP, "withoutBackground");
         BackgroundSubtracter backgroundSubtracter = new BackgroundSubtracter();
         backgroundSubtracter.rollingBallBackground(wobkgIP.getProcessor(), rollingBallSize, false, false, false, true, false);
