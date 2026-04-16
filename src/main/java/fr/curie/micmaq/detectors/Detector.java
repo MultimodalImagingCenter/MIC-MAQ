@@ -377,8 +377,10 @@ public class Detector {
         for (int i = 0; i < rois.length; i++) {
             if(nslices>1) {
                 int z=rois[i].getZPosition();
-                imagePlus.getImageStack().getProcessor(z).setColor(i + 1);
-                imagePlus.getImageStack().getProcessor(z).fill(rois[i]);
+                //IJ.log("detector labeledImage nbrois:"+rois.length+" i:"+i+" z="+z);
+                imagePlus.setSlice(z);
+                imagePlus.getProcessor().setColor(i + 1);
+                imagePlus.getProcessor().fill(rois[i]);
             }else {
                 //IJ.log("detector labeledImage nbrois:"+rois.length+" i:"+i);
                 imagePlus.getProcessor().setColor(i + 1);

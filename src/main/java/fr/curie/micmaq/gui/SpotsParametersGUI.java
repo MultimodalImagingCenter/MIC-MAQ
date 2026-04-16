@@ -373,7 +373,8 @@ public class SpotsParametersGUI {
         subtractBackgroundCheckBox.setSelected(false);
         isZStackCheckBox.setSelected(true);
         isZStackCheckBox.doClick();
-        useMacroCodeCheckBox.setSelected(false);
+        useMacroCodeCheckBox.setSelected(true);
+        useMacroCodeCheckBox.doClick();
 
         for (int i = 0; i < params.size(); i++) {
             //System.out.println("#spots: "+params.get(i));

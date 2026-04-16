@@ -12,9 +12,11 @@ import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
+import mcib3d.geom2.Objects3DIntPopulation;
 
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * Author : Camille RABIER
@@ -60,6 +62,8 @@ public class CellDetector {
     String segmentationMacro;
     boolean macroOutputRoiManager;
     boolean isMacroOutputImage;
+
+    protected Objects3DIntPopulation roi3D;
 
 // CONSTRUCTOR
 
@@ -245,13 +249,15 @@ public class CellDetector {
     public CytoDetector getCytoDetector() {
         return new CytoDetector(imageToMeasure, image.getTitle(), cellRois, resultsDirectory, showBinaryImage, saveBinary, saveRois, minNucleiCellOverlap, minCytoSize);
     }
-
+    public boolean prepare(){
+        return prepare(false);
+    }
     /**
      * Segment cell to obtain ROIs for further analysis
      *
      * @return true if no problem occurred
      */
-    public boolean prepare() {
+    public boolean prepare(boolean preview) {
         //IJ.showMessage("CellDetector showPreprocessed="+showPreprocessedImage+" showComposite="+showCompositeImage+" showBinary="+showBinaryImage);
         //check saving directory
         if (saveRois) {
@@ -263,120 +269,63 @@ public class CellDetector {
             if (!tmp.exists()) tmp.mkdirs();
         }
 //        PREPROCESSING
-        ImagePlus preprocessed = getPreprocessing();
-        if (preprocessed != null) {
-            if (showPreprocessedImage) {
-                //preprocessed.setTitle("preprocessed");
-                preprocessed.show();
-                WindowManager.setWindow(WindowManager.getWindow("Log"));
-            }
-            String analysisType;
-            RoiManager roiManagerCell;
-            ImagePlus labeledImage;
-            ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
-            if (nucleiDetector != null) {
-                ImagePlus nucleiProcessedImage = nucleiDetector.getPreprocessing();
-                if (nucleiProcessedImage != null) {
-//                    Create composite
-                    ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{preprocessed, nucleiDetector.getPreprocessing()}, true);
-                    if(cellposeModel!=null && cellposeModel.equals("cpsam")) {
-                        ColorProcessor tmp=new ColorProcessor(preprocessed.getWidth(),preprocessed.getHeight());
-                        ByteProcessor r=preprocessed.getProcessor().convertToByteProcessor(true);
-                        ByteProcessor g=nucleiDetector.getPreprocessing().getProcessor().convertToByteProcessor(true);
-                        ByteProcessor b=new ByteProcessor(preprocessed.getWidth(),preprocessed.getHeight());
-                        tmp.setRGB((byte[]) r.getPixels(),(byte[]) g.getPixels(),(byte[]) b.getPixels());
-                        composite = new ImagePlus("rgb",tmp);
-                    }
-                    if (showCompositeImage) {
-                        composite.setTitle(nameExperiment + "_composite");
-                        composite.show();
-                    }
-                    imageToReturn=composite;
-                } else {
-                    IJ.error("There is a problem with the nuclei preprocessing, please verify the parameters");
-                    return false;
-                }
-            }
+        ImagePlus imageToReturn = prepareImageForSegmentation();
+        if(imageToReturn==null) return false;
+        String analysisType;
+        RoiManager roiManagerCell;
+        ImagePlus labeledImage;
 
-            if (macroSegmentation) {
-                IJ.log("cell segmentation via macro");
-                analysisType = "macro segmentation";
-                ImagePlus temp;
-//      MACRO : apply custom commands of user
-
-                imageToReturn.show();
-                IJ.selectWindow(imageToReturn.getID());
-                IJ.runMacro("//setBatchMode(true);\n" + segmentationMacro + "\n//setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
-                temp = WindowManager.getCurrentImage();
-                if(!showPreprocessedImage) imageToReturn.hide();
-                //imageToReturn.setTitle("image to return");
-                temp.changes = false;
-                //temp.setTitle("temp");
-                temp.hide();
-                if (isMacroOutputImage && macroOutputRoiManager) {
-                    labeledImage = temp;
-                    roiManagerCell = RoiManager.getRoiManager();
-                } else if (macroOutputRoiManager){
-                    roiManagerCell = RoiManager.getRoiManager();
-                    labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
-                } else {
-                    labeledImage = temp;
-                    roiManagerCell = CellposeLauncher.label2Roi(temp, 0, 0, 0);
-                }
-            } else {
-                IJ.log("cell segmentation via cellpose");
-//            SEGMENTATION : launch cellpose command to obtain mask
-                /*cyto channel : 0=grayscale, 1=red, 2=green, 3=blue*/
-                /*nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue*/
-                CellposeLauncher cellposeLauncher;
-                /*Use nuclei image, if exists, to improve segmentation*/
-                /*Cellpose needs in this case a composite image that contains the nuclei and cytoplasm channels*/
-                if (nucleiDetector != null) {
-//                    Create CellposeLauncher objet
-                        cellposeLauncher = new CellposeLauncher(imageToReturn, minSizeCell, cellposeCellproba_threshold, cellposeModel, 1, 2, excludeOnEdges);
-
-                } else {/*No nuclei channel*/
-                    cellposeLauncher = new CellposeLauncher(imageToReturn, minSizeCell, cellposeCellproba_threshold, cellposeModel, excludeOnEdges);
-                }
-//            Launch Cellpose
-                cellposeLauncher.analysis();
-//            Get cellpose mask and roiManager
-                labeledImage = cellposeLauncher.getCellposeMask();
-                detector.renameImage(labeledImage, "cellpose_Cells");
-                roiManagerCell = cellposeLauncher.getCellposeRoiManager();
-            }
-
-            if(excludeOnEdges) {
-                if(excludeOnEdgesRois(roiManagerCell)){
-                    labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
-                }
-            }
-
-            if (showBinaryImage) {
-                labeledImage.show();
-                labeledImage.setDisplayRange(0, (roiManagerCell.getCount() + 10));
-                labeledImage.updateAndDraw();
-            }
-//            Allow user to redefine the regions of interest
-            if (finalValidation) {
-                roiManagerCell.toFront();
-                ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
-                /*if (showBinaryImage){
-                    IJ.selectWindow(imageToMeasure.getID());
-                }else {
-                    tempImage.show();
-                }*/
-                tempImage.show();
-                IJ.selectWindow(tempImage.getID());
-                roiManagerCell.runCommand("Show All");
-                new WaitForUserDialog("Cell selection", "Delete cells : select the ROIs + delete").show();
-                if (!showBinaryImage) {
-                    tempImage.close();
-                }
-                /*Obtain new ROIs*/
+        if (macroSegmentation) {
+            labeledImage=runMacroSegmentation(imageToReturn);
+            analysisType = "macro segmentation";
+            if (isMacroOutputImage && macroOutputRoiManager) {
+                roiManagerCell = RoiManager.getRoiManager();
+            } else if (macroOutputRoiManager){
+                roiManagerCell = RoiManager.getRoiManager();
                 labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
+            } else {
+                roiManagerCell = CellposeLauncher.label2Roi(labeledImage, 0, 0, 0);
             }
+        } else {
+            analysisType = "Cellpose segmentation";
+            ArrayList<Object> data= runCellposeSegmentation(imageToReturn);
+            labeledImage = (ImagePlus) data.get(0);
+            roiManagerCell = (RoiManager) data.get(1);
+            roi3D = (Objects3DIntPopulation) data.get(2);
+            if(roiManagerCell==null) {
+                IJ.error("There is a problem with the cellpose segmentation 2 roi");
+                return false;
+            }
+        }
+
+        if(excludeOnEdges) {
+            if(excludeOnEdgesRois(roiManagerCell)){
+                if(labeledImage.getNSlices()>1) IJ.log("exclude on edge does not work on 3D data");
+                else labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
+            }
+        }
+
+        if (showBinaryImage) {
+            labeledImage.show();
+            labeledImage.setDisplayRange(0, (roiManagerCell.getCount() + 10));
+            labeledImage.updateAndDraw();
+        }
+//            Allow user to redefine the regions of interest
+        if (finalValidation && !preview ) {
+            roiManagerCell.toFront();
+            ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
+            tempImage.show();
+            IJ.selectWindow(tempImage.getID());
+            roiManagerCell.runCommand("Show All");
+            new WaitForUserDialog("Cell selection", "Delete cells : select the ROIs + delete").show();
+            if (!showBinaryImage) {
+                tempImage.close();
+            }
+            /*Obtain new ROIs*/
+            labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
+        }
 //            SAVINGS
+        if(!preview) {
             if (resultsDirectory != null && saveBinary) {
                 detector.setLUT(labeledImage);
                 File dir = new File(resultsDirectory + "/Images/AllDetected/");
@@ -403,8 +352,97 @@ public class CellDetector {
             cellRois = roiManagerCell.getRoisAsArray();
 //            Create analyzer for future measurements
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures);
-            return true;
-        } else return false;
+        }
+        return true;
+
+    }
+
+    public ImagePlus prepareImageForSegmentation(){
+        ImagePlus preprocessed = getPreprocessing();
+        if (preprocessed != null) {
+            if (showPreprocessedImage) {
+                //preprocessed.setTitle("preprocessed");
+                preprocessed.show();
+                WindowManager.setWindow(WindowManager.getWindow("Log"));
+            }
+            String analysisType;
+            RoiManager roiManagerCell;
+            ImagePlus labeledImage;
+            ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
+            if (nucleiDetector != null) {
+                ImagePlus nucleiProcessedImage = nucleiDetector.getPreprocessing();
+                if (nucleiProcessedImage != null) {
+//                    Create composite
+                    ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{preprocessed, nucleiDetector.getPreprocessing()}, true);
+                    if (cellposeModel != null && cellposeModel.equals("cpsam")) {
+                        ColorProcessor tmp = new ColorProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                        ByteProcessor r = preprocessed.getProcessor().convertToByteProcessor(true);
+                        ByteProcessor g = nucleiDetector.getPreprocessing().getProcessor().convertToByteProcessor(true);
+                        ByteProcessor b = new ByteProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                        tmp.setRGB((byte[]) r.getPixels(), (byte[]) g.getPixels(), (byte[]) b.getPixels());
+                        composite = new ImagePlus("rgb", tmp);
+                    }
+                    if (showCompositeImage) {
+                        composite.setTitle(nameExperiment + "_composite");
+                        composite.show();
+                    }
+                    imageToReturn = composite;
+                } else {
+                    IJ.error("There is a problem with the nuclei preprocessing, please verify the parameters");
+                    return null;
+                }
+                return imageToReturn;
+            }
+        }
+        return preprocessed;
+    }
+
+    public ImagePlus runMacroSegmentation(ImagePlus imageToReturn){
+        IJ.log("cell segmentation via macro");
+        ImagePlus temp;
+//      MACRO : apply custom commands of user
+
+        imageToReturn.show();
+        IJ.selectWindow(imageToReturn.getID());
+        IJ.runMacro("//setBatchMode(true);\n" + segmentationMacro + "\n//setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
+        temp = WindowManager.getCurrentImage();
+        if(!showPreprocessedImage) imageToReturn.hide();
+        //imageToReturn.setTitle("image to return");
+        temp.changes = false;
+        //temp.setTitle("temp");
+        temp.hide();
+
+        return temp;
+    }
+
+    public ArrayList<Object> runCellposeSegmentation(ImagePlus imageToReturn){
+        IJ.log("cell segmentation via cellpose");
+//            SEGMENTATION : launch cellpose command to obtain mask
+        /*cyto channel : 0=grayscale, 1=red, 2=green, 3=blue*/
+        /*nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue*/
+        CellposeLauncher cellposeLauncher;
+        /*Use nuclei image, if exists, to improve segmentation*/
+        /*Cellpose needs in this case a composite image that contains the nuclei and cytoplasm channels*/
+        if (nucleiDetector != null) {
+//                    Create CellposeLauncher objet
+            cellposeLauncher = new CellposeLauncher(imageToReturn, minSizeCell, cellposeCellproba_threshold, cellposeModel, 1, 2, excludeOnEdges);
+
+        } else {/*No nuclei channel*/
+            cellposeLauncher = new CellposeLauncher(imageToReturn, minSizeCell, cellposeCellproba_threshold, cellposeModel, excludeOnEdges);
+        }
+//            Launch Cellpose
+        cellposeLauncher.analysis();
+//            Get cellpose mask and roiManager
+        ImagePlus labeledImage = cellposeLauncher.getCellposeMask();
+        detector.renameImage(labeledImage, "cellpose_Cells");
+
+        RoiManager roiManagerCell = cellposeLauncher.getCellposeRoiManager();
+        IJ.log("cellpose segmentation "+roiManagerCell.getCount()+" ROIs");
+        ArrayList<Object> returndata = new ArrayList<>();
+        returndata.add(labeledImage);
+        returndata.add(roiManagerCell);
+        returndata.add(cellposeLauncher.getRoi3D());
+        return returndata;
     }
 
     /**
@@ -414,46 +452,7 @@ public class CellDetector {
      * - show result labeled image
      */
     public void preview() {
-//        PREPROCESSING
-        ImagePlus preprocessed = getPreprocessing();
-        if (preprocessed != null) {
-            preprocessed.show();
-            WindowManager.setWindow(WindowManager.getWindow("Log"));
-//            SEGMENTATION : launch cellpose command to obtain mask
-            /*cyto channel : 0=grayscale, 1=red, 2=green, 3=blue*/
-            /*nuclei channel : 0=None (will set to zero), 1=red, 2=green, 3=blue*/
-            CellposeLauncher cellposeLauncher;
-            /*Use nuclei image, if exists, to improve segmentation*/
-            /*Cellpose needs in this case a composite image that contains the nuclei and cytoplasm channels*/
-            if (nucleiDetector != null) {
-                ImagePlus nucleiProcessedImage = nucleiDetector.getPreprocessing();
-                if (nucleiProcessedImage != null) {
-                    /*Create composite*/
-                    ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{imageToMeasure, nucleiDetector.getPreprocessing()}, true);
-                    composite.setTitle(nameExperiment + "_composite");
-                    if (showCompositeImage) {
-                        composite.show();
-                    }
-//                    Create CellposeLauncher object
-                    cellposeLauncher = new CellposeLauncher(composite, minSizeCell, cellposeCellproba_threshold,
-                            cellposeModel, 1, 2, excludeOnEdges);
-                } else {
-                    IJ.error("There is a problem with the nuclei preprocessing, please verify the parameters");
-                    return;
-                }
-            } else { /*no nuclei channel*/
-                cellposeLauncher = new CellposeLauncher(preprocessed, minSizeCell, cellposeCellproba_threshold,
-                        cellposeModel, excludeOnEdges);
-            }
-//            Launch Cellpose
-            cellposeLauncher.analysis();
-//            Get Cellpose mask
-            ImagePlus cellposeOutput = cellposeLauncher.getCellposeMask();
-//            Show cellpose mask
-            cellposeOutput.show();
-            cellposeOutput.setDisplayRange(0, (cellposeLauncher.getCellposeRoiManager().getCount() + 10));
-            cellposeOutput.updateAndDraw();
-        }
+        prepare(true);
     }
 
     /**
@@ -513,6 +512,17 @@ public class CellDetector {
      */
     public Roi[] getRoiArray() {
         return cellRois;
+    }
+
+    public Objects3DIntPopulation getRoi3D() {
+        return roi3D;
+    }
+
+    public int getNumberOfCells(){
+        IJ.log("celldetector getNbCells "+ roi3D);
+        if(roi3D !=null) return roi3D.getNbObjects();
+        else if(cellRois!=null) return cellRois.length;
+        else return 0;
     }
 
     public String getNameChannel() {

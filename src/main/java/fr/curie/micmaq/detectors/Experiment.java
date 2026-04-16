@@ -147,7 +147,34 @@ public class Experiment {
         IJ.log("start experiment");
         Instant dateBegin = Instant.now(); /*get starting time*/
 //        PREPARE NECESSARY IMAGES FOR MEASUREMENTS
-//        --> Cells images
+        if(!preprocess()) return false;
+//        Prepare cytoplasm and get the ROIs for spot detection
+        CytoDetector cytoDetector = null;
+        if (cell!=null && nuclei!=null && !interrupt){
+           /*Prepare cytoplasm et get new cellRois*/
+                cytoDetector = prepareCytoplams();
+        }
+        IJ.log("measurements launch");
+        MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
+        measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
+        measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
+
+        //perform summary
+        if(summary!=null) {
+            if(finalResultsNuclei!=null && finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsNuclei, finalResultsCellSpot,experimentName, onlyPositive4Spots);
+            else if(finalResultsNuclei!=null) measureRois.summary(summary,finalResultsNuclei,experimentName);
+            else if(finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsCellSpot,experimentName);
+        }
+
+//        TIMING OF EXPERIENCE
+        Instant dateEnd = Instant.now();
+        long duration = Duration.between(dateBegin,dateEnd).toMillis();
+        IJ.log("Experiment "+experimentName+" is done in :" +duration/1000+" seconds");
+        return true;
+    }
+
+    public boolean preprocess(){
+        //        --> Cells images
         if (cell !=null && !interrupt){
             IJ.log("Cell/Cytoplasm image: "+ cell.getImageTitle());
             cell.setMeasureCalibration(measureCalibration);
@@ -177,13 +204,12 @@ public class Experiment {
                 }
             }
         }
-//        Prepare cytoplasm and get the ROIs for spot detection
-        Roi[] cellRois = null;
-        Roi[] nucleiRois = null;
-        Roi[] cytoplasmRois = null;
-        boolean onlySpot = false;
-        int numberOfObject;
+        return true;
+    }
+
+    public CytoDetector prepareCytoplams(){
         CytoDetector cytoDetector = null;
+        Roi[] cellRois = null;
         if (cell!=null && !interrupt){
             cellRois = cell.getRoiArray();
             if (nuclei!=null){ /*Prepare cytoplasm et get new cellRois*/
@@ -191,101 +217,15 @@ public class Experiment {
                 cytoDetector.setNucleiRois(nuclei.getRoiArray());
                 cytoDetector.setMeasureCalibration(measureCalibration);
                 cytoDetector.prepare();
-                nucleiRois = cytoDetector.getAssociatedNucleiRois();
-                cytoplasmRois = cytoDetector.getCytoRois();
+                Roi[] nucleiRois = cytoDetector.getAssociatedNucleiRois();
+                //cytoplasmRois = cytoDetector.getCytoRois();
                 cellRois = cytoDetector.getCellRois();
                 cell.setCellRois(cellRois);
             }
-            numberOfObject = cellRois.length;
+            int numberOfObject = cellRois.length;
             IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
-        }else { /*No cell images*/
-            if (nuclei!=null && !interrupt){ /*But nuclei images*/
-                nucleiRois = nuclei.getRoiArray();
-                numberOfObject = nucleiRois.length;
-                IJ.log("(nuclei"+")number of objects: "+numberOfObject);
-            } else { /*Only spot images*/
-                numberOfObject = 1;
-                onlySpot = true;
-                IJ.log("only spots");
-            }
         }
-        IJ.log("measurements launch");
-        MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
-        measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
-        measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
-
-
-        if(summary!=null) {
-            if(finalResultsNuclei!=null && finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsNuclei, finalResultsCellSpot,experimentName, onlyPositive4Spots);
-            else if(finalResultsNuclei!=null) measureRois.summary(summary,finalResultsNuclei,experimentName);
-            else if(finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsCellSpot,experimentName);
-        }
-/*
-        if (cell!=null && nuclei!=null && !interrupt){ //Get result table for all nuclei in addition to cell ResultTable
-            Roi[] allNuclei = nuclei.getRoiArray();
-            int[] association2Cell = cytoDetector.getAssociationCell2Nuclei();
-            for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
-                finalResultsNuclei.addValue("Name experiment", experimentName);
-                finalResultsNuclei.addValue("Nucleus nr.", "" + (nucleusID + 1));
-                finalResultsNuclei.addValue("Cell associated",""+association2Cell[nucleusID]);
-                nuclei.measureEachNuclei(nucleusID, finalResultsNuclei,allNuclei[nucleusID]);
-                for (int s=0;s<spots.size();s++) {
-                    SpotDetector spot=spots.get(s);
-                    if(spot!=null) {
-                        IJ.log("channel "+s+" measure in nuclei");
-                        spot.analysisPerRegion(nucleusID,allNuclei[nucleusID], finalResultsNuclei,"Nuclei",spotsInNucleiTable.get(s));
-                        //IJ.log("analysis region nuclei spots exists"+(spotsInNucleiTable.get(s)!=null));
-                    }
-                }
-                finalResultsNuclei.incrementCounter();
-            }
-            nuclei.setNucleiAssociatedRois(nucleiRois);
-        }
-        IJ.log("measurements");
-//        Measurements for each cell or nuclei or image (in case of only spot)
-        for (int cellID = 0; cellID < numberOfObject; cellID++) {
-            if (!interrupt){
-                finalResultsCellSpot.addValue("Name experiment", experimentName);
-                finalResultsCellSpot.addValue("Cell nr.", "" + (cellID + 1));
-                if (cell!=null){
-                    cell.measureEachCell(cellID, finalResultsCellSpot);
-                }
-                if (nuclei!=null && cell==null){
-                    nuclei.measureEachNuclei(cellID, finalResultsCellSpot,nucleiRois[cellID]);
-                }
-                if (cytoDetector!=null){
-                    System.out.println("measure cyto: "+cellID+"/"+numberOfObject);
-                    cytoDetector.measureEachCytoplasm(cellID, finalResultsCellSpot);
-                }
-                for (int s=0;s<spots.size();s++) {
-                    SpotDetector spot=spots.get(s);
-                    if(spot!=null) {
-                        //IJ.log("measure spot "+spot.getSpotName()+ "     "+spot);
-                        if (cellRois != null) {
-                            //IJ.log("results channel "+s+" measure in cell");
-                            spot.analysisPerRegion(cellID, cellRois[cellID], finalResultsCellSpot, "Cell", spotsInCellsTable.get(s));
-                        }
-                        if (nucleiRois != null && cellRois == null) {
-                            //IJ.log("results channel "+s+" measure in nuclei");
-                            spot.analysisPerRegion(cellID, nucleiRois[cellID], finalResultsCellSpot, "Nuclei", spotsInNucleiTable.get(s));
-                            //IJ.log("analysis region nuclei spots exists"+(spotsInNucleiTable.get(s)!=null));
-                        }
-                        if (cytoplasmRois != null) {
-                            //IJ.log("channel "+s+" measure in cytoplasm");
-                            spot.analysisPerRegion(cellID, cytoplasmRois[cellID], finalResultsCellSpot, "Cytoplasm", spotsInCytoplasmsTable.get(s));
-                        }if (onlySpot) spot.analysisPerRegion(cellID, null, finalResultsCellSpot, "Image",spotsInNucleiTable.get(s));
-                    }
-                }
-                finalResultsCellSpot.incrementCounter();
-            }
-        }
-
- */
-//        TIMING OF EXPERIENCE
-        Instant dateEnd = Instant.now();
-        long duration = Duration.between(dateBegin,dateEnd).toMillis();
-        IJ.log("Experiment "+experimentName+" is done in :" +duration/1000+" seconds");
-        return true;
+        return cytoDetector;
     }
 
     public boolean previewNucleiSegmentation(){

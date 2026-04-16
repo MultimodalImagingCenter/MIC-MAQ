@@ -961,7 +961,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             } else {
                 IJ.log("User removed this field of view from analysis\nnothing done!");
             }
-            if (cellResults != null) {
+            /*if (cellResults != null) {
                 cellResults.save(resultDirectory + "Results.xls");
             }
             if (nucleusResults != null) {
@@ -978,42 +978,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             spotsInCyto[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
                     }
                 }
-            }
+            }*/
+            saveResults(false);
         }
-        if (cellResults != null) {
-            cellResults.deleteRow(cellResults.size() - 1);
-            cellResults.show("Results");
-            cellResults.save(resultDirectory + "Results.xls");
-        }
-        if (nucleusResults != null) {
-            nucleusResults.deleteRow(nucleusResults.size() - 1);
-            nucleusResults.show("Cells-Nuclei Association");
-            nucleusResults.save(resultDirectory + "Cells-Nuclei-Association.xls");
-        }
-        if (spotPanels != null) {
-            for (int s = 0; s < spotPanels.size(); s++) {
-                if (spotPanels.get(s) != null) {
-                    if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInNuclei[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
-                    if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCells[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
-                    if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
-                        spotsInCyto[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
-
-                    if (!spotPanels.get(s).getMeasure().isSpotThreshold()) {
-                        spotsInNuclei = null;
-                        spotsInCells = null;
-                        spotsInCyto = null;
-                    }
-                }
-            }
-        }
-        if (summary != null) {
-            //summary.deleteRow(summary.size() - 1);
-            summary.show("summary");
-            summary.save(resultDirectory + "summary.xls");
-
-        }
+        saveResults(true);
 
         Instant dateEnd = Instant.now();
         long duration = Duration.between(dateBegin, dateEnd).toMillis();
@@ -1163,6 +1131,43 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
         IJ.log("create experiment finished");
         return exp;
+    }
+
+    public void saveResults(boolean deleteLastEmptyRow) {
+        if (cellResults != null) {
+            if(deleteLastEmptyRow)cellResults.deleteRow(cellResults.size() - 1);
+            cellResults.show("Results");
+            cellResults.save(resultDirectory + "Results.xls");
+        }
+        if (nucleusResults != null) {
+            if(deleteLastEmptyRow)nucleusResults.deleteRow(nucleusResults.size() - 1);
+            nucleusResults.show("Cells-Nuclei Association");
+            nucleusResults.save(resultDirectory + "Cells-Nuclei-Association.xls");
+        }
+        if (spotPanels != null) {
+            for (int s = 0; s < spotPanels.size(); s++) {
+                if (spotPanels.get(s) != null) {
+                    if (spotsInNuclei != null && spotsInNuclei[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
+                        spotsInNuclei[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInNuclei.xls");
+                    if (spotsInCells != null && spotsInCells[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
+                        spotsInCells[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCells.xls");
+                    if (spotsInCyto != null && spotsInCyto[s] != null && spotPanels.get(s).getMeasure().isSpotThreshold())
+                        spotsInCyto[s].save(resultDirectory + "C" + spotPanels.get(s).getChannel() + "_" + spotPanels.get(s).proteinName + "_SpotsInCytoplasms.xls");
+
+                    if (!spotPanels.get(s).getMeasure().isSpotThreshold()) {
+                        spotsInNuclei = null;
+                        spotsInCells = null;
+                        spotsInCyto = null;
+                    }
+                }
+            }
+        }
+        if (summary != null) {
+            //summary.deleteRow(summary.size() - 1);
+            summary.show("summary");
+            summary.save(resultDirectory + "summary.xls");
+
+        }
     }
 
     private boolean[] checkParameters() {

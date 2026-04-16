@@ -421,8 +421,11 @@ public class SegmentationParametersGUI {
                     }
 
                     if (params.get(i).startsWith("Projection")) {
-                        isZStackCheckBox.setSelected(true);
-                        System.out.println("change projection");
+                        isZStackCheckBox.setSelected(false);
+                        isZStackCheckBox.doClick();
+                        String model = params.get(i).split(": ")[1];
+                        projectionMethodCB.setSelectedItem(model);
+                        System.out.println("change projection to " + model);
                     }
 
                     if (params.get(i).startsWith("Use")) {

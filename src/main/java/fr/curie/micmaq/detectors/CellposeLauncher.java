@@ -109,6 +109,10 @@ public class CellposeLauncher {
         return cellposeRoiManager;
     }
 
+    public Objects3DIntPopulation getRoi3D() {
+        return roi3D;
+    }
+
     /**
      * Launching of cellpose resulting with a binary mask and a RoiManager
      */
@@ -183,6 +187,7 @@ public class CellposeLauncher {
                 IJ.log("convert to ROI_3D and measure");
                 label2Roi3D(cellposeMask,input);
                 IJ.log("should display measures");
+                label2Roi(cellposeMask);
             }else {
                 label2Roi(cellposeMask);
             }
@@ -438,7 +443,7 @@ public class CellposeLauncher {
 
             // will "erase" found ROI by setting them to 0
             cellposeProc.setColor(0);
-            IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi start: "+cellposeRoiManager.getCount());
+            //IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi start: "+cellposeRoiManager.getCount());
             for (int y_coord : pixel_height) {
                 for (int x_coord : pixel_width) {
                     if (cellposeProc.getPixel(x_coord, y_coord) > 0.0) {
@@ -457,7 +462,7 @@ public class CellposeLauncher {
                             roi.setLocation(xoffset + r.x, yoffset + r.y);
 
                             //roi.setPosition(0,slice+1,0);
-                            IJ.log("label2Roi ("+roi.getZPosition()+" )");
+                            //IJ.log("label2Roi ("+roi.getZPosition()+" )");
                             cellposeRoiManager.addRoi(roi);
                         }
                     }
@@ -482,7 +487,7 @@ public class CellposeLauncher {
             roi3D.addObjects(population1.getObjects3DInt(),true);
         }
         IJ.log("label2Roi3D nb objects after add: "+roi3D.getObjects3DInt().size()+"\nmeasure3D");
-        ResultsFrame tableResultsMeasure = Manager3DMeasurements.measurements3D(roi3D.getObjects3DInt());
+        /*ResultsFrame tableResultsMeasure = Manager3DMeasurements.measurements3D(roi3D.getObjects3DInt());
         IJ.log("frame created "+(tableResultsMeasure!=null));
         if (tableResultsMeasure != null) {
             tableResultsMeasure.setTitle("Cellpose 3D measurements");
@@ -493,7 +498,7 @@ public class CellposeLauncher {
         if (tableResultsQuantif != null) {
             tableResultsQuantif.setTitle("Cellpose 3D quantification");
             tableResultsQuantif.showFrame();
-        }
+        }*/
     }
 
     /**

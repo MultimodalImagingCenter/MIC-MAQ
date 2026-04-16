@@ -18,6 +18,7 @@ public class MeasureCalibration {
     private final String name; /*name of calibration*/
     private final double pixelLength; /*length of 1 pixel in real life*/
     private final String unit; /*unit of length the measures should be in*/
+    private final double pixelsZ;
 
 //    CONSTRUCTORS
     /**
@@ -42,6 +43,34 @@ public class MeasureCalibration {
 
 //        SET UNIT
         this.unit = unit;
+        this.pixelsZ=1;
+    }
+    /**
+     * Constructor mainly used when parsing file
+     * @param name : label to identify calibration
+     * @param pixelLength : length of pixel
+     * @param unit : unit of calibration
+     */
+    public MeasureCalibration(String name, String pixelLength, String pixelZ, String unit) {
+//        SET NAME
+        this.name = name;
+//        SET VALUE
+        /*The values are considered as given as length, so they need to be converted to areas by multiplicating them*/
+        double value_tmp;
+        double value_tmp2;
+        try {
+            value_tmp = Double.parseDouble(pixelLength);
+            value_tmp2 = Double.parseDouble(pixelZ);
+        }catch (NumberFormatException e){ /*If the value is not a number*/
+            IJ.error("The value is not a number, please correct the file.");
+            value_tmp=1;
+            value_tmp2=1;
+        }
+        this.pixelLength = value_tmp;
+
+//        SET UNIT
+        this.unit = unit;
+        this.pixelsZ=value_tmp2;
     }
 
     /**
@@ -52,6 +81,7 @@ public class MeasureCalibration {
         this.name = "No calibration";
 //        SET VALUE
         this.pixelLength =1;
+        this.pixelsZ=1;
 //        SET UNIT
         this.unit = "pixel";
     }
@@ -65,6 +95,9 @@ public class MeasureCalibration {
     }
     public double getPixelArea() {
         return pixelLength*pixelLength;
+    }
+    public double getPixelsZ() {
+        return pixelsZ;
     }
     public String getUnit() {
         return unit;
@@ -88,7 +121,9 @@ public class MeasureCalibration {
                     String[] calibration_values = currentLine.split(";");/*The three infos are separated by ;*/
                     if (calibration_values.length==3){
                         measureCalibrations.add(new MeasureCalibration(calibration_values[0],calibration_values[1],calibration_values[2]));
-                    } else {/*If more or less infos display error*/
+                    } else if(calibration_values.length==4){
+                        measureCalibrations.add(new MeasureCalibration(calibration_values[0],calibration_values[1],calibration_values[2],calibration_values[3]));
+                    }else {/*If more or less infos display error*/
                         IJ.error("The calibration information need to be separated by ';' " +
                                 "and there should only be the name, value and unit");
                     }
@@ -120,7 +155,7 @@ public class MeasureCalibration {
         try {
             BufferedWriter output = new BufferedWriter(new FileWriter(calibration_filename,true));
             output.newLine();
-            output.append(name).append(";").append(String.valueOf(pixelLength)).append(";").append(unit);
+            output.append(name).append(";").append(String.valueOf(pixelLength)).append(String.valueOf(pixelsZ)).append(";").append(unit);
             IJ.log("Added new calibration : name: "+ name +" value: " + pixelLength +" unit: "+ unit);
             output.close();
         } catch (IOException e) { /*If file can not be written in, display error message*/

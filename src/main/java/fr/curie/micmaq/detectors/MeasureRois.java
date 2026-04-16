@@ -4,18 +4,24 @@ import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.helpers.SummarizeResults;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.PolygonRoi;
+import ij.Prefs;
 import ij.gui.Roi;
-import ij.gui.ShapeRoi;
-import ij.gui.Wand;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
+import mcib3d.geom2.Object3DInt;
+import mcib3d.geom2.Objects3DIntPopulation;
+import mcib3d.geom2.measurements.*;
+import mcib3d.image3d.ImageHandler;
 
-import java.awt.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 
 public class MeasureRois {
@@ -51,52 +57,24 @@ public class MeasureRois {
     }
 
     public void measureAll(ResultsTable finalResultsNuclei, ResultsTable finalResultsCellSpot, String experimentName, MeasureCalibration calibration){
-        //IJ.log("measureAll");
+        IJ.log("measureAll");
         if(cells!=null && nuclei!=null){
-            Roi[] allNuclei = nuclei.getRoiArray();
-            int[] association2Cell = cyto.getAssociationCell2Nuclei();
-            int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
-            ResultsTable tmp =new ResultsTable();
-            int padding=(""+allNuclei.length).length();
-            for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
-                tmp.addValue("Name experiment", experimentName);
-                tmp.addValue("Nucleus ID",  IJ.pad(nucleusID + 1,padding));
-                tmp.addValue("Cell ID associated (detection)",IJ.pad(association2Cell[nucleusID],padding));
-                tmp.addValue("Cell ID associated (validated)",IJ.pad(association2CellTrue[nucleusID],padding));
-                measure(nucleusID, tmp,allNuclei[nucleusID],NUCLEI,calibration);
-                if(nucleusID< allNuclei.length-1) tmp.incrementCounter();
-            }
-
-            tmp.sort("Cell ID associated (validated)");
-            String[] headings= tmp.getHeadings();
-            for (int ind=0;ind<tmp.getCounter();ind++){
-                for(int col=0;col<headings.length;col++) {
-                    String val=tmp.getStringValue(col,ind);
-                    try{
-                        try{
-                            int valI = Integer.parseInt(val);
-                            finalResultsNuclei.addValue(headings[col],valI);
-                        }catch (NumberFormatException nfeI) {
-                            double valD = Double.parseDouble(val);
-                            finalResultsNuclei.addValue(headings[col], valD);
-                        }
-                    }catch (Exception e){
-                        finalResultsNuclei.addValue(headings[col],val);
-                    }
-                }
-                finalResultsNuclei.incrementCounter();
-            }
-
-            nuclei.setNucleiAssociatedRois(cyto.getAssociatedNucleiRois());
+            prepareCytoMeasure(finalResultsNuclei,experimentName,calibration);
         }
-        int numberOfObject = cells!=null ? cells.getRoiArray().length : nuclei.getRoiArray().length;
+        int numberOfObject = cells!=null ? cells.getNumberOfCells() : nuclei.getRoiArray().length;
+        IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
         for (int cellID = 0; cellID < numberOfObject; cellID++) {
                 finalResultsCellSpot.addValue("Name experiment", experimentName);
                 finalResultsCellSpot.addValue("Cell ID", "" + (cellID + 1));
                 if(cyto!=null) finalResultsCellSpot.addValue("Number of nuclei in Cell", cyto.getNumberOfNuclei(cellID));
                 if (cells!=null){
-                    Roi[] roiscell= cells.getRoiArray();
-                    measure(cellID, finalResultsCellSpot,roiscell[cellID],CELL, calibration);
+                    Objects3DIntPopulation roi3Ds=cells.getRoi3D();
+                    if(roi3Ds!=null) {
+                        measure3D(cellID, finalResultsCellSpot, roi3Ds.getObjects3DInt().get(cellID), CELL, calibration);
+                    }else {
+                        Roi[] roiscell = cells.getRoiArray();
+                        measure(cellID, finalResultsCellSpot, roiscell[cellID], CELL, calibration);
+                    }
                 }else if (nuclei!=null){
                     Roi[] rois= nuclei.getRoiArray();
                     measure(cellID, finalResultsCellSpot,rois[cellID],NUCLEI, calibration);
@@ -115,6 +93,44 @@ public class MeasureRois {
                 finalResultsCellSpot.incrementCounter();
 
         }
+    }
+
+    public void prepareCytoMeasure(ResultsTable finalResultsNuclei, String experimentName, MeasureCalibration calibration){
+        Roi[] allNuclei = nuclei.getRoiArray();
+        int[] association2Cell = cyto.getAssociationCell2Nuclei();
+        int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
+        ResultsTable tmp =new ResultsTable();
+        int padding=(""+allNuclei.length).length();
+        for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
+            tmp.addValue("Name experiment", experimentName);
+            tmp.addValue("Nucleus ID",  IJ.pad(nucleusID + 1,padding));
+            tmp.addValue("Cell ID associated (detection)",IJ.pad(association2Cell[nucleusID],padding));
+            tmp.addValue("Cell ID associated (validated)",IJ.pad(association2CellTrue[nucleusID],padding));
+            measure(nucleusID, tmp,allNuclei[nucleusID],NUCLEI,calibration);
+            if(nucleusID< allNuclei.length-1) tmp.incrementCounter();
+        }
+
+        tmp.sort("Cell ID associated (validated)");
+        String[] headings= tmp.getHeadings();
+        for (int ind=0;ind<tmp.getCounter();ind++){
+            for(int col=0;col<headings.length;col++) {
+                String val=tmp.getStringValue(col,ind);
+                try{
+                    try{
+                        int valI = Integer.parseInt(val);
+                        finalResultsNuclei.addValue(headings[col],valI);
+                    }catch (NumberFormatException nfeI) {
+                        double valD = Double.parseDouble(val);
+                        finalResultsNuclei.addValue(headings[col], valD);
+                    }
+                }catch (Exception e){
+                    finalResultsNuclei.addValue(headings[col],val);
+                }
+            }
+            finalResultsNuclei.incrementCounter();
+        }
+
+        nuclei.setNucleiAssociatedRois(cyto.getAssociatedNucleiRois());
     }
 
     public void measure(int cellID, ResultsTable resultsTableFinal, Roi measureRoi, String type, MeasureCalibration calib){
@@ -175,6 +191,119 @@ public class MeasureRois {
         setResultsAndRename(rawMeasures, resultsTableFinal, type + spot.getNameChannel(), calib);*/
     }
 
+    public void measure3D(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
+        IJ.log("measure3D "+type);
+        IJ.log(measureRoi3D.getName());
+        measureRoi3D.setVoxelSizeXY(calib.getPixelArea());
+        measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
+        measureRoi3D.setUnit(calib.getUnit());
+        int measures=cells.getMeasurements();
+        String[] headingsMeasureMorpho = getValidMeasurementsMorpho(measures);
+        //measure morpho
+        MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
+        Double[] measurementsMorpho = measureObjectMorpho.measureList(headingsMeasureMorpho);
+        //put in table
+        setResults3D(measurementsMorpho, headingsMeasureMorpho, resultsTableFinal, type + cells.getNameChannel(), calib);
+        //IJ.log(Arrays.toString(measurements));
+        String[] headingsMeasureIntensity = getValidMeasurementsIntensity(measures);
+        AtomicInteger ai = new AtomicInteger(0);
+        MeasureObject measureObjectIntensity = new MeasureObject(measureRoi3D);
+        Double[] measurementsIntensity = measureObjectIntensity.measureIntensityList(headingsMeasureIntensity,ImageHandler.wrap(cells.getImageToMeasure()));
+        setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + cells.getNameChannel(), calib);
+
+
+    }
+
+    public String[] getValidMeasurementsMorpho(int measurements){
+        List<String> validMeasurements = new ArrayList<>();
+        if((measurements&Measurements.AREA)!=0) {
+            validMeasurements.add(MeasureVolume.VOLUME_PIX);
+            validMeasurements.add(MeasureVolume.VOLUME_UNIT);
+        }
+        if((measurements&Measurements.PERIMETER)!=0) {
+            validMeasurements.add(MeasureSurface.SURFACE_PIX);
+            validMeasurements.add(MeasureSurface.SURFACE_UNIT);
+            validMeasurements.add(MeasureSurface.SURFACE_CORRECTED);
+            validMeasurements.add(MeasureSurface.SURFACE_NB_VOXELS);
+        }
+        if((measurements&Measurements.RECT)!=0){
+            validMeasurements.add(MeasureBoundingBox.XMIN);
+            validMeasurements.add(MeasureBoundingBox.YMIN);
+            validMeasurements.add(MeasureBoundingBox.ZMIN);
+            validMeasurements.add(MeasureBoundingBox.XMAX);
+            validMeasurements.add(MeasureBoundingBox.YMAX);
+            validMeasurements.add(MeasureBoundingBox.ZMAX);
+        }
+        if((measurements&Measurements.CENTROID)!=0){
+            validMeasurements.add(MeasureCentroid.CX_PIX);
+            validMeasurements.add(MeasureCentroid.CY_PIX);
+            validMeasurements.add(MeasureCentroid.CZ_PIX);
+        }
+        if((measurements&Measurements.CENTER_OF_MASS)!=0){
+            validMeasurements.add(MeasureCenterOfMass.MASS_CENTER_X_PIX);
+            validMeasurements.add(MeasureCenterOfMass.MASS_CENTER_Y_PIX);
+            validMeasurements.add(MeasureCenterOfMass.MASS_CENTER_Z_PIX);
+        }
+        if((measurements&Measurements.AREA_FRACTION)!=0){
+            //nothing available in 3DImageJSuite?
+        }
+        if((measurements&Measurements.ELLIPSE)!=0){
+            validMeasurements.add(MeasureEllipsoid.ELL_MAJOR_RADIUS_UNIT);
+            validMeasurements.add(MeasureEllipsoid.ELL_ELONGATION);
+            validMeasurements.add(MeasureEllipsoid.ELL_FLATNESS);
+            validMeasurements.add(MeasureEllipsoid.ELL_VOL_UNIT);
+            validMeasurements.add(MeasureEllipsoid.ELL_SPARENESS);
+        }
+        if((measurements&Measurements.SHAPE_DESCRIPTORS)!=0) {
+            validMeasurements.add(MeasureCompactness.COMP_PIX);
+            validMeasurements.add(MeasureCompactness.COMP_UNIT);
+            validMeasurements.add(MeasureCompactness.COMP_CORRECTED);
+            validMeasurements.add(MeasureCompactness.COMP_DISCRETE);
+            validMeasurements.add(MeasureCompactness.SPHER_PIX);
+            validMeasurements.add(MeasureCompactness.SPHER_UNIT);
+            validMeasurements.add(MeasureCompactness.SPHER_CORRECTED);
+            validMeasurements.add(MeasureCompactness.SPHER_DISCRETE);
+        }
+        if((measurements&Measurements.FERET)!=0) {
+            validMeasurements.add(MeasureFeret.FERET_PIX);
+            validMeasurements.add(MeasureFeret.FERET_UNIT);
+        }
+        return validMeasurements.toArray(new String[0]);
+    }
+
+
+    public String[] getValidMeasurementsIntensity(int measurements){
+        List<String> validMeasurements = new ArrayList<>();
+        if((measurements&Measurements.INTEGRATED_DENSITY)!=0) {
+            validMeasurements.add(MeasureIntensity.INTENSITY_SUM);
+        }
+        if((measurements&Measurements.MEAN)!=0) {
+            validMeasurements.add(MeasureIntensity.INTENSITY_AVG);
+        }
+        if((measurements&Measurements.MEDIAN)!=0){
+            validMeasurements.add(MeasureIntensityHist.INTENSITY_MEDIAN);
+        }
+        if((measurements&Measurements.STD_DEV)!=0){
+            validMeasurements.add(MeasureIntensity.INTENSITY_SD);
+        }
+        if((measurements&Measurements.MIN_MAX)!=0){
+            validMeasurements.add(MeasureIntensity.INTENSITY_MIN);
+            validMeasurements.add(MeasureIntensity.INTENSITY_MAX);
+        }
+        if((measurements&Measurements.MODE)!=0){
+            validMeasurements.add(MeasureIntensityHist.INTENSITY_MODE);
+            validMeasurements.add(MeasureIntensityHist.INTENSITY_MODE_NONZERO);
+        }
+        if((measurements&Measurements.SKEWNESS)!=0){
+            //nothing available in 3DImageJSuite?
+        }
+        if((measurements&Measurements.KURTOSIS)!=0) {
+            //nothing available in 3DImageJSuite?
+        }
+        return validMeasurements.toArray(new String[0]);
+    }
+
+
     public void summary(ResultsTable summaryTable, ResultsTable Table, String experimentName){
         System.out.println("summary "+experimentName);
         SummarizeResults.summarize(summaryTable,Table,0);
@@ -194,6 +323,16 @@ public class MeasureRois {
             } else if (!measure.equals("IntDen")) {
                 customMeasures.addValue(preNameColumn + " " + measure, rawMeasures.getValue(measure, 0));
             }
+        }
+    }
+
+    public void setResults3D(Double[] rawMeasures, String[] headings,ResultsTable customMeasures,  String preNameColumn, MeasureCalibration calib) {
+        for (int i = 0; i < headings.length; i++) {
+            if (headings[i].equals("Area")) {
+                customMeasures.addValue(preNameColumn + " " + headings[i] + " (pixel)", rawMeasures[i]);
+                customMeasures.addValue(preNameColumn + " " + headings[i] + " (" + calib.getUnit() + ")", rawMeasures[i] * calib.getPixelArea());
+            }
+            customMeasures.addValue(preNameColumn + " "+headings[i], rawMeasures[i]);
         }
     }
 
