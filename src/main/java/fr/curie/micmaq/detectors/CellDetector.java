@@ -313,7 +313,7 @@ public class CellDetector {
 //            Allow user to redefine the regions of interest
         if (finalValidation && !preview ) {
             roiManagerCell.toFront();
-            ImagePlus tempImage = imageToMeasure.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
+            ImagePlus tempImage = imageToReturn.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
             tempImage.show();
             IJ.selectWindow(tempImage.getID());
             roiManagerCell.runCommand("Show All");
