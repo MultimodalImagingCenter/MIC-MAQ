@@ -293,7 +293,7 @@ public class Experiment {
             interrupt=true;
             return false;
         }
-        spot.analysisPerRegion(0,null, finalResultsCellSpot,"Image",null);
+        spot.analysisPerRegion(0,(Roi)null, finalResultsCellSpot,"Image",null);
 
         return true;
     }
