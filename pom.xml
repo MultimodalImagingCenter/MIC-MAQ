@@ -11,7 +11,7 @@
 
     <groupId>fr.curie.mic-maq</groupId>
     <artifactId>MIC-MAQ</artifactId>
-    <version>1.14e-SNAPSHOT</version>
+    <version>1.15b-SNAPSHOT</version>
 
     <name>MIC-MAQ</name>
     <description>MIC-MAQ is an ImageJ plugin to segment nuclei/cells and provide measurements on many channels including foci detection</description>
@@ -128,7 +128,7 @@
 		<dependency>
 			<groupId>ch.epfl.biop</groupId>
 			<artifactId>ijl-utilities-wrappers</artifactId>
-			<version>0.11.5</version>
+			<version>0.12.1</version>
             <scope>provided</scope>
 		</dependency>
         <!-- https://mvnrepository.com/artifact/ome/pom-bio-formats -->
