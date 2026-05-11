@@ -290,7 +290,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             public void actionPerformed(ActionEvent e) {
                 GenericDialog gd = new GenericDialog("Cellpose environment");
                 gd.addStringField("conda_environment_type", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda"));
-                gd.addDirectoryField("conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()), 80);
+                gd.addDirectoryField("Cellpose3 conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", CellposeLauncher.getDefaultEnvPath()), 80);
+                gd.addDirectoryField("CellposeSAM conda_environment_path", Prefs.get("ch.epfl.biop.wrappers.cellpose.CellposeSAM.envDirPath", CellposeLauncher.getDefaultEnvPath()), 80);
                 gd.addCheckbox("use_GPU", Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", false));
 
                 gd.showDialog();
@@ -298,9 +299,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 if (!gd.wasCanceled()) {
                     String type = gd.getNextString();
                     String path = gd.getNextString();
+                    String path2 = gd.getNextString();
                     boolean useGPU = gd.getNextBoolean();
                     Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", type);
                     Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", path);
+                    Prefs.set("ch.epfl.biop.wrappers.cellpose.CellposeSAM.envDirPath", path2);
                     Prefs.set("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu", useGPU);
 
                     IJ.log("changed Cellpose environment to :\ntype: " + Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType", "conda")
@@ -1044,17 +1047,17 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
                     System.out.println("channel " + (i + 1) + "there should be projection!");
                     if (checkproj[0]) {
-                        System.out.println("set projection to the one from quantification");
+                        IJ.log("set projection to the one from quantification");
                         params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
                     } else {
-                        System.out.println("do nothing (should be in macro)!");
+                        IJ.log("do nothing (should be in macro)!");
                     }
                 }
                 cell = true;
             }
             if (cp.isUsed()) {
                 System.out.println("quantification channel: " + (i + 1));
-                IJ.log("quantification channel: " + (i + 1) + " is spot " + cp.isSpot());
+                IJ.log("MIC-MAQ: create experiment: quantification channel: " + (i + 1) + " is spot " + cp.isSpot());
                 //IJ.log("number of slices: " + imgs.getNSlices(i + 1));
                 MeasureValue measureValue = new MeasureValue(false);
                 if (cp.isSpot()) {
@@ -1063,14 +1066,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         measureValue = sp.getMeasure();
                         MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                         if (!measureValue.isZproject() && imgs.getNSlices(i + 1) > 1) {
-                            System.out.println("channel " + (i + 1) + "there should be projection!");
-                            if (checkproj[0]) {
-                                System.out.println("set projection to the one from quantification");
+                            IJ.log("channel " + (i + 1) + "there should be projection!");
+                            if (tmp.isZproject() && checkproj[0]) {
+                                IJ.log("set projection to the one from quantification");
                                 measureValue.setProjection(tmp.getProjectionMethod());
                                 measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
                                 measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
                             } else {
-                                System.out.println("do nothing (should be in macro)!");
+                                IJ.log("do nothing (should be in macro)!");
                             }
                         }
                     }
@@ -1078,10 +1081,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     //TODO check that MAX projection is what should be done by default
                     if (imgs.getNSlices(i + 1) > 1) {
                         MeasureValue tmp = quantifPanel.getMeasuresQuantif(i + 1);
-                        measureValue.setProjection(tmp.getProjectionMethod());
-                        measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
-                        measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
-                        IJ.log("C" + (i + 1) + " quantification without spots: 3D -> set projection to the one defined in quantification");
+                        if (tmp.isZproject() && checkproj[0]) {
+                            IJ.log("set projection to the one from quantification");
+                            measureValue.setProjection(tmp.getProjectionMethod());
+                            measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
+                            measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
+                            IJ.log("C" + (i + 1) + " quantification without spots: 3D -> set projection to the one defined in quantification");
+                        } else {
+                            IJ.log("do nothing (should be in macro)!");
+                        }
+
                     }
                 }
                 measureValue.setMeasure(quantifPanel.getMeasuresQuantif(i + 1).getMeasure());
@@ -1135,12 +1144,12 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
     public void saveResults(boolean deleteLastEmptyRow) {
         if (cellResults != null) {
-            if(deleteLastEmptyRow)cellResults.deleteRow(cellResults.size() - 1);
+            if (deleteLastEmptyRow) cellResults.deleteRow(cellResults.size() - 1);
             cellResults.show("Results");
             cellResults.save(resultDirectory + "Results.xls");
         }
         if (nucleusResults != null) {
-            if(deleteLastEmptyRow)nucleusResults.deleteRow(nucleusResults.size() - 1);
+            if (deleteLastEmptyRow) nucleusResults.deleteRow(nucleusResults.size() - 1);
             nucleusResults.show("Cells-Nuclei Association");
             nucleusResults.save(resultDirectory + "Cells-Nuclei-Association.xls");
         }

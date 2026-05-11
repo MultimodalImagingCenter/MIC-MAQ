@@ -14,10 +14,7 @@ import ij.gui.Wand;
 import ij.io.FileSaver;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.frame.RoiManager;
-import ij.process.Blitter;
-import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
+import ij.process.*;
 import mcib3d.geom2.Objects3DIntPopulation;
 import mcib3d.image3d.ImageHandler;
 import mcib_plugins.Manager3D.ImportImage;
@@ -122,6 +119,10 @@ public class CellposeLauncher {
         cellposeRoiManager = RoiManager.getRoiManager();
         cellposeMask = Detector.labeledImage(cellposeMask.getWidth(), cellposeMask.getHeight(),cellposeMask.getNSlices(), cellposeRoiManager.getRoisAsArray());
         cellposeMask.setTitle(imagePlus.getShortTitle() + "-cellpose");
+
+        if(roi3D!=null) IJ.log("cellpose roi3D:"+roi3D.getNbObjects());
+        IJ.log("cellpose roimanager:"+cellposeRoiManager.getCount());
+        IJ.log("cellpose mask (n objects):"+new StackStatistics(cellposeMask).max);
     }
 
     /**
@@ -352,7 +353,13 @@ public class CellposeLauncher {
     }
     private void setSettingsFromPrefs(CellposeTaskSettings settings){
         settings.setEnvType(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType","conda"));
-        settings.setEnvPath(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath",null));
+        switch (model) {
+            case "cpsam":
+                settings.setEnvPath(Prefs.get("ch.epfl.biop.wrappers.cellpose.CellposeSAM.envDirPath",null));
+                break;
+            default:
+                settings.setEnvPath(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath",null));
+        }
     }
 
     static public String getDefaultEnvPath(){
@@ -477,6 +484,7 @@ public class CellposeLauncher {
 
     public void label2Roi3D(ImagePlus cellposeIP, ImagePlus input) {
         IJ.log("label2Roi3D");
+        //TODO remove this display?
         cellposeIP.show();
         Objects3DIntPopulation population1 = new ImportImage(ImageHandler.wrap(cellposeIP.getImageStack())).importImage();
         IJ.log("label2Roi3D nb objects: "+population1.getObjects3DInt().size());
@@ -487,18 +495,6 @@ public class CellposeLauncher {
             roi3D.addObjects(population1.getObjects3DInt(),true);
         }
         IJ.log("label2Roi3D nb objects after add: "+roi3D.getObjects3DInt().size()+"\nmeasure3D");
-        /*ResultsFrame tableResultsMeasure = Manager3DMeasurements.measurements3D(roi3D.getObjects3DInt());
-        IJ.log("frame created "+(tableResultsMeasure!=null));
-        if (tableResultsMeasure != null) {
-            tableResultsMeasure.setTitle("Cellpose 3D measurements");
-            tableResultsMeasure.showFrame();
-        }
-        ResultsFrame tableResultsQuantif = Manager3DMeasurements.quantif3D(roi3D.getObjects3DInt(), ImageHandler.wrap(input));
-        IJ.log("frame created "+(tableResultsQuantif!=null));
-        if (tableResultsQuantif != null) {
-            tableResultsQuantif.setTitle("Cellpose 3D quantification");
-            tableResultsQuantif.showFrame();
-        }*/
     }
 
     /**
