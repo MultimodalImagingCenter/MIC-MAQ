@@ -66,6 +66,7 @@ public class Detector {
      */
     public Detector(ImagePlus image, String nameObject) {
         this.image = image;
+        IJ.log("detector constructor "+ image.getNSlices() +" slices");
 //        this.image = image.duplicate();
         this.nameImage = image.getTitle().replaceAll("[\\\\/:,;*?\"<>|]","_");
         this.nameObject = nameObject;
@@ -91,7 +92,7 @@ public class Detector {
         this.zStackProjMethod = zStackProjMethod;
         this.zStackFirstSlice = zStackFirstSlice;
         this.zStackLastSlice = zStackLastSlice;
-        //IJ.log("detector : zStack folowed by projection");
+        IJ.log("detector : zStack folowed by projection");
         isProjection = true;
         projection();
     }
@@ -144,6 +145,7 @@ public class Detector {
      * @return
      */
     public ImagePlus getImageQuantification() {
+        IJ.log("detector getimage quantif "+image.getNSlices()+" slices");
         //if (image.getNSlices() > 1) projection();
         //System.out.println("detector getimage quantif preprocess macro: "+quantifMacro);
         if (quantifMacro != null && !quantifMacro.isEmpty()) {
@@ -162,8 +164,10 @@ public class Detector {
                 temp.close();
             }
             if(temp.isVisible()) temp.hide();
+            IJ.log("detector getimage quantif with macro: "+imageToReturn.getNSlices()+" slices");
             return imageToReturn;
         }
+        IJ.log("detector getimage quantif without macro: "+image.getNSlices()+" slices");
         return image.duplicate();
     }
 
