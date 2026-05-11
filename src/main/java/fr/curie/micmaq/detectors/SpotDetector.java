@@ -20,9 +20,13 @@ import ij.process.Blitter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.process.LUT;
+import mcib3d.geom2.Object3DInt;
+import mcib3d.geom2.measurements.MeasureObject;
+import mcib3d.image3d.ImageHandler;
 
 import java.awt.*;
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Author : Camille RABIER
@@ -68,6 +72,7 @@ public class SpotDetector {
     private ImagePlus findMaximaMask;
 
     private ImagePlus livePreview;
+    private ImagePlus liveOriginal;
     private boolean spotByFindMaxima;
     private double prominence;
 
@@ -125,6 +130,8 @@ public class SpotDetector {
     public SpotDetector(ImagePlus image, String spotName) {
         detector = new Detector(image, spotName);
         this.image = image;
+        IJ.log("SpotDetector constructor image"+ this.image.getNSlices() +" slices");
+        IJ.log("SpotDetector constructor image(detector)"+ detector.getImage().getNSlices() +" slices");
         this.spotName = spotName;
         this.nameExperiment = "livePreview";
         this.resultsDirectory = "";
@@ -147,6 +154,7 @@ public class SpotDetector {
      * @param zStackLastSlice  Last slice of stack to use
      */
     public void setzStackParameters(String zStackProj, int zStackFirstSlice, int zStackLastSlice) {
+        IJ.log("spotdetector setzStackParameters "+zStackProj+" "+zStackFirstSlice+" "+zStackLastSlice);
         detector.setzStackParameters(zStackProj, zStackFirstSlice, zStackLastSlice);
     }
 
@@ -280,7 +288,11 @@ public class SpotDetector {
      * @param prominence
      */
     public void livePreviewFindMaxima(double prominence,boolean show) {
-        if (livePreview == null) livePreview = preprocessing();
+        if (livePreview == null) {
+            livePreview = preprocessing();
+            liveOriginal = detector.getImage();
+            liveOriginal.show();
+        }
         livePreview.show();
         Roi old=livePreview.getRoi();
         livePreview.resetRoi();
@@ -303,6 +315,8 @@ public class SpotDetector {
         if (livePreview == null) {
             livePreview = preprocessing();
             autocontrast(livePreview);
+            liveOriginal = detector.getImage();
+            liveOriginal.show();
         }
         Roi old=livePreview.getRoi();
         livePreview.resetRoi();
@@ -365,6 +379,8 @@ public class SpotDetector {
     public void endLivePreview() {
         livePreview.close();
         livePreview = null;
+        liveOriginal.close();
+        liveOriginal = null;
     }
 
     /**
@@ -430,8 +446,17 @@ public class SpotDetector {
             }
         }
 //        Preprocessing
+        if(image!=null) IJ.log("spotdetector prepare image "+image.getNSlices()+" slices");
+        else IJ.log("spotdetector prepare image is null");
+        if(imageToMeasure!=null)IJ.log("spotdetector prepare image to measure "+imageToMeasure.getNSlices()+" slices");
+        else IJ.log("spotdetector prepare image to measure is null ");
         ImagePlus preprocessed = preprocessing();
         if (preprocessed != null) {
+            IJ.log("spotdetector prepare preprocessed "+preprocessed.getNSlices()+" slices");
+            if(image!=null) IJ.log("spotdetector prepare after preprocessed image "+image.getNSlices()+" slices");
+            else IJ.log("spotdetector prepare after preprocessed image is null");
+            if(imageToMeasure!=null)IJ.log("spotdetector prepare after preprocessed image to measure "+imageToMeasure.getNSlices()+" slices");
+            else IJ.log("spotdetector prepare after preprocessed image to measure is null ");
             if (showPreprocessedImage) {
                 preprocessed.show();
             }
@@ -507,6 +532,43 @@ public class SpotDetector {
         }
         if (spotByThreshold) {
             findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
+        }
+    }
+
+    /**
+     * Detect spot in region wanted : nucleus, cell or cytoplasm
+     *
+     * @param regionID          : id of objet (number in list of ROI) for saving of threshold roi
+     * @param measureRoi3D         : ROI where the spot have to be detected
+     * @param resultsTableFinal : results table to fill
+     * @param type              : image, cell, nucleus or cytoplasm
+     */
+    public void analysisPerRegion(int regionID, Object3DInt measureRoi3D, ResultsTable resultsTableFinal, String type, ResultsTable spotsMeasuresTable) {
+        measureRoi3D.setVoxelSizeXY(measureCalibration.getPixelArea());
+        measureRoi3D.setVoxelSizeZ(measureCalibration.getPixelsZ());
+        measureRoi3D.setUnit(measureCalibration.getUnit());
+        String[] headingsMeasureIntensity = MeasureRois.getValidMeasurements3DIntensity(measurements);
+        MeasureObject measureObjectIntensity = new MeasureObject(measureRoi3D);
+        this.imageToMeasure.setTitle("spot measure intensity");
+        this.imageToMeasure.show();
+        Double[] measurementsIntensity = measureObjectIntensity.measureIntensityList(headingsMeasureIntensity, ImageHandler.wrap(this.getImageToMeasure()));
+        MeasureRois.setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + this.getSpotName(), measureCalibration);
+
+
+        //imageToMeasure.setRoi(regionROI);
+        //ResultsTable rawMeasures = new ResultsTable();
+//        Measures of mean and raw intensities in the whole ROI are always done for spot images
+        //Analyzer analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures);
+        //analyzer.measure();
+        //detector.setResultsAndRename(rawMeasures, resultsTableFinal, 0, type  + spotName); /*always first line, because analyzer replace line*/
+        //IJ.log("SpotDetector analysis per region : "+spotName);
+        //IJ.log("SpotDetector analysis per region : "+type);
+//        Detection and measurements
+        if (spotByFindMaxima) {
+            //findMaximaPerRegion(regionROI, resultsTableFinal, type);
+        }
+        if (spotByThreshold) {
+            //findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
         }
     }
 
@@ -619,6 +681,8 @@ public class SpotDetector {
 //        PROJECTION : convert stack to one image
             imageToMeasure = detector.getImageQuantification();
             ImagePlus imageToReturn = detector.getImage();
+            IJ.log("SpotDetector preprocessing imageToMeasure "+imageToMeasure.getNSlices()+" slices");
+            IJ.log("SpotDetector preprocessing imageToReturn "+imageToReturn.getNSlices()+" slices");
             ImagePlus temp;
 //      MACRO : apply custom commands of user
             if (macroText != null) {
@@ -629,16 +693,16 @@ public class SpotDetector {
                 temp = WindowManager.getCurrentImage();
                 if(temp!=imageToReturn) {
                     imageToReturn.changes=false;
-                    imageToReturn.close();
+                    imageToReturn.hide();
                     imageToReturn = temp.duplicate();
-                    temp.changes = false;
-                    temp.close();
                 }
+                temp.changes = false;
+                temp.hide();
             }
 //            SUBTRACT BACKGROUND : correct background with rolling ball algorithm
             if (useRollingBallSize) {
                 ImagePlus tmp= getSubtractBackground(imageToReturn);
-                imageToReturn.close();
+                imageToReturn.hide();
                 imageToReturn = tmp;
             }
             imageToReturn.setTitle("test");
@@ -722,8 +786,10 @@ public class SpotDetector {
 
     public ImagePlus getImageToMeasure() {
         if(imageToMeasure==null) {
+            IJ.log("SpotDetector imageToMeasure : null");
             imageToMeasure=detector.getImageQuantification();
         }
+        IJ.log("SpotDetector imageToMeasure : "+imageToMeasure.getNSlices());
         return imageToMeasure;
     }
 
