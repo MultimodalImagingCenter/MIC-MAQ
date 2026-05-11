@@ -97,6 +97,7 @@ public class SummarizeResults implements PlugIn {
         ArrayList<String> names=new ArrayList<>();
 
         // Iterate over the rows in the ResultsTable
+        if(rt.getCounter()==0) return;
         for (int i = 0; i < rt.getCounter(); i++) {
             String experimentName = rt.getStringValue(experimentNameColumn, i);
             double[] values = new double[columnCount];
@@ -162,84 +163,95 @@ public class SummarizeResults implements PlugIn {
             ArrayList<String> names=new ArrayList<>();
 
             // Iterate over the rows in the first ResultsTable
-            for (int i = 0; i < nucleiResultTable.getCounter(); i++) {
-                String experimentName = nucleiResultTable.getStringValue(experimentNameColumn1, i);
-                double[] values = new double[columnCount1+2];
+            System.out.println("nucleiResultTable.getCounter():"+nucleiResultTable.getCounter());
+            System.out.println("cellResultsTable.getCounter():"+cellResultsTable.getCounter());
+            if(nucleiResultTable.getCounter()>0) {
+                for (int i = 0; i < nucleiResultTable.getCounter(); i++) {
+                    String experimentName = nucleiResultTable.getStringValue(experimentNameColumn1, i);
+                    double[] values = new double[columnCount1 + 2];
 
-                // Retrieve values for each column in the row
-                for (int j = 0; j < columnCount1; j++) {
-                    if(nucleiResultTable.getColumnHeading(j).equals("Nucleus ID")){
-                        values[j]=1;
-                    }else if(nucleiResultTable.getColumnHeading(j).endsWith("maxima nr. spots")){
-                        double val=nucleiResultTable.getValue(j, i);
-                        if(val>0) values[columnCount1]++;
-                        values[j] = val;
-                        maxima=true;
-                    }else if(nucleiResultTable.getColumnHeading(j).endsWith("threshold nr. spots")){
-                        double val=nucleiResultTable.getValue(j, i);
-                        if(val>0) values[columnCount1+1]++;
-                        values[j] = val;
-                        thresh=true;
-                    }else {
-                        double val=nucleiResultTable.getValue(j, i);
-                        if(Double.isNaN(val)) {
-                            values[j] = 0;
-                        }else{
+                    // Retrieve values for each column in the row
+                    for (int j = 0; j < columnCount1; j++) {
+                        if (nucleiResultTable.getColumnHeading(j).equals("Nucleus ID")) {
+                            values[j] = 1;
+                        } else if (nucleiResultTable.getColumnHeading(j).endsWith("maxima nr. spots")) {
+                            double val = nucleiResultTable.getValue(j, i);
+                            if (val > 0) values[columnCount1]++;
                             values[j] = val;
+                            maxima = true;
+                        } else if (nucleiResultTable.getColumnHeading(j).endsWith("threshold nr. spots")) {
+                            double val = nucleiResultTable.getValue(j, i);
+                            if (val > 0) values[columnCount1 + 1]++;
+                            values[j] = val;
+                            thresh = true;
+                        } else {
+                            double val = nucleiResultTable.getValue(j, i);
+                            if (Double.isNaN(val)) {
+                                values[j] = 0;
+                            } else {
+                                values[j] = val;
+                            }
                         }
+
                     }
 
-                }
-
-                // Summarize the values
-                if (summaryMap1.containsKey(experimentName)) {
-                    double[] existingValues = summaryMap1.get(experimentName);
-                    for (int j = 0; j < values.length; j++) {
-                        existingValues[j] += values[j];
+                    // Summarize the values
+                    if (summaryMap1.containsKey(experimentName)) {
+                        double[] existingValues = summaryMap1.get(experimentName);
+                        for (int j = 0; j < values.length; j++) {
+                            existingValues[j] += values[j];
+                        }
+                    } else {
+                        summaryMap1.put(experimentName, values.clone());
+                        if (!experimentName.equals("0")) names.add(experimentName);
                     }
-                } else {
-                    summaryMap1.put(experimentName, values.clone());
-                    if(! experimentName.equals("0")) names.add(experimentName);
                 }
+            }//end if (nucleiResultTable.getCounter()>0)
+            else{
+                IJ.log("no nuclei results");
             }
             // Iterate over the rows in the second ResultsTable
-            for (int i = 0; i < cellResultsTable.getCounter(); i++) {
-                String experimentName = cellResultsTable.getStringValue(experimentNameColumn2, i);
-                double[] values = new double[columnCount2+2];
+            if(cellResultsTable.getCounter()>0) {
+                for (int i = 0; i < cellResultsTable.getCounter(); i++) {
+                    String experimentName = cellResultsTable.getStringValue(experimentNameColumn2, i);
+                    double[] values = new double[columnCount2 + 2];
 
-                // Retrieve values for each column in the row
-                for (int j = 0; j < columnCount2; j++) {
-                    if(cellResultsTable.getColumnHeading(j).equals("Cell ID")){
-                        values[j]=1;
-                    }else if(cellResultsTable.getColumnHeading(j).startsWith("Cell")&& cellResultsTable.getColumnHeading(j).endsWith("maxima nr. spots")){
-                        double val=cellResultsTable.getValue(j, i);
-                        if(val>0) values[columnCount2]++;
-                        values[j] = val;
-                    }else if(cellResultsTable.getColumnHeading(j).startsWith("Cell")&&cellResultsTable.getColumnHeading(j).endsWith("threshold nr. spots")){
-                        double val=cellResultsTable.getValue(j, i);
-                        if(val>0) values[columnCount2+1]++;
-                        values[j] = val;
-                    }else {
-                        double val=cellResultsTable.getValue(j, i);
-                        if(Double.isNaN(val)) {
-                            values[j] = 0;
-                        }else{
+                    // Retrieve values for each column in the row
+                    for (int j = 0; j < columnCount2; j++) {
+                        if (cellResultsTable.getColumnHeading(j).equals("Cell ID")) {
+                            values[j] = 1;
+                        } else if (cellResultsTable.getColumnHeading(j).startsWith("Cell") && cellResultsTable.getColumnHeading(j).endsWith("maxima nr. spots")) {
+                            double val = cellResultsTable.getValue(j, i);
+                            if (val > 0) values[columnCount2]++;
                             values[j] = val;
+                        } else if (cellResultsTable.getColumnHeading(j).startsWith("Cell") && cellResultsTable.getColumnHeading(j).endsWith("threshold nr. spots")) {
+                            double val = cellResultsTable.getValue(j, i);
+                            if (val > 0) values[columnCount2 + 1]++;
+                            values[j] = val;
+                        } else {
+                            double val = cellResultsTable.getValue(j, i);
+                            if (Double.isNaN(val)) {
+                                values[j] = 0;
+                            } else {
+                                values[j] = val;
+                            }
                         }
                     }
-                }
 
-                // Summarize the values
-                if (summaryMap2.containsKey(experimentName)) {
-                    double[] existingValues = summaryMap2.get(experimentName);
-                    for (int j = 0; j < values.length; j++) {
-                        existingValues[j] += values[j];
+                    // Summarize the values
+                    if (summaryMap2.containsKey(experimentName)) {
+                        double[] existingValues = summaryMap2.get(experimentName);
+                        for (int j = 0; j < values.length; j++) {
+                            existingValues[j] += values[j];
+                        }
+                    } else {
+                        summaryMap2.put(experimentName, values.clone());
                     }
-                } else {
-                    summaryMap2.put(experimentName, values.clone());
                 }
+            }//end if (cellResultsTable.getCounter()>0)
+            else{
+                IJ.log("no cell results");
             }
-
             // Display the summary
             summaryMap1.remove("0");
             summaryMap2.remove("0");
