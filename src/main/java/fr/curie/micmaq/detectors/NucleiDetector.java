@@ -12,6 +12,8 @@ import ij.plugin.frame.RoiManager;
 import ij.process.Blitter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
+import ij.process.StackStatistics;
+import mcib3d.geom2.Objects3DIntPopulation;
 
 import java.awt.*;
 import java.io.File;
@@ -67,6 +69,9 @@ public class NucleiDetector {
     private int expandRadius = 10;
     private ArrayList<Roi[]> roisExpanded;
     protected ImagePlus expandedIP;
+
+    Objects3DIntPopulation roi3Ds;
+    protected ImagePlus labeledImage;
 
     /**
      * Constructor with basic parameters, the other are initialized only if needed
@@ -279,6 +284,17 @@ public class NucleiDetector {
         return nucleiRois;
     }
 
+    public Objects3DIntPopulation getRoi3D() {
+        return roi3Ds;
+    }
+
+    public int getNumberOfNuclei(){
+        IJ.log("nucleidetector getNbCells "+ roi3Ds);
+        if(roi3Ds !=null) return roi3Ds.getNbObjects();
+        else if(nucleiRois!=null) return nucleiRois.length;
+        else return 0;
+    }
+
     /**
      *
      * @return image
@@ -332,6 +348,9 @@ public class NucleiDetector {
         }
     }
 
+    public boolean prepare(){
+        return prepare(false);
+    }
     /**
      * Prepare for measurement
      * - does the preprocessing
@@ -342,7 +361,7 @@ public class NucleiDetector {
      * - if selected by user save segmentation image and ROIs
      * @return true if no error
      */
-    public boolean prepare(){
+    public boolean prepare(boolean preview){
         IJ.log("nuclei detector prepare "+macroSegmentation);
         //check saving directory
         if(saveRois){
@@ -357,79 +376,20 @@ public class NucleiDetector {
 //        PREPROCESSING
        // System.out.println("nuclei detector prepare macro preprocess: "+getPreprocessingMacro());
         ImagePlus preprocessed = getPreprocessing();
-        if (preprocessed!=null){ /*if no error during preprocessing*/
-            if (showPreprocessingImage){
-                preprocessed.show();
-                WindowManager.getWindow("Log").toFront();
-            }
-            RoiManager roiManagerNuclei;
-            ImagePlus labeledImage;
-            String analysisType;
-//            SEGMENTATION
-            if (cellpose){
-                WindowManager.getWindow("Log").toFront();
-                IJ.log("run Cellpose");
-                analysisType = "cellpose";
-                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
-                cellposeLauncher.analysis();
-                labeledImage = cellposeLauncher.getCellposeMask();
-                detector.renameImage(labeledImage,"cellpose");
-                roiManagerNuclei = cellposeLauncher.getCellposeRoiManager();
-            } else if(stardist) {
-                IJ.log("run Stardist");
-                analysisType = "StarDist";
-                StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
-                starDistLauncher.setModel(stardistModel);
-                starDistLauncher.setPercentileBottom(stardistPercentileBottom);
-                starDistLauncher.setPercentileTop(stardistPercentileTop);
-                starDistLauncher.setProbThresh(stardistProbThresh);
-                starDistLauncher.setNmsThresh(stardistNmsThresh);
-                starDistLauncher.setModelFile(stardistModelFile);
-                starDistLauncher.setScale(stardistScale);
-                starDistLauncher.setExcludeOnEdges(excludeOnEdges);
-                starDistLauncher.analysis();
-                labeledImage = starDistLauncher.getInstanceMask();
-                detector.renameImage(labeledImage, "stardist");
-                roiManagerNuclei = starDistLauncher.getStardistRoiManager();
-            }else if (macroSegmentation){
-                IJ.log("segmentation via macro");
-                analysisType = "macro segmentation";
-                ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
-                ImagePlus temp;
-//      MACRO : apply custom commands of user
+        if (preprocessed!=null){
+            ArrayList<Object> segtmp = runSegmentation(preprocessed);
+            labeledImage = (ImagePlus) segtmp.get(0);
+            IJ.log("label image max "+new StackStatistics(labeledImage).max);
+            RoiManager roiManagerNuclei = (RoiManager) segtmp.get(1);
+            roi3Ds = (Objects3DIntPopulation) segtmp.get(2);
+            if(roi3Ds!=null) IJ.log("nucleidetector analyse cellpose roi3D:"+roi3Ds.getNbObjects());
+            String analysisType = (String) segtmp.get(3);
 
-                imageToReturn.show();
-                IJ.selectWindow(imageToReturn.getID());
-                IJ.runMacro("//setBatchMode(true);\n"+segmentationMacro+"\n//setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
-                temp = WindowManager.getCurrentImage();
-                if(!showPreprocessingImage) imageToReturn.hide();
-                //imageToReturn.setTitle("image to return");
-                temp.changes=false;
-                temp.setTitle("temp");
-                temp.hide();
-                if(isMacroOutputImage && macroOutputRoiManager){
-                    labeledImage = temp;
-                    roiManagerNuclei = RoiManager.getRoiManager();
-                }else if(isMacroOutputImage){
-                    labeledImage = temp;
-                    RoiManager.getRoiManager().reset();
-                    roiManagerNuclei = CellposeLauncher.label2Roi(temp,0,0,0);
-                } else {
-                    roiManagerNuclei = RoiManager.getRoiManager();
-                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
-                }
-            }else {//threshold
-                IJ.log("run threshold");
-                analysisType = "threshold";
-                thresholding(preprocessed);
-                // Analyse particle
-                roiManagerNuclei =detector.analyzeParticles(imageToParticleAnalyze);
-                labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
-            }
             IJ.log("should do exclude on edge "+excludeOnEdges);
             if(excludeOnEdges) {
                 if(excludeOnEdgesRois(roiManagerNuclei)){
-                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                    if(labeledImage.getNSlices()>1) IJ.log("exclude on edge does not work on 3D data");
+                    else labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
                 }
             }
 
@@ -540,6 +500,90 @@ public class NucleiDetector {
             return true;
         }else return false;
     }
+    public ArrayList<Object> runSegmentation(ImagePlus preprocessed ){
+         /*if no error during preprocessing*/
+            if (showPreprocessingImage){
+                preprocessed.show();
+                WindowManager.getWindow("Log").toFront();
+            }
+            RoiManager roiManagerNuclei;
+            ImagePlus labeledImage;
+            String analysisType;
+//            SEGMENTATION
+            if (cellpose){
+                WindowManager.getWindow("Log").toFront();
+                IJ.log("run Cellpose");
+                analysisType = "cellpose";
+                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
+                cellposeLauncher.analysis();
+                ImagePlus tmp = cellposeLauncher.getCellposeMask();
+                IJ.log("seg label image max "+new StackStatistics(tmp).max);
+                detector.renameImage(tmp,"cellpose");
+                roiManagerNuclei = cellposeLauncher.getCellposeRoiManager();
+                IJ.log("cellpose segmentation "+roiManagerNuclei.getCount()+" ROIs");
+                roi3Ds = cellposeLauncher.getRoi3D();
+                labeledImage = tmp;
+                IJ.log("seg label image max "+new StackStatistics(labeledImage).max);
+                if(roi3Ds!=null) IJ.log("nucleidetector cellpose segmentation "+roi3Ds.getNbObjects()+" 3D objects");
+            } else if(stardist) {
+                IJ.log("run Stardist");
+                analysisType = "StarDist";
+                StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
+                starDistLauncher.setModel(stardistModel);
+                starDistLauncher.setPercentileBottom(stardistPercentileBottom);
+                starDistLauncher.setPercentileTop(stardistPercentileTop);
+                starDistLauncher.setProbThresh(stardistProbThresh);
+                starDistLauncher.setNmsThresh(stardistNmsThresh);
+                starDistLauncher.setModelFile(stardistModelFile);
+                starDistLauncher.setScale(stardistScale);
+                starDistLauncher.setExcludeOnEdges(excludeOnEdges);
+                starDistLauncher.analysis();
+                labeledImage = starDistLauncher.getInstanceMask();
+                detector.renameImage(labeledImage, "stardist");
+                roiManagerNuclei = starDistLauncher.getStardistRoiManager();
+            }else if (macroSegmentation){
+                IJ.log("segmentation via macro");
+                analysisType = "macro segmentation";
+                ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
+                ImagePlus temp;
+//      MACRO : apply custom commands of user
+
+                imageToReturn.show();
+                IJ.selectWindow(imageToReturn.getID());
+                IJ.runMacro("//setBatchMode(true);\n"+segmentationMacro+"\n//setBatchMode(false);"); /*accelerates the treatment by displaying only the last image*/
+                temp = WindowManager.getCurrentImage();
+                if(!showPreprocessingImage) imageToReturn.hide();
+                //imageToReturn.setTitle("image to return");
+                temp.changes=false;
+                temp.setTitle("temp");
+                temp.hide();
+                if(isMacroOutputImage && macroOutputRoiManager){
+                    labeledImage = temp;
+                    roiManagerNuclei = RoiManager.getRoiManager();
+                }else if(isMacroOutputImage){
+                    labeledImage = temp;
+                    RoiManager.getRoiManager().reset();
+                    roiManagerNuclei = CellposeLauncher.label2Roi(temp,0,0,0);
+                } else {
+                    roiManagerNuclei = RoiManager.getRoiManager();
+                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                }
+            }else {//threshold
+                IJ.log("run threshold");
+                analysisType = "threshold";
+                thresholding(preprocessed);
+                // Analyse particle
+                roiManagerNuclei =detector.analyzeParticles(imageToParticleAnalyze);
+                labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+            }
+        IJ.log("end seg label image max "+new StackStatistics(labeledImage).max);
+        ArrayList<Object> returnList = new ArrayList<>();
+        returnList.add(labeledImage);
+        returnList.add(roiManagerNuclei);
+        returnList.add(roi3Ds);
+        returnList.add(analysisType);
+        return returnList;
+    }
 
 
     /**
@@ -640,6 +684,10 @@ public class NucleiDetector {
         return imageToMeasure;
     }
 
+    public ImagePlus getLabeledImage() {
+        return labeledImage;
+    }
+
     public boolean isExpand4Cells() {
         return expand4Cells;
     }
@@ -663,11 +711,15 @@ public class NucleiDetector {
     public ImageProcessor getExpandedMask(int radius){
         //IJ.log("nb nuclei: "+nucleiRois.length);
         int nsl = detector.isProjection() ? 1 : image.getNSlices();
-        ImagePlus expandedIP= Detector.labeledImage(image.getWidth(),image.getHeight(),nsl,nucleiRois);
-        //IJ.log("nb cells nuclei(maskFromRoi): "+expandedIP.getRawStatistics().max);
-        ImageProcessor expanded= ExpandMask.expandsMask(expandedIP.getProcessor(),radius);
-        //IJ.log("nb cells expanded(mask): "+expanded.getStats().max);
-        return expanded;
+
+            ImagePlus expandedIP = Detector.labeledImage(image.getWidth(), image.getHeight(), nsl, nucleiRois);
+            //IJ.log("nb cells nuclei(maskFromRoi): "+expandedIP.getRawStatistics().max);
+            ImageProcessor expanded = ExpandMask.expandsMask(expandedIP.getProcessor(), radius);
+            //IJ.log("nb cells expanded(mask): "+expanded.getStats().max);
+            return expanded;
+
+
+
     }
 
     public ImagePlus getExpandedMask(){

@@ -1,10 +1,11 @@
 package fr.curie.micmaq.detectors;
 
+import fr.curie.micmaq.helpers.ExpandMask;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.helpers.SummarizeResults;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.Prefs;
+import ij.ImageStack;
 import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
@@ -13,15 +14,13 @@ import mcib3d.geom2.Object3DInt;
 import mcib3d.geom2.Objects3DIntPopulation;
 import mcib3d.geom2.measurements.*;
 import mcib3d.image3d.ImageHandler;
+import mcib_plugins.Manager3D.ImportImage;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 
 public class MeasureRois {
@@ -58,10 +57,17 @@ public class MeasureRois {
 
     public void measureAll(ResultsTable finalResultsNuclei, ResultsTable finalResultsCellSpot, String experimentName, MeasureCalibration calibration){
         IJ.log("measureAll");
+        Objects3DIntPopulation expandLabels=null;
         if(cells!=null && nuclei!=null){
             prepareCytoMeasure(finalResultsNuclei,experimentName,calibration);
         }
-        int numberOfObject = cells!=null ? cells.getNumberOfCells() : nuclei.getRoiArray().length;
+        if(nuclei!=null&& nuclei.isExpand4Cells()){
+            IJ.log("expanding nuclei");
+            ImagePlus labels=nuclei.getLabeledImage();
+            ImageStack tmpexpand= ExpandMask.expandsMask(labels.getStack(), nuclei.getExpandRadius(), (int)Math.round(nuclei.getExpandRadius()/calibration.getPixelLength()*calibration.getPixelsZ()));
+            expandLabels = new ImportImage(ImageHandler.wrap(tmpexpand)).importImage();
+        }
+        int numberOfObject = cells!=null ? cells.getNumberOfCells() : nuclei.getNumberOfNuclei();
         IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
         for (int cellID = 0; cellID < numberOfObject; cellID++) {
                 finalResultsCellSpot.addValue("Name experiment", experimentName);
@@ -70,19 +76,39 @@ public class MeasureRois {
                 if (cells!=null){
                     Objects3DIntPopulation roi3Ds=cells.getRoi3D();
                     if(roi3Ds!=null) {
+                        IJ.log("cell measure3D");
                         measure3D(cellID, finalResultsCellSpot, roi3Ds.getObjects3DInt().get(cellID), CELL, calibration);
                     }else {
+                        IJ.log("cell measure2D");
                         Roi[] roiscell = cells.getRoiArray();
                         measure(cellID, finalResultsCellSpot, roiscell[cellID], CELL, calibration);
                     }
                 }else if (nuclei!=null){
-                    Roi[] rois= nuclei.getRoiArray();
-                    measure(cellID, finalResultsCellSpot,rois[cellID],NUCLEI, calibration);
+                    Objects3DIntPopulation roi3Ds=nuclei.getRoi3D();
+                    if(roi3Ds!=null){
+                        IJ.log("nuclei measure3D");
+                        if(roi3Ds.getObjects3DInt().size()>cellID) {
+                            measure3D(cellID, finalResultsCellSpot, roi3Ds.getObjects3DInt().get(cellID), NUCLEI, calibration);
+                        }
+                    }else {
+                        IJ.log("nuclei measure2D");
+                        Roi[] rois = nuclei.getRoiArray();
+                        measure(cellID, finalResultsCellSpot, rois[cellID], NUCLEI, calibration);
+                    }
                     if(nuclei.isExpand4Cells()){
-                        ArrayList<Roi[]> roisExpanded= nuclei.getExpandedRois();
-                        if(roisExpanded.get(1).length>cellID) {
-                            measure(cellID, finalResultsCellSpot, roisExpanded.get(1)[cellID], NUCLEI_EXP_CELL, calibration);
-                            measure(cellID, finalResultsCellSpot, roisExpanded.get(2)[cellID], NUCLEI_EXP_CYTO, calibration);
+                        if(roi3Ds!=null) {
+                            if(expandLabels!=null){
+                                IJ.log("expand nuclei measure3D");
+                                measure3D(cellID, finalResultsCellSpot, expandLabels.getObjects3DInt().get(cellID), NUCLEI_EXP_CELL, calibration);
+                                //TODO cyto
+                            }
+                        }else {
+                            IJ.log("expand nuclei measure2D");
+                            ArrayList<Roi[]> roisExpanded = nuclei.getExpandedRois();
+                            if (roisExpanded.get(1).length > cellID) {
+                                measure(cellID, finalResultsCellSpot, roisExpanded.get(1)[cellID], NUCLEI_EXP_CELL, calibration);
+                                measure(cellID, finalResultsCellSpot, roisExpanded.get(2)[cellID], NUCLEI_EXP_CYTO, calibration);
+                            }
                         }
                     }
                 }
@@ -192,29 +218,79 @@ public class MeasureRois {
     }
 
     public void measure3D(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
+        rawMeasures.reset();
+        if(type.equals(NUCLEI)){
+            if(nuclei!=null) measure3DNuclei(cellID,resultsTableFinal,measureRoi3D,type,calib);
+            if(cells!=null) measure3DCell(cellID,resultsTableFinal,measureRoi3D,type,calib);
+        }else{
+            if(cells!=null) measure3DCell(cellID,resultsTableFinal,measureRoi3D,type,calib);
+            if(nuclei!=null) measure3DNuclei(cellID,resultsTableFinal,measureRoi3D,type,calib);
+        }
+        if(spots!=null){
+            for (int s=0;s<spots.size();s++) {
+                SpotDetector spot = spots.get(s);
+                if (spot != null) {
+                    measureSpot3D(spot,cellID,s,measureRoi3D,type,resultsTableFinal,calib);
+                }
+            }
+        }
+    }
+
+    public void measure3DCell(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
         IJ.log("measure3D "+type);
         IJ.log(measureRoi3D.getName());
         measureRoi3D.setVoxelSizeXY(calib.getPixelArea());
         measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
         measureRoi3D.setUnit(calib.getUnit());
         int measures=cells.getMeasurements();
-        String[] headingsMeasureMorpho = getValidMeasurementsMorpho(measures);
-        //measure morpho
-        MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
-        Double[] measurementsMorpho = measureObjectMorpho.measureList(headingsMeasureMorpho);
-        //put in table
-        setResults3D(measurementsMorpho, headingsMeasureMorpho, resultsTableFinal, type + cells.getNameChannel(), calib);
+        if(type.equals(CELL)) {
+            String[] headingsMeasureMorpho = getValidMeasurements3DMorpho(measures);
+            //measure morpho
+            MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
+            Double[] measurementsMorpho = measureObjectMorpho.measureList(headingsMeasureMorpho);
+            //put in table
+            setResults3D(measurementsMorpho, headingsMeasureMorpho, resultsTableFinal, type + cells.getNameChannel(), calib);
+        }
         //IJ.log(Arrays.toString(measurements));
-        String[] headingsMeasureIntensity = getValidMeasurementsIntensity(measures);
+        String[] headingsMeasureIntensity = getValidMeasurements3DIntensity(measures);
         AtomicInteger ai = new AtomicInteger(0);
         MeasureObject measureObjectIntensity = new MeasureObject(measureRoi3D);
         Double[] measurementsIntensity = measureObjectIntensity.measureIntensityList(headingsMeasureIntensity,ImageHandler.wrap(cells.getImageToMeasure()));
         setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + cells.getNameChannel(), calib);
+    }
+    public void measure3DNuclei(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
+        IJ.log("measure3D "+type);
+        IJ.log(measureRoi3D.getName());
+        measureRoi3D.setVoxelSizeXY(calib.getPixelArea());
+        measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
+        measureRoi3D.setUnit(calib.getUnit());
+        int measures=nuclei.getMeasurements();
+        if(type.equals(NUCLEI)) {
+            String[] headingsMeasureMorpho = getValidMeasurements3DMorpho(measures);
+            //measure morpho
+            MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
+            Double[] measurementsMorpho = measureObjectMorpho.measureList(headingsMeasureMorpho);
+            //put in table
+            setResults3D(measurementsMorpho, headingsMeasureMorpho, resultsTableFinal, type + nuclei.getNameChannel(), calib);
+        }
+        //IJ.log(Arrays.toString(measurements));
+        String[] headingsMeasureIntensity = getValidMeasurements3DIntensity(measures);
+        AtomicInteger ai = new AtomicInteger(0);
+        MeasureObject measureObjectIntensity = new MeasureObject(measureRoi3D);
+        Double[] measurementsIntensity = measureObjectIntensity.measureIntensityList(headingsMeasureIntensity,ImageHandler.wrap(nuclei.getImageToMeasure()));
+        setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + nuclei.getNameChannel(), calib);
+    }
 
+    public  void measureSpot3D(SpotDetector spot,int cellID, int spotID, Object3DInt measureRoi3D, String type, ResultsTable resultsTableFinal, MeasureCalibration calib){
+        //IJ.log("measure spot "+spot.getSpotName());
+        spot.setMeasureCalibration(calib);
+        if(type.equals(NUCLEI)) spot.analysisPerRegion(cellID,measureRoi3D,resultsTableFinal,type,spotsInNucleiTable.get(spotID));
+        if(type.equals(CELL)||type.equals(NUCLEI_EXP_CELL)) spot.analysisPerRegion(cellID,measureRoi3D,resultsTableFinal,type ,spotsInCellsTable.get(spotID));
+        if(type.equals(CYTO)||type.equals(NUCLEI_EXP_CYTO)) spot.analysisPerRegion(cellID,measureRoi3D,resultsTableFinal,type ,spotsInCytoplasmsTable.get(spotID));
 
     }
 
-    public String[] getValidMeasurementsMorpho(int measurements){
+    public static String[] getValidMeasurements3DMorpho(int measurements){
         List<String> validMeasurements = new ArrayList<>();
         if((measurements&Measurements.AREA)!=0) {
             validMeasurements.add(MeasureVolume.VOLUME_PIX);
@@ -272,7 +348,7 @@ public class MeasureRois {
     }
 
 
-    public String[] getValidMeasurementsIntensity(int measurements){
+    public static String[] getValidMeasurements3DIntensity(int measurements){
         List<String> validMeasurements = new ArrayList<>();
         if((measurements&Measurements.INTEGRATED_DENSITY)!=0) {
             validMeasurements.add(MeasureIntensity.INTENSITY_SUM);
@@ -326,7 +402,7 @@ public class MeasureRois {
         }
     }
 
-    public void setResults3D(Double[] rawMeasures, String[] headings,ResultsTable customMeasures,  String preNameColumn, MeasureCalibration calib) {
+    public static void setResults3D(Double[] rawMeasures, String[] headings,ResultsTable customMeasures,  String preNameColumn, MeasureCalibration calib) {
         for (int i = 0; i < headings.length; i++) {
             if (headings[i].equals("Area")) {
                 customMeasures.addValue(preNameColumn + " " + headings[i] + " (pixel)", rawMeasures[i]);
