@@ -10,6 +10,8 @@ public class MeasureValue {
     static final public int PROJECTION_STDDEV=1;
 
     static final public int PROJECTION_SUM=2;
+    static final public int PROJECTION_BEST=3;
+    static final public int PROJECTION_MAXBEST3=4;
 
     public int measure;
     public String name;
@@ -178,6 +180,8 @@ public class MeasureValue {
             case PROJECTION_MAX: return "Maximum projection";
             case PROJECTION_STDDEV: return "Standard deviation projection";
             case PROJECTION_SUM: return "Sum Slices";
+            case PROJECTION_BEST: return "Best Focal slice";
+            case PROJECTION_MAXBEST3: return "Maximum of 3 best Focal slices";
         }
     }
     public void setProjection(int method){
