@@ -64,7 +64,7 @@ public class AboutInformation {
         Font label2Font = this.$$$getFont$$$(null, Font.BOLD, 18, label2.getFont());
         if (label2Font != null) label2.setFont(label2Font);
         label2.setForeground(new Color(-1));
-        label2.setText("version 1.15b (2026.05.11)");
+        label2.setText("version 1.15c (2026.05.12)");
         panel2.add(label2, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label3 = new JLabel();
         Font label3Font = this.$$$getFont$$$(null, Font.BOLD, 16, label3.getFont());
