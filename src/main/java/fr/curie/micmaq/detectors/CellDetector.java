@@ -3,6 +3,7 @@ package fr.curie.micmaq.detectors;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.Roi;
 import ij.gui.WaitForUserDialog;
@@ -10,8 +11,8 @@ import ij.measure.ResultsTable;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
-import ij.process.ByteProcessor;
-import ij.process.ColorProcessor;
+import ij.process.*;
+import mcib3d.geom2.Object3DInt;
 import mcib3d.geom2.Objects3DIntPopulation;
 
 import java.awt.*;
@@ -64,6 +65,9 @@ public class CellDetector {
     boolean isMacroOutputImage;
 
     protected Objects3DIntPopulation roi3D;
+
+    ImagePlus labeledImage;
+    protected String analysisType;
 
 // CONSTRUCTOR
 
@@ -193,7 +197,7 @@ public class CellDetector {
      */
     public void setCellRois(Roi[] modifiedCellRois) {
         cellRois = modifiedCellRois;
-        if (cellRois.length > 0) {
+        if (cellRois!=null && cellRois.length > 0) {
 //            Save Rois
             if (resultsDirectory != null && saveRois) {
                 RoiManager roiManager = RoiManager.getInstance();
@@ -236,9 +240,16 @@ public class CellDetector {
                 }
             }
         } else {
-            IJ.log("No cells with a nucleus were detected");
+            IJ.log("No cells with a nucleus were detected (2D)");
         }
 
+    }
+
+    public void setCellRois(Object3DInt[] cellroi3D) {
+        roi3D = new Objects3DIntPopulation();
+        for (Object3DInt cellroi : cellroi3D) {
+            roi3D.addObject(cellroi);
+        }
     }
 
 //    GETTER
@@ -247,8 +258,15 @@ public class CellDetector {
      * @return CytoDetector associated to CellDetector (cellRois are given)
      */
     public CytoDetector getCytoDetector() {
+        IJ.log("get cyto detector"+(roi3D!=null?" with 3D":" without 3D"));
+        if(roi3D!=null) return new CytoDetector(imageToMeasure,image.getTitle(),roi3D.getObjects3DInt().toArray(new Object3DInt[0]), resultsDirectory,showBinaryImage,saveBinary,saveRois,minNucleiCellOverlap,minCytoSize);
         return new CytoDetector(imageToMeasure, image.getTitle(), cellRois, resultsDirectory, showBinaryImage, saveBinary, saveRois, minNucleiCellOverlap, minCytoSize);
     }
+
+    public String getAnalysisType() {
+        return analysisType;
+    }
+
     public boolean prepare(){
         return prepare(false);
     }
@@ -258,22 +276,12 @@ public class CellDetector {
      * @return true if no problem occurred
      */
     public boolean prepare(boolean preview) {
-        //IJ.showMessage("CellDetector showPreprocessed="+showPreprocessedImage+" showComposite="+showCompositeImage+" showBinary="+showBinaryImage);
-        //check saving directory
-        if (saveRois) {
-            File tmp = new File(resultsDirectory + "/ROI/AllDetected/");
-            if (!tmp.exists()) tmp.mkdirs();
-        }
-        if (saveBinary) {
-            File tmp = new File(resultsDirectory + "/Images/");
-            if (!tmp.exists()) tmp.mkdirs();
-        }
+
 //        PREPROCESSING
         ImagePlus imageToReturn = prepareImageForSegmentation();
+
         if(imageToReturn==null) return false;
-        String analysisType;
         RoiManager roiManagerCell;
-        ImagePlus labeledImage;
 
         if (macroSegmentation) {
             labeledImage=runMacroSegmentation(imageToReturn);
@@ -299,9 +307,11 @@ public class CellDetector {
         }
 
         if(excludeOnEdges) {
-            if(excludeOnEdgesRois(roiManagerCell)){
-                if(labeledImage.getNSlices()>1) IJ.log("exclude on edge does not work on 3D data");
-                else labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
+            if(image.getNSlices()>1) {
+                IJ.log("exclude on edge on 3D data");
+                if(Detector.excludeOnEdgesRois(image,roi3D)) labeledImage = Detector.labeledImage3D(image.getWidth(), image.getHeight(), image.getNSlices(), roi3D, nameExperiment+analysisType+"_Cell");
+            }else if(Detector.excludeOnEdgesRois(image,roiManagerCell)){
+                labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
             }
         }
 
@@ -325,8 +335,9 @@ public class CellDetector {
             labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
         }
 //            SAVINGS
+        cellRois = roiManagerCell.getRoisAsArray();
         if(!preview) {
-            if (resultsDirectory != null && saveBinary) {
+            /*if (resultsDirectory != null && saveBinary) {
                 detector.setLUT(labeledImage);
                 File dir = new File(resultsDirectory + "/Images/AllDetected/");
                 if (!dir.exists()) dir.mkdirs();
@@ -336,7 +347,8 @@ public class CellDetector {
                     IJ.log("The cell segmentation mask " + labeledImage.getTitle() + " could not be saved in " + resultsDirectory + "/Images/AllDetected/");
                 }
             }
-            if (resultsDirectory != null && saveRois) {
+
+            /*if (resultsDirectory != null && saveRois) {
                 for (int i = 0; i < roiManagerCell.getCount(); i++) {
                     roiManagerCell.rename(i, "Cell_" + (i + 1));
                 }
@@ -352,6 +364,8 @@ public class CellDetector {
             cellRois = roiManagerCell.getRoisAsArray();
 //            Create analyzer for future measurements
             analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures);
+
+             */
         }
         return true;
 
@@ -361,7 +375,7 @@ public class CellDetector {
         ImagePlus preprocessed = getPreprocessing();
         if (preprocessed != null) {
             if (showPreprocessedImage) {
-                //preprocessed.setTitle("preprocessed");
+                preprocessed.setTitle("preprocessed");
                 preprocessed.show();
                 WindowManager.setWindow(WindowManager.getWindow("Log"));
             }
@@ -371,16 +385,31 @@ public class CellDetector {
             ImagePlus imageToReturn = preprocessed; /*detector class does the projection if needed*/
             if (nucleiDetector != null) {
                 ImagePlus nucleiProcessedImage = nucleiDetector.getPreprocessing();
+
                 if (nucleiProcessedImage != null) {
 //                    Create composite
                     ImagePlus composite = RGBStackMerge.mergeChannels(new ImagePlus[]{preprocessed, nucleiDetector.getPreprocessing()}, true);
                     if (cellposeModel != null && cellposeModel.equals("cpsam")) {
-                        ColorProcessor tmp = new ColorProcessor(preprocessed.getWidth(), preprocessed.getHeight());
-                        ByteProcessor r = preprocessed.getProcessor().convertToByteProcessor(true);
-                        ByteProcessor g = nucleiDetector.getPreprocessing().getProcessor().convertToByteProcessor(true);
-                        ByteProcessor b = new ByteProcessor(preprocessed.getWidth(), preprocessed.getHeight());
-                        tmp.setRGB((byte[]) r.getPixels(), (byte[]) g.getPixels(), (byte[]) b.getPixels());
-                        composite = new ImagePlus("rgb", tmp);
+                        ImagePlus nucltmp=nucleiDetector.getPreprocessing();
+                        if(preprocessed.getNSlices()>1&& nucltmp.getNSlices()>1){
+                            ImageStack stackcell = preprocessed.getStack();
+                            ImageStack stacknucl = nucltmp.getStack();
+                            for(int z=1;z<=preprocessed.getNSlices();z++) {
+                                ByteProcessor ipcell=stackcell.getProcessor(z).convertToByteProcessor(true);
+                                ByteProcessor ipnucl=stacknucl.getProcessor(z).convertToByteProcessor(true);
+                                ByteProcessor b = new ByteProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                                ColorProcessor tmp = new ColorProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                                tmp.setRGB((byte[]) ipcell.getPixels(), (byte[]) ipnucl.getPixels(), (byte[]) b.getPixels());
+                                composite.getImageStack().setProcessor(tmp,z);
+                            }
+                        }else {
+                            ColorProcessor tmp = new ColorProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                            ByteProcessor r = preprocessed.getProcessor().convertToByteProcessor(true);
+                            ByteProcessor g = nucltmp.getProcessor().convertToByteProcessor(true);
+                            ByteProcessor b = new ByteProcessor(preprocessed.getWidth(), preprocessed.getHeight());
+                            tmp.setRGB((byte[]) r.getPixels(), (byte[]) g.getPixels(), (byte[]) b.getPixels());
+                            composite = new ImagePlus("rgb", tmp);
+                        }
                     }
                     if (showCompositeImage) {
                         composite.setTitle(nameExperiment + "_composite");
@@ -563,22 +592,40 @@ public class CellDetector {
         return imageToMeasure;
     }
 
-    public boolean excludeOnEdgesRois(RoiManager roiManager){
-        boolean removed=false;
-        Roi[] keep = new Roi[roiManager.getCount()];
-        for (int r=roiManager.getCount()-1; r>=0;r--){
-            Roi roi=roiManager.getRoi(r);
-            Rectangle rec = roi.getBounds();
-            if (rec.x <= 1 || rec.y <= 1 || rec.x + rec.width >= image.getWidth() - 1 || rec.y + rec.height >= image.getHeight() - 1) {
-                removed=true;
-            }else {
-                keep[r]=roi;
+    public void saveAll(String analysisType){
+        //check saving directory
+        if(saveRois){
+            File tmp=new File(resultsDirectory + "/ROI/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
+        if (saveBinary){
+            File tmp=new File(resultsDirectory + "/Images/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
+
+        //            SAVING
+        if (resultsDirectory !=null && saveBinary){
+            if(roi3D!=null){
+                ImagePlus label=detector.labeledImage3D(labeledImage.getWidth(), labeledImage.getHeight(), labeledImage.getNSlices(), roi3D,nameExperiment);
+                detector.renameImage(label,analysisType+"_NucleiDetected_LabelMask3D");
+                detector.setLUT(label);
+                Detector.saveMasks(resultsDirectory,label,"Cell","AllDetected");
+            }else{
+                detector.renameImage(labeledImage,analysisType+"_CellDetected_LabelMask");
+                detector.setLUT(labeledImage);
+                Detector.saveMasks(resultsDirectory,labeledImage,"Cell","AllDetected");
+            }
+        }else if (resultsDirectory==null && saveBinary){
+            IJ.error("No directory given for the results");
+        }
+        if(resultsDirectory!=null && saveRois){
+            Detector.saveROI(resultsDirectory,image,cellRois,analysisType,"_CellDetectedROIs","Cell_","AllDetected");
+
+            if(roi3D!=null) {
+                Detector.saveROI3D(resultsDirectory,image,roi3D,analysisType,"_CellDetectedROIs_3D","AllDetected");
             }
         }
-        roiManager.reset();
-        for(Roi roi: keep){
-            if(roi!=null) roiManager.addRoi(roi);
-        }
-        return removed;
     }
+
+
 }

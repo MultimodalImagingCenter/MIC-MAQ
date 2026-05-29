@@ -15,10 +15,17 @@ import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
-import org.checkerframework.checker.units.qual.A;
+import ij.process.ShortProcessor;
+import mcib3d.geom2.BoundingBox;
+import mcib3d.geom2.Object3DInt;
+import mcib3d.geom2.Object3DPlane;
+import mcib3d.geom2.Objects3DIntPopulation;
+import mcib3d.image3d.ImageHandler;
 
+import java.awt.*;
 import java.awt.image.IndexColorModel;
-import java.util.ArrayList;
+import java.io.File;
+import java.util.List;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -300,7 +307,7 @@ public class Detector {
         particleAnalyzer.analyze(threshold_IP);
         thresholdRois = roiManager.getRoisAsArray();
 //        Get binary mask output and renames it
-        ImagePlus mask_IP = binaryImage();
+        ImagePlus mask_IP = binaryImage(image);
         renameImage(mask_IP, "binary_mask");
         return mask_IP;
     }
@@ -340,7 +347,7 @@ public class Detector {
         particleAnalyzer.analyze(threshold_IP);
         thresholdRois = roiManager.getRoisAsArray();
 //        Get binary mask output and renames it
-        ImagePlus mask_IP = binaryImage();
+        ImagePlus mask_IP = binaryImage(image);
         thresholdRois = null;
         roiManager.reset();
         renameImage(mask_IP, "binary_mask");
@@ -395,17 +402,81 @@ public class Detector {
     }
 
     /**
+     * Uses the ROIs found in getThresholdMask (thresholdRois)
+     *
+     * @param rois3D : region of all the objects segmented
+     * @return ImagePlus with an intensity per object
+     */
+    public static ImagePlus labeledImage3D(int imageWidth, int imageHeight,int nslices,Objects3DIntPopulation rois3D,String name) {
+        IJ.log("detector labeledImage3D n slices = "+nslices);
+        /*ImageStack is=new ImageStack(image.getWidth(), image.getHeight());
+        for(int z=1;z<=image.getNSlices();z++){
+            is.addSlice(new ShortProcessor(image.getWidth(),image.getHeight()));
+        }*/
+        ImagePlus ip = NewImage.createShortImage("labeledImage", imageWidth, imageHeight, nslices, NewImage.FILL_BLACK);
+        int color = 1;
+        List<Object3DInt> rois = rois3D.getObjects3DInt();
+        ImageHandler ih= ImageHandler.wrap(ip);
+        for (int r= 0; r<rois3D.getNbObjects();r++){
+            Object3DInt roi=rois.get(r);
+            roi.drawObject(ih,color);
+            color++;
+        }
+        ip.setTitle(name+"_labeled_mask");
+        return ip;
+    }
+
+    /**
      * Uses the ROIs detected to create binary image (with same dimension)
      *
      * @return Binary image
      */
-    private ImagePlus binaryImage() {
+    private ImagePlus binaryImage(ImagePlus image) {
         ImagePlus binaryMask = NewImage.createByteImage("binaryMask", image.getWidth(), image.getHeight(), 1, NewImage.FILL_BLACK);
         for (Roi rois : thresholdRois) {
             binaryMask.getProcessor().setColor(255);
             binaryMask.getProcessor().fill(rois);
         }
         return binaryMask;
+    }
+
+    public static boolean excludeOnEdgesRois(ImagePlus image,RoiManager roiManager){
+        boolean removed=false;
+        Roi[] keep = new Roi[roiManager.getCount()];
+        for (int r=roiManager.getCount()-1; r>=0;r--){
+            Roi roi=roiManager.getRoi(r);
+            Rectangle rec = roi.getBounds();
+            if (rec.x <= 1 || rec.y <= 1 || rec.x + rec.width >= image.getWidth() - 1 || rec.y + rec.height >= image.getHeight() - 1) {
+                removed=true;
+            }else {
+                keep[r]=roi;
+            }
+        }
+        roiManager.reset();
+        for(Roi roi: keep){
+            if(roi!=null) roiManager.addRoi(roi);
+        }
+        return removed;
+    }
+
+    public static boolean excludeOnEdgesRois(ImagePlus image, Objects3DIntPopulation rois3D){
+        //IJ.log("detector excludeOnEdgesRois n slices = "+image.getNSlices());
+        boolean removed=false;
+        List<Object3DInt> rois = rois3D.getObjects3DInt();
+        //IJ.log("detector excludeOnEdgesRois n rois = "+rois.size());
+        for (int r= rois3D.getNbObjects()-1; r>=0;r--){
+            Object3DInt roi=rois.get(r);
+            BoundingBox bounds=roi.getBoundingBox();
+            //IJ.log("detector excludeOnEdgesRois bounds = "+bounds);
+            //IJ.log("detector excludeOnEdgesRois width = "+image.getWidth()+" height ="+image.getHeight()+" depth ="+image.getNSlices());
+            if(bounds.xmin<=1 || bounds.ymin<=1 || bounds.xmax>=image.getWidth()-1 || bounds.ymax>=image.getHeight()-1){
+                removed=true;
+                rois.remove(r);
+                //IJ.log("detector excludeOnEdgesRois removed roi new size = "+rois.size());
+            }
+        }
+        //IJ.log("final:"+rois3D.getNbObjects());
+        return removed;
     }
 
     /**
@@ -593,5 +664,58 @@ public class Detector {
             }
         }
         return bestIdx;
+    }
+
+
+    /**
+     *
+     *
+     * @param resultsDirectory
+     * @param labeledImage
+     * @param type to signal the compartment
+     */
+    public static void saveMasks(String resultsDirectory, ImagePlus labeledImage,String type, String step){
+        IJ.log("save mask "+ labeledImage.getNSlices());
+        File dir=new File(resultsDirectory + "/Images/"+step+"/");
+        if(!dir.exists()) dir.mkdirs();
+        IJ.saveAsTiff(labeledImage,resultsDirectory + "/Images/"+step+"/" + type +"_" +labeledImage.getTitle()+".tif");
+
+        IJ.log("The "+type+" segmentation mask "+labeledImage.getTitle() + " was saved in "+ resultsDirectory+"/Images/"+step+"/");
+
+    }
+
+    public static void saveROI(String resultsDirectory, ImagePlus image, Roi[] rois, String analysisType, String compartiment, String roiPrefix, String step){
+        RoiManager roiManagerNuclei = new RoiManager(true);
+        if(rois!=null) {
+            for (int i = 0; i < rois.length; i++) {
+                roiManagerNuclei.add(rois[i],i);
+            }
+        } else return;
+
+        if (resultsDirectory!=null ) {
+
+            for (int i = 0; i < roiManagerNuclei.getCount(); i++) {
+                roiManagerNuclei.rename(i,roiPrefix+(i+1));
+            }
+            if(roiManagerNuclei.getCount()>0) {
+                String extension=(roiManagerNuclei.getCount()==1)?".roi":".zip";
+                File dir=new File(resultsDirectory + "/ROI/"+step+"/");
+                if(!dir.exists()) dir.mkdirs();
+                if (roiManagerNuclei.save(resultsDirectory + "/ROI/"+step+"/" + image.getTitle() + "_" + analysisType + compartiment+extension)) {
+                    IJ.log("The "+compartiment+" ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/"+step+"/");
+                } else {
+                    IJ.log("The "+compartiment+" ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/"+step+"/");
+                }
+            }
+        }
+        else if (resultsDirectory==null){
+            IJ.error("No directory given for the results");
+        }
+    }
+
+    public static void saveROI3D(String resultsDirectory, ImagePlus image, Objects3DIntPopulation rois3D, String analysisType, String compartiment,String step){
+
+        ImagePlus mask=Detector.labeledImage3D(image.getWidth(), image.getHeight(), image.getNSlices(),rois3D,image.getTitle()+analysisType+compartiment);
+        saveMasks(resultsDirectory, mask,compartiment,step);
     }
 }

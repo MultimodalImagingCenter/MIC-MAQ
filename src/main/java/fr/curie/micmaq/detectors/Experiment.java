@@ -5,6 +5,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
+import mcib3d.geom2.Object3DInt;
 import org.checkerframework.checker.units.qual.A;
 
 import java.time.Duration;
@@ -148,9 +149,11 @@ public class Experiment {
         Instant dateBegin = Instant.now(); /*get starting time*/
 //        PREPARE NECESSARY IMAGES FOR MEASUREMENTS
         if(!preprocess()) return false;
+        if(nuclei!=null) nuclei.saveAll(nuclei.getAnalysisType());
+        if(cell!=null) cell.saveAll(cell.getAnalysisType());
 //        Prepare cytoplasm and get the ROIs for spot detection
         CytoDetector cytoDetector = null;
-        if (cell!=null && nuclei!=null && !interrupt){
+        if ((cell!=null && nuclei!=null)||(cell==null && nuclei!=null && nuclei.isExpand4Cells()) && !interrupt){
            /*Prepare cytoplasm et get new cellRois*/
                 cytoDetector = prepareCytoplams();
         }
@@ -182,6 +185,7 @@ public class Experiment {
                 interrupt=true;
                 return false;
             }
+            IJ.log("Cell/Cytoplasm image: "+ (cell.getRoi3D()!=null?"3D":"2D"));
         }
 //        --> Nuclei images
         if (nuclei!=null && !interrupt){
@@ -210,19 +214,25 @@ public class Experiment {
     public CytoDetector prepareCytoplams(){
         CytoDetector cytoDetector = null;
         Roi[] cellRois = null;
-        if (cell!=null && !interrupt){
-            cellRois = cell.getRoiArray();
-            if (nuclei!=null){ /*Prepare cytoplasm et get new cellRois*/
-                cytoDetector = cell.getCytoDetector();
-                cytoDetector.setNucleiRois(nuclei.getRoiArray());
-                cytoDetector.setMeasureCalibration(measureCalibration);
-                cytoDetector.prepare();
-                Roi[] nucleiRois = cytoDetector.getAssociatedNucleiRois();
+        int numberOfObject = -1;
+        if (cell!=null && nuclei!=null && !interrupt){
+             /*I have cell AND Nuclei : prepare cytoplasm et get validated cellRois*/
+            cytoDetector = cell.getCytoDetector();
+            cytoDetector.setNucleiRois(nuclei.getRoiArray());
+            if(nuclei.getRoi3D()!=null) cytoDetector.setNucleiRois3D(nuclei.getRoi3D().getObjects3DInt().toArray(new Object3DInt[0]));
+            cytoDetector.setMeasureCalibration(measureCalibration);
+            cytoDetector.prepare();
+            if(cytoDetector.is3D()){
+                Object3DInt[] validcell3D = cytoDetector.getCellRois3D();
+                cell.setCellRois(validcell3D);
+                numberOfObject= validcell3D.length;
+            }else {
+                //Roi[] nucleiRois = cytoDetector.getAssociatedNucleiRois();
                 //cytoplasmRois = cytoDetector.getCytoRois();
                 cellRois = cytoDetector.getCellRois();
                 cell.setCellRois(cellRois);
+                numberOfObject= cellRois.length;
             }
-            int numberOfObject = cellRois.length;
             IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
         }
         return cytoDetector;

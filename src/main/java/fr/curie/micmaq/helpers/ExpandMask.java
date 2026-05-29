@@ -163,10 +163,12 @@ public class ExpandMask implements PlugInFilter {
                 }
             }));
         }
-
+        int count = futures.size();
         for (Future f : futures) {
             try {
                 f.get();
+                IJ.showProgress(++count / (double) futures.size());
+                IJ.showStatus("Expanding mask: " + (count / (double) futures.size()) * 100 + "%");
             } catch (Exception e) {
                 e.printStackTrace();
             }

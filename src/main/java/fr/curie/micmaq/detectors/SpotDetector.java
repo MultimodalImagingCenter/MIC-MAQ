@@ -549,8 +549,8 @@ public class SpotDetector {
         measureRoi3D.setUnit(measureCalibration.getUnit());
         String[] headingsMeasureIntensity = MeasureRois.getValidMeasurements3DIntensity(measurements);
         MeasureObject measureObjectIntensity = new MeasureObject(measureRoi3D);
-        this.imageToMeasure.setTitle("spot measure intensity");
-        this.imageToMeasure.show();
+        this.imageToMeasure.setTitle("spot measure intensity"+spotName);
+        if(showPreprocessedImage) this.imageToMeasure.show();
         Double[] measurementsIntensity = measureObjectIntensity.measureIntensityList(headingsMeasureIntensity, ImageHandler.wrap(this.getImageToMeasure()));
         MeasureRois.setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + this.getSpotName(), measureCalibration);
 

@@ -4,8 +4,10 @@ import fr.curie.micmaq.helpers.ExpandMask;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.*;
+import ij.io.FileSaver;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
@@ -13,11 +15,15 @@ import ij.process.Blitter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.process.StackStatistics;
-import mcib3d.geom2.Objects3DIntPopulation;
+import mcib3d.geom2.*;
+import mcib3d.image3d.ImageByte;
+import mcib3d.image3d.ImageHandler;
+import mcib_plugins.Manager3D.ImportImage;
 
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Author : Camille RABIER
@@ -28,7 +34,7 @@ import java.util.ArrayList;
 public class NucleiDetector {
     private final ImagePlus image; /*Original image*/
     private final ResultsTable rawMeasures;
-    private Analyzer analyzer;
+    //private Analyzer analyzer;
     private ImagePlus imageToMeasure; /*Projected or not image, that will be the one measured*/
     private ImagePlus imageToParticleAnalyze; /*Binary mask that particle analyzer use to count and return the ROIs*/
     private String nameExperiment; /*Name of experiment (common with spot images)*/
@@ -72,6 +78,10 @@ public class NucleiDetector {
 
     Objects3DIntPopulation roi3Ds;
     protected ImagePlus labeledImage;
+    protected Objects3DIntPopulation expandedRois3D;
+    protected Objects3DIntPopulation cytoRois3D;
+
+    protected String analysisType;
 
     /**
      * Constructor with basic parameters, the other are initialized only if needed
@@ -95,6 +105,15 @@ public class NucleiDetector {
         if(!dir.exists()) dir.mkdirs();
         rawMeasures = new ResultsTable();
         IJ.log("nuclei detector : resultdir="+this.resultsDirectory);
+    }
+
+    public void setNucleiAssociatedRois3D(Object3DInt[] associatedToCellNucleiRois){
+        roi3Ds=new Objects3DIntPopulation();
+        for (Object3DInt nucleiroi:associatedToCellNucleiRois) {
+            roi3Ds.addObject(nucleiroi);
+        }
+        //@TODO save stuff
+
     }
 
     public void setNucleiAssociatedRois(Roi[] associatedToCellNucleiRois){
@@ -303,6 +322,10 @@ public class NucleiDetector {
         return image.getTitle();
     }
 
+    public String getAnalysisType() {
+        return analysisType;
+    }
+
     /**
      * Preview of segmentation
      * - does the preprocessing:
@@ -363,15 +386,7 @@ public class NucleiDetector {
      */
     public boolean prepare(boolean preview){
         IJ.log("nuclei detector prepare "+macroSegmentation);
-        //check saving directory
-        if(saveRois){
-            File tmp=new File(resultsDirectory + "/ROI/");
-            if(!tmp.exists()) tmp.mkdirs();
-        }
-        if (saveMask){
-            File tmp=new File(resultsDirectory + "/Images/");
-            if(!tmp.exists()) tmp.mkdirs();
-        }
+
 
 //        PREPROCESSING
        // System.out.println("nuclei detector prepare macro preprocess: "+getPreprocessingMacro());
@@ -387,13 +402,19 @@ public class NucleiDetector {
 
             IJ.log("should do exclude on edge "+excludeOnEdges);
             if(excludeOnEdges) {
-                if(excludeOnEdgesRois(roiManagerNuclei)){
-                    if(labeledImage.getNSlices()>1) IJ.log("exclude on edge does not work on 3D data");
-                    else labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                if(labeledImage.getNSlices()>1) {
+                    IJ.log("exclude on edge on 3D data");
+                    IJ.log("before nb rois3D "+roi3Ds.getNbObjects());
+                    if(Detector.excludeOnEdgesRois(image,roi3Ds)) labeledImage = Detector.labeledImage3D( labeledImage.getWidth(), labeledImage.getHeight(), labeledImage.getNSlices(), roi3Ds,nameExperiment+analysisType+"_Nuclei");
+                    IJ.log("after nb rois3D "+roi3Ds.getNbObjects());
+
+                }else if(Detector.excludeOnEdgesRois(image,roiManagerNuclei)){
+                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
                 }
             }
 
             if (showBinaryImage){
+                //IJ.log("show binary image "+labeledImage.getNSlices());
                 labeledImage.show();
                 labeledImage.setDisplayRange(0,roiManagerNuclei.getCount()+5);
                 labeledImage.updateAndDraw();
@@ -416,85 +437,9 @@ public class NucleiDetector {
                 }
                 labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
             }
-//            SAVING
-            if (resultsDirectory !=null && saveMask){
-                detector.renameImage(labeledImage,analysisType+"_labeledMask");
-                detector.setLUT(labeledImage);
-                File dir=new File(resultsDirectory + "/Images/AllDetected/");
-                if(!dir.exists()) dir.mkdirs();
-                if(IJ.saveAsTiff(labeledImage, resultsDirectory +"/Images/AllDetected/" + "Nuclei_" +labeledImage.getTitle())){
-                    IJ.log("The nuclei segmentation mask "+labeledImage.getTitle() + " was saved in "+ resultsDirectory+"/Images/AllDetected/");
-                } else {
-                    IJ.log("The nuclei segmentation mask "+labeledImage.getTitle() + " could not be saved in "+ resultsDirectory+"/Images/AllDetected/");
-                }
-            }else if (resultsDirectory==null && saveMask){
-                IJ.error("No directory given for the results");
-            }
-
-            if (resultsDirectory!=null && saveRois) {
-                for (int i = 0; i < roiManagerNuclei.getCount(); i++) {
-                    roiManagerNuclei.rename(i,"Nucleus_"+(i+1));
-                }
-                if(roiManagerNuclei.getCount()>0) {
-                    String extension=(roiManagerNuclei.getCount()==1)?".roi":".zip";
-                    File dir=new File(resultsDirectory + "/ROI/AllDetected/");
-                    if(!dir.exists()) dir.mkdirs();
-                    if (roiManagerNuclei.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs"+extension)) {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    } else {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    }
-                }
-            }
-            else if (resultsDirectory==null && saveRois){
-                IJ.error("No directory given for the results");
-            }
-            if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
-            analyzer = new Analyzer(imageToMeasure, measurements, rawMeasures); /*set measurements and image to analyze*/
             nucleiRois = roiManagerNuclei.getRoisAsArray();
-            if(resultsDirectory!=null && expand4Cells && nucleiRois.length>0) {
-                getExpandedRois();
-                if (saveRois) {
-                    RoiManager tmpCell = new RoiManager(true);
-                    tmpCell.reset();
-                    Roi[] cells = roisExpanded.get(1);
-                    for (Roi r : cells) tmpCell.addRoi(r);
-                    RoiManager tmpCyto = new RoiManager(true);
-                    tmpCyto.reset();
-                    Roi[] cytos = roisExpanded.get(2);
-                    for (Roi r : cytos) tmpCyto.addRoi(r);
-
-                    String extension = (roiManagerNuclei.getCount() == 1) ? ".roi" : ".zip";
-                    File dir = new File(resultsDirectory + "/ROI/AllDetected/");
-                    if (!dir.exists()) dir.mkdirs();
-                    if (tmpCell.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCell" + extension)) {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    } else {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    }
-                    if (tmpCyto.save(resultsDirectory + "/ROI/AllDetected/" + image.getTitle() + "_" + analysisType + "_NucleiDetectedROIs_ExpandedCyto" + extension)) {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    } else {
-                        IJ.log("The nuclei ROIs of " + image.getTitle() + " could not be saved in " + resultsDirectory + "/ROI/AllDetected/");
-                    }
-                }
-                if( saveMask) {
-                    //IJ.log("expand 4 cells save masks");
-                    ImagePlus tmp= getExpandedMask();
-                    if (tmp!=null) {
-                        //IJ.log("mask is not empty");
-                        detector.renameImage(tmp,analysisType+"_expandedMask");
-                        detector.setLUT(tmp);
-                        File dir=new File(resultsDirectory + "/Images/AllDetected/");
-                        if(!dir.exists()) dir.mkdirs();
-                        if(IJ.saveAsTiff(tmp, resultsDirectory +"/Images/AllDetected/" + "Nuclei_ExpandedToCell_" +tmp.getTitle())){
-                            IJ.log("The expanded mask "+tmp.getTitle() + " was saved in "+ resultsDirectory+"/Images/AllDetected/");
-                        } else {
-                            IJ.log("The nuclei segmentation mask "+tmp.getTitle() + " could not be saved in "+ resultsDirectory+"/Images/AllDetected/");
-                        }
-                    }
-                }
-            }
+            if(imageToMeasure==null) imageToMeasure=detector.getImageQuantification();
+            //saveAll(analysisType);
 
             //imageToMeasure=null;
             return true;
@@ -508,7 +453,6 @@ public class NucleiDetector {
             }
             RoiManager roiManagerNuclei;
             ImagePlus labeledImage;
-            String analysisType;
 //            SEGMENTATION
             if (cellpose){
                 WindowManager.getWindow("Log").toFront();
@@ -728,8 +672,11 @@ public class NucleiDetector {
     }
 
     /**
-     * get the differents rois corresponding to nuclei, expanded nuclei (cell) and cytoplasm (xor or the previous 2)
-     * @return
+     * get the differents rois corresponding to nuclei, expanded nuclei (cell) and cytoplasm (xor of the previous 2)
+     * @return an arrayList with 3 elements :
+     * 0 : nucleiRois
+     * 1 : expanded nuclei (cell) rois
+     * 2 : cytoplasm rois (xor of the previous 2)
      */
     public ArrayList<Roi[]> getExpandedRois(){
         if(expand4Cells && roisExpanded!=null) {
@@ -836,22 +783,85 @@ public class NucleiDetector {
         return cellposeRoiManager;
     }
 
-    public boolean excludeOnEdgesRois(RoiManager roiManager){
-        boolean removed=false;
-        Roi[] keep = new Roi[roiManager.getCount()];
-        for (int r=roiManager.getCount()-1; r>=0;r--){
-            Roi roi=roiManager.getRoi(r);
-            Rectangle rec = roi.getBounds();
-            if (rec.x <= 1 || rec.y <= 1 || rec.x + rec.width >= image.getWidth() - 1 || rec.y + rec.height >= image.getHeight() - 1) {
-                removed=true;
-            }else {
-                keep[r]=roi;
-            }
+
+    /**
+     * get the differents rois corresponding to nuclei, expanded nuclei (cell) and cytoplasm (xor of the previous 2)
+     * @return an arrayList with 3 elements :
+     * 0 : nucleiRois
+     * 1 : expanded nuclei (cell) rois
+     * 2 : cytoplasm rois (xor of the previous 2)
+     */
+    public ArrayList<Objects3DIntPopulation> expandNuclei3D(MeasureCalibration calibration ){
+        IJ.log("expanding nuclei");
+        //expands nuclei
+        if(expandedRois3D==null) {
+            ImageStack tmpexpand = ExpandMask.expandsMask(labeledImage.getStack(), expandRadius, (int) Math.round(expandRadius / calibration.getPixelLength() * calibration.getPixelsZ()));
+            labeledImage = new ImagePlus("expand", tmpexpand);
+            expandedRois3D = new ImportImage(ImageHandler.wrap(tmpexpand)).importImage();
         }
-        roiManager.reset();
-        for(Roi roi: keep){
-            if(roi!=null) roiManager.addRoi(roi);
+        ArrayList<Objects3DIntPopulation> returnList = new ArrayList<>();
+        returnList.add(roi3Ds);
+        returnList.add(expandedRois3D);
+        //compute cytoplasms
+        cytoRois3D=new Objects3DIntPopulation();
+        List<Object3DInt> cells= expandedRois3D.getObjects3DInt();
+        List<Object3DInt> nucl= roi3Ds.getObjects3DInt();
+        for (int i = 0; i < roi3Ds.getNbObjects(); i++) {
+            cytoRois3D.addObject(CytoDetector.computeCytoplasmROI3D(cells.get(i),nucl.get(i)));
         }
-        return removed;
+        returnList.add(cytoRois3D);
+
+
+        return returnList;
     }
+
+    public void saveAll(String analysisType){
+        //check saving directory
+        if(saveRois){
+            File tmp=new File(resultsDirectory + "/ROI/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
+        if (saveMask){
+            File tmp=new File(resultsDirectory + "/Images/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
+
+        //            SAVING
+        if (resultsDirectory !=null && saveMask){
+            if(roi3Ds!=null){
+                ImagePlus label=detector.labeledImage3D(labeledImage.getWidth(), labeledImage.getHeight(), labeledImage.getNSlices(), roi3Ds,nameExperiment);
+                detector.renameImage(label,analysisType+"_NucleiDetected_LabelMask3D");
+                detector.setLUT(label);
+                Detector.saveMasks(resultsDirectory,label,"Nuclei3D","AllDetected");
+            }else{
+                detector.renameImage(labeledImage,analysisType+"_NucleiDetected_LabelMask");
+                detector.setLUT(labeledImage);
+                Detector.saveMasks(resultsDirectory,labeledImage,"Nuclei2D","AllDetected");
+            }
+            if(expand4Cells && roisExpanded!=null) {
+                detector.renameImage(expandedIP,analysisType+"_NucleiExpanded_LabelMask");
+                detector.setLUT(expandedIP);
+                Detector.saveMasks(resultsDirectory,expandedIP, "NucleiExpanded","AllDetected");
+            }
+        }else if (resultsDirectory==null && saveMask){
+            IJ.error("No directory given for the results");
+        }
+       if(resultsDirectory!=null && saveRois){
+           Detector.saveROI(resultsDirectory,image,nucleiRois,analysisType,"_NucleiDetectedROIs","Nucleus_","AllDetected");
+           if(expand4Cells && roisExpanded!=null) {
+               Detector.saveROI(resultsDirectory,image,roisExpanded.get(1), analysisType, "_NucleiDetectedROIs_ExpandedCell", "Cell_","AllDetected");
+               Detector.saveROI(resultsDirectory,image, roisExpanded.get(1),  analysisType,"_NucleiDetectedROIs_ExpandedCyto", "Cyto_","AllDetected");
+           }
+           if(roi3Ds!=null) {
+               Detector.saveROI3D(resultsDirectory,image,roi3Ds,analysisType,"_NucleiDetectedROIs_3D","AllDetected");
+               if(expand4Cells){
+                   if(expandedRois3D!=null)Detector.saveROI3D(resultsDirectory,image,expandedRois3D,analysisType,"_NucleiDetectedROIs_ExpandedCell","AllDetected");
+                   if(cytoRois3D!=null)Detector.saveROI3D(resultsDirectory,image,cytoRois3D,analysisType,"_NucleiDetectedROIs_ExpandedCyto","AllDetected");
+               }
+           }
+       }
+    }
+
+
+
 }

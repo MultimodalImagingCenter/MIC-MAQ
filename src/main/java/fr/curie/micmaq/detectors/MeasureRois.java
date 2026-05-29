@@ -59,13 +59,7 @@ public class MeasureRois {
         IJ.log("measureAll");
         Objects3DIntPopulation expandLabels=null;
         if(cells!=null && nuclei!=null){
-            prepareCytoMeasure(finalResultsNuclei,experimentName,calibration);
-        }
-        if(nuclei!=null&& nuclei.isExpand4Cells()){
-            IJ.log("expanding nuclei");
-            ImagePlus labels=nuclei.getLabeledImage();
-            ImageStack tmpexpand= ExpandMask.expandsMask(labels.getStack(), nuclei.getExpandRadius(), (int)Math.round(nuclei.getExpandRadius()/calibration.getPixelLength()*calibration.getPixelsZ()));
-            expandLabels = new ImportImage(ImageHandler.wrap(tmpexpand)).importImage();
+            if(nuclei.getNumberOfNuclei()>0) prepareCytoMeasure(finalResultsNuclei,experimentName,calibration);
         }
         int numberOfObject = cells!=null ? cells.getNumberOfCells() : nuclei.getNumberOfNuclei();
         IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
@@ -96,11 +90,13 @@ public class MeasureRois {
                         measure(cellID, finalResultsCellSpot, rois[cellID], NUCLEI, calibration);
                     }
                     if(nuclei.isExpand4Cells()){
-                        if(roi3Ds!=null) {
-                            if(expandLabels!=null){
-                                IJ.log("expand nuclei measure3D");
-                                measure3D(cellID, finalResultsCellSpot, expandLabels.getObjects3DInt().get(cellID), NUCLEI_EXP_CELL, calibration);
-                                //TODO cyto
+                        if(nuclei.getRoi3D()!=null) {
+                            IJ.log("expand nuclei measure3D");
+                            ArrayList<Objects3DIntPopulation> rois3Dexpands= nuclei.expandNuclei3D(calibration);
+                            if( rois3Dexpands.get(1).getNbObjects()>cellID){
+                                measure3D(cellID, finalResultsCellSpot, rois3Dexpands.get(1).getObjects3DInt().get(cellID), NUCLEI_EXP_CELL, calibration);
+                                measure3D(cellID, finalResultsCellSpot, rois3Dexpands.get(2).getObjects3DInt().get(cellID), NUCLEI_EXP_CYTO, calibration);
+
                             }
                         }else {
                             IJ.log("expand nuclei measure2D");
@@ -113,50 +109,71 @@ public class MeasureRois {
                     }
                 }
                 if (cyto!=null){
-                    Roi[] rois= cyto.getCytoRois();
-                    measure(cellID, finalResultsCellSpot,rois[cellID],CYTO, calibration);
+                    if(cyto.is3D()){
+                        Object3DInt[] rois = cyto.getCellRois3D();
+                        measure3D(cellID, finalResultsCellSpot, rois[cellID], CYTO, calibration);
+                    }else {
+                        Roi[] rois = cyto.getCytoRois();
+                        measure(cellID, finalResultsCellSpot, rois[cellID], CYTO, calibration);
+                    }
                 }
                 finalResultsCellSpot.incrementCounter();
-
         }
     }
 
-    public void prepareCytoMeasure(ResultsTable finalResultsNuclei, String experimentName, MeasureCalibration calibration){
-        Roi[] allNuclei = nuclei.getRoiArray();
-        int[] association2Cell = cyto.getAssociationCell2Nuclei();
-        int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
-        ResultsTable tmp =new ResultsTable();
-        int padding=(""+allNuclei.length).length();
-        for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
-            tmp.addValue("Name experiment", experimentName);
-            tmp.addValue("Nucleus ID",  IJ.pad(nucleusID + 1,padding));
-            tmp.addValue("Cell ID associated (detection)",IJ.pad(association2Cell[nucleusID],padding));
-            tmp.addValue("Cell ID associated (validated)",IJ.pad(association2CellTrue[nucleusID],padding));
-            measure(nucleusID, tmp,allNuclei[nucleusID],NUCLEI,calibration);
-            if(nucleusID< allNuclei.length-1) tmp.incrementCounter();
-        }
+    public boolean prepareCytoMeasure(ResultsTable finalResultsNuclei, String experimentName, MeasureCalibration calibration){
+        Objects3DIntPopulation allnuclei3D=nuclei.getRoi3D();
 
+        ResultsTable tmp = new ResultsTable();
+        if(allnuclei3D!=null){
+            int[] association2Cell = cyto.getAssociationCell2Nuclei();
+            int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
+            int padding = ("" + allnuclei3D.getNbObjects()).length();
+            for (int nucleusID = 0; nucleusID < allnuclei3D.getNbObjects(); nucleusID++) {
+                tmp.addValue("Name experiment", experimentName);
+                tmp.addValue("Nucleus ID", IJ.pad(nucleusID + 1, padding));
+                tmp.addValue("Cell ID associated (detection)", IJ.pad(association2Cell[nucleusID], padding));
+                tmp.addValue("Cell ID associated (validated)", IJ.pad(association2CellTrue[nucleusID], padding));
+                measure3D(nucleusID, tmp, allnuclei3D.getObjects3DInt().get(nucleusID), NUCLEI, calibration);
+                if (nucleusID < allnuclei3D.getNbObjects() - 1) tmp.incrementCounter();
+                nuclei.setNucleiAssociatedRois3D(cyto.getAssociatedNucleiRois3D());
+            }
+        }else {
+            Roi[] allNuclei = nuclei.getRoiArray();
+            if(allNuclei==null||allNuclei.length==0) return false;
+            int[] association2Cell = cyto.getAssociationCell2Nuclei();
+            int[] association2CellTrue = cyto.getAssociationCell2NucleiTrue();
+            int padding = ("" + allNuclei.length).length();
+            for (int nucleusID = 0; nucleusID < allNuclei.length; nucleusID++) {
+                tmp.addValue("Name experiment", experimentName);
+                tmp.addValue("Nucleus ID", IJ.pad(nucleusID + 1, padding));
+                tmp.addValue("Cell ID associated (detection)", IJ.pad(association2Cell[nucleusID], padding));
+                tmp.addValue("Cell ID associated (validated)", IJ.pad(association2CellTrue[nucleusID], padding));
+                measure(nucleusID, tmp, allNuclei[nucleusID], NUCLEI, calibration);
+                if (nucleusID < allNuclei.length - 1) tmp.incrementCounter();
+            }
+            nuclei.setNucleiAssociatedRois(cyto.getAssociatedNucleiRois());
+        }
         tmp.sort("Cell ID associated (validated)");
-        String[] headings= tmp.getHeadings();
-        for (int ind=0;ind<tmp.getCounter();ind++){
-            for(int col=0;col<headings.length;col++) {
-                String val=tmp.getStringValue(col,ind);
-                try{
-                    try{
+        String[] headings = tmp.getHeadings();
+        for (int ind = 0; ind < tmp.getCounter(); ind++) {
+            for (int col = 0; col < headings.length; col++) {
+                String val = tmp.getStringValue(col, ind);
+                try {
+                    try {
                         int valI = Integer.parseInt(val);
-                        finalResultsNuclei.addValue(headings[col],valI);
-                    }catch (NumberFormatException nfeI) {
+                        finalResultsNuclei.addValue(headings[col], valI);
+                    } catch (NumberFormatException nfeI) {
                         double valD = Double.parseDouble(val);
                         finalResultsNuclei.addValue(headings[col], valD);
                     }
-                }catch (Exception e){
-                    finalResultsNuclei.addValue(headings[col],val);
+                } catch (Exception e) {
+                    finalResultsNuclei.addValue(headings[col], val);
                 }
             }
             finalResultsNuclei.incrementCounter();
         }
-
-        nuclei.setNucleiAssociatedRois(cyto.getAssociatedNucleiRois());
+        return true;
     }
 
     public void measure(int cellID, ResultsTable resultsTableFinal, Roi measureRoi, String type, MeasureCalibration calib){
@@ -243,7 +260,7 @@ public class MeasureRois {
         measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
         measureRoi3D.setUnit(calib.getUnit());
         int measures=cells.getMeasurements();
-        if(type.equals(CELL)) {
+        if(!type.equals(NUCLEI)) {
             String[] headingsMeasureMorpho = getValidMeasurements3DMorpho(measures);
             //measure morpho
             MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
@@ -265,7 +282,7 @@ public class MeasureRois {
         measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
         measureRoi3D.setUnit(calib.getUnit());
         int measures=nuclei.getMeasurements();
-        if(type.equals(NUCLEI)) {
+        if(!type.equals(CELL)&&!type.equals(CYTO)) {
             String[] headingsMeasureMorpho = getValidMeasurements3DMorpho(measures);
             //measure morpho
             MeasureObject measureObjectMorpho = new MeasureObject(measureRoi3D);
