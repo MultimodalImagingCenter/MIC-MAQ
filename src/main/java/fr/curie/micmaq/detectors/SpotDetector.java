@@ -50,6 +50,7 @@ public class SpotDetector {
     private final String resultsDirectory;
     private boolean saveImage;
     private boolean saveRois;
+    private boolean savePreprocessedImage;
 
 
     //    Showing images
@@ -230,9 +231,11 @@ public class SpotDetector {
      * @param saveImage : save find maxima or threshold image
      * @param saveRois  : save corresponding regions
      */
-    public void setSaving(boolean saveImage, boolean saveRois) {
+    public void setSaving(boolean saveImage, boolean saveRois, boolean savePreprocessedImage) {
         this.saveImage = saveImage;
         this.saveRois = saveRois;
+        this.savePreprocessedImage = savePreprocessedImage;
+        System.out.println("saveImage: "+saveImage+" saveRois: "+saveRois+" savePreprocessedImage: "+savePreprocessedImage);
     }
 
     /**
@@ -445,14 +448,18 @@ public class SpotDetector {
                 if (!tmp.exists()) tmp.mkdirs();
             }
         }
+        if(savePreprocessedImage) {
+            File tmp = new File(resultsDirectory + "/Images/preprocessed/");
+            if (!tmp.exists()) tmp.mkdirs();
+        }
 //        Preprocessing
-        if(image!=null) IJ.log("spotdetector prepare image "+image.getNSlices()+" slices");
-        else IJ.log("spotdetector prepare image is null");
-        if(imageToMeasure!=null)IJ.log("spotdetector prepare image to measure "+imageToMeasure.getNSlices()+" slices");
-        else IJ.log("spotdetector prepare image to measure is null ");
+        if(image!=null) IJ.log("spotdetector prepare start image "+image.getNSlices()+" slices");
+        else IJ.log("spotdetector prepare start image is null");
+        if(imageToMeasure!=null)IJ.log("spotdetector prepare start image to measure "+imageToMeasure.getNSlices()+" slices");
+        else IJ.log("spotdetector prepare start image to measure is null ");
         ImagePlus preprocessed = preprocessing();
         if (preprocessed != null) {
-            IJ.log("spotdetector prepare preprocessed "+preprocessed.getNSlices()+" slices");
+            IJ.log("spotdetector prepare getPreprocessed "+preprocessed.getNSlices()+" slices");
             if(image!=null) IJ.log("spotdetector prepare after preprocessed image "+image.getNSlices()+" slices");
             else IJ.log("spotdetector prepare after preprocessed image is null");
             if(imageToMeasure!=null)IJ.log("spotdetector prepare after preprocessed image to measure "+imageToMeasure.getNSlices()+" slices");
@@ -503,7 +510,12 @@ public class SpotDetector {
                             IJ.log("The find maxima spots image " + findMaximaIP.getTitle() + " could not be saved in " + resultsDirectory + "/Images/Spot" + spotName + "/findmaxima/");
                         }
                     }
+
                 }
+            }
+            if(resultsDirectory!=null && savePreprocessedImage ) {
+                IJ.log("savePreprocessedImage "+savePreprocessedImage +" "+imageToMeasure.getNSlices()+" slices");
+                IJ.saveAsTiff(imageToMeasure, resultsDirectory + "/Images/preprocessed/" + image.getTitle()+spotName+"_quantif_preprocessed.tif");
             }
             return true;
         } else return false;

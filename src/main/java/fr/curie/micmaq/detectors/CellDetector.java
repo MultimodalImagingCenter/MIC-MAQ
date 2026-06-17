@@ -30,6 +30,7 @@ public class CellDetector {
     private final ResultsTable rawMeasures;
     private Analyzer analyzer;
     private ImagePlus imageToMeasure; /*Projected or not image, that will be the one measured*/
+    ImagePlus preprocessed;
 
     //General parameters
     private String nameExperiment; /*Name of experiment (common with spot/nuclei images)*/
@@ -42,6 +43,7 @@ public class CellDetector {
     private final boolean showCompositeImage;
     private boolean saveBinary;
     private boolean saveRois;
+    private boolean savePreprocessed;
     private boolean showBinaryImage;
 
     //    Parameters for cellpose
@@ -156,9 +158,10 @@ public class CellDetector {
      * @param saveMask : boolean to save the labeled mask or not
      * @param saveROIs : boolean to save the ROI obtained after segmentation or not
      */
-    public void setSavings(boolean saveMask, boolean saveROIs) {
+    public void setSavings(boolean saveMask, boolean saveROIs, boolean savePreprocessedImage) {
         this.saveBinary = saveMask;
         this.saveRois = saveROIs;
+        this.savePreprocessed=savePreprocessedImage;
     }
 
     /**
@@ -278,13 +281,13 @@ public class CellDetector {
     public boolean prepare(boolean preview) {
 
 //        PREPROCESSING
-        ImagePlus imageToReturn = prepareImageForSegmentation();
+        preprocessed = prepareImageForSegmentation();
 
-        if(imageToReturn==null) return false;
+        if(preprocessed==null) return false;
         RoiManager roiManagerCell;
 
         if (macroSegmentation) {
-            labeledImage=runMacroSegmentation(imageToReturn);
+            labeledImage=runMacroSegmentation(preprocessed);
             analysisType = "macro segmentation";
             if (isMacroOutputImage && macroOutputRoiManager) {
                 roiManagerCell = RoiManager.getRoiManager();
@@ -296,7 +299,7 @@ public class CellDetector {
             }
         } else {
             analysisType = "Cellpose segmentation";
-            ArrayList<Object> data= runCellposeSegmentation(imageToReturn);
+            ArrayList<Object> data= runCellposeSegmentation(preprocessed);
             labeledImage = (ImagePlus) data.get(0);
             roiManagerCell = (RoiManager) data.get(1);
             roi3D = (Objects3DIntPopulation) data.get(2);
@@ -320,10 +323,14 @@ public class CellDetector {
             labeledImage.setDisplayRange(0, (roiManagerCell.getCount() + 10));
             labeledImage.updateAndDraw();
         }
+
+        for (int i = 0; i < roiManagerCell.getCount(); i++) {
+            roiManagerCell.rename(i,"Cell_"+(i+1));
+        }
 //            Allow user to redefine the regions of interest
         if (finalValidation && !preview ) {
             roiManagerCell.toFront();
-            ImagePlus tempImage = imageToReturn.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
+            ImagePlus tempImage = preprocessed.duplicate(); /*Need to duplicate, as closing the image nullify the ImageProcessor*/
             tempImage.show();
             IJ.selectWindow(tempImage.getID());
             roiManagerCell.runCommand("Show All");
@@ -336,7 +343,7 @@ public class CellDetector {
         }
 //            SAVINGS
         cellRois = roiManagerCell.getRoisAsArray();
-        if(!preview) {
+        if(preview) {
             /*if (resultsDirectory != null && saveBinary) {
                 detector.setLUT(labeledImage);
                 File dir = new File(resultsDirectory + "/Images/AllDetected/");
@@ -602,6 +609,10 @@ public class CellDetector {
             File tmp=new File(resultsDirectory + "/Images/");
             if(!tmp.exists()) tmp.mkdirs();
         }
+        if(savePreprocessed){
+            File tmp=new File(resultsDirectory + "/Images/Preprocessed/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
 
         //            SAVING
         if (resultsDirectory !=null && saveBinary){
@@ -609,21 +620,24 @@ public class CellDetector {
                 ImagePlus label=detector.labeledImage3D(labeledImage.getWidth(), labeledImage.getHeight(), labeledImage.getNSlices(), roi3D,nameExperiment);
                 detector.renameImage(label,analysisType+"_NucleiDetected_LabelMask3D");
                 detector.setLUT(label);
-                Detector.saveMasks(resultsDirectory,label,"Cell","AllDetected");
+                Detector.saveMasks(resultsDirectory,label,"Cell3D","AllDetected");
             }else{
                 detector.renameImage(labeledImage,analysisType+"_CellDetected_LabelMask");
                 detector.setLUT(labeledImage);
-                Detector.saveMasks(resultsDirectory,labeledImage,"Cell","AllDetected");
+                Detector.saveMasks(resultsDirectory,labeledImage,"Cell2D","AllDetected");
             }
         }else if (resultsDirectory==null && saveBinary){
             IJ.error("No directory given for the results");
         }
         if(resultsDirectory!=null && saveRois){
-            Detector.saveROI(resultsDirectory,image,cellRois,analysisType,"_CellDetectedROIs","Cell_","AllDetected");
+            Detector.saveROI(resultsDirectory,image,cellRois,analysisType,"CellDetectedROIs","Cell_","AllDetected");
 
             if(roi3D!=null) {
-                Detector.saveROI3D(resultsDirectory,image,roi3D,analysisType,"_CellDetectedROIs_3D","AllDetected");
+                Detector.saveROI3D(resultsDirectory,image,roi3D,analysisType,"CellDetectedROIs_3D","AllDetected");
             }
+        }
+        if (resultsDirectory !=null && savePreprocessed){
+            IJ.saveAsTiff(preprocessed,resultsDirectory + "/Images/Preprocessed/"+image.getTitle()+"_Cell_Preprocessed.tif");
         }
     }
 

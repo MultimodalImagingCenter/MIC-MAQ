@@ -79,6 +79,7 @@ public class SegmentationParametersGUI {
     private JTextArea textAreaMacroSegment;
     private JCheckBox resultIsInRoiManagerCheckBox;
     private JCheckBox resultIsAnInstanceCheckBox;
+    private JCheckBox savePreprocessedImageCheckBox;
 
     private File cellposeModelPath;
     private File stardistModelPath;
@@ -398,6 +399,7 @@ public class SegmentationParametersGUI {
         userValidationCheckBox.setSelected(false);
         saveROIsCheckBox.setSelected(true);
         saveSegmentationMaskCheckBox.setSelected(false);
+        savePreprocessedImageCheckBox.setSelected(false);
 
         for (int i = 0; i < params.size(); i++) {
             //System.out.println("#segm: "+params.get(i));
@@ -509,6 +511,9 @@ public class SegmentationParametersGUI {
                     if (params.get(i).startsWith("save mask:")) {
                         saveSegmentationMaskCheckBox.setSelected(params.get(i).endsWith("yes"));
                     }
+                    if (params.get(i).startsWith("save preprocessed:")) {
+                        savePreprocessedImageCheckBox.setSelected(params.get(i).endsWith("yes"));
+                    }
 
                     if (params.get(i).startsWith("min size overlap nucleus/cell:")) {
                         minOverlapSpinner.setValue(new Double(params.get(i).split(": ")[1]));
@@ -570,6 +575,7 @@ public class SegmentationParametersGUI {
         params.setUserValidation(userValidationCheckBox.isSelected());
         params.setSaveROIs(saveROIsCheckBox.isSelected());
         params.setSaveMasks(saveSegmentationMaskCheckBox.isSelected());
+        params.setSavePreprocessed(savePreprocessedImageCheckBox.isSelected());
         params.setMeasurements(measures);
         System.out.println("#### segmentationGUI : getParameters measure " + measures.getMeasure());
 
@@ -653,6 +659,7 @@ public class SegmentationParametersGUI {
         userValidationCheckBox.setSelected(Prefs.get("MICMAQ.userValidation" + type, false));
         saveSegmentationMaskCheckBox.setSelected(Prefs.get("MICMAQ.SaveMask" + type, true));
         saveROIsCheckBox.setSelected(Prefs.get("MICMAQ.SaveROI" + type, true));
+        savePreprocessedImageCheckBox.setSelected(Prefs.get("MICMAQ.SavePreprocessed" + type, false));
 //        --> threshold
         thresholdMethodsCB.setSelectedItem(Prefs.get("MICMAQ.thresholdMethod" + type, "Li"));
         thresholdMinSizeSpinner.setValue(Prefs.get("MICMAQ.minSize" + type, 1000));
@@ -742,6 +749,7 @@ public class SegmentationParametersGUI {
         Prefs.set("MICMAQ.userValidation" + type, userValidationCheckBox.isSelected());
         Prefs.set("MICMAQ.SaveROI" + type, saveROIsCheckBox.isSelected());
         Prefs.set("MICMAQ.SaveMask" + type, saveSegmentationMaskCheckBox.isSelected());
+        Prefs.set("MICMAQ.SavePreprocessed" + type, savePreprocessedImageCheckBox.isSelected());
 
 //        --> threshold
         Prefs.set("MICMAQ.thresholdMethod" + type, (String) thresholdMethodsCB.getSelectedItem());
@@ -964,7 +972,7 @@ public class SegmentationParametersGUI {
         cellposePanel.add(label6, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposePanel.add(cellposeCellproba_thresholdSpinner, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel5.setLayout(new GridLayoutManager(2, 4, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(panel5, new GridConstraints(8, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         excludeOnEdgesCheckBox = new JCheckBox();
         excludeOnEdgesCheckBox.setText("exclude on edges");
@@ -979,7 +987,10 @@ public class SegmentationParametersGUI {
         saveSegmentationMaskCheckBox.setText("save segmentation mask");
         panel5.add(saveSegmentationMaskCheckBox, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer6 = new Spacer();
-        panel5.add(spacer6, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        panel5.add(spacer6, new GridConstraints(1, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        savePreprocessedImageCheckBox = new JCheckBox();
+        savePreprocessedImageCheckBox.setText("save preprocessed image");
+        panel5.add(savePreprocessedImageCheckBox, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cytoPanel = new JPanel();
         cytoPanel.setLayout(new GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(cytoPanel, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));

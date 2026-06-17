@@ -50,6 +50,7 @@ public class QuantificationParametersGUI {
     private JComboBox comboBoxMeasure;
     private JCheckBox summaryTableCheckBox;
     private JCheckBox countOnlyPositiveCellsCheckBox;
+    private JCheckBox savePreprocessedImageCheckBox;
 
     protected FieldOfViewProvider provider;
     protected MeasureValue measuresQuantif;
@@ -170,6 +171,7 @@ public class QuantificationParametersGUI {
             }
         }
         measure.setSummary(summaryTableCheckBox.isSelected());
+        measure.setSavePreprocessed(savePreprocessedImageCheckBox.isSelected());
         return measure;
     }
 
@@ -189,12 +191,17 @@ public class QuantificationParametersGUI {
         measure.setSummary(summaryTableCheckBox.isSelected());
         System.out.println("####### quantificationParameterGUI getmeasuresegmentation : " + measure.getMeasure());
         System.out.println("####### quantificationParameterGUI getmeasuresegmentation measureSegmentation : " + measuresSegmentation.getMeasure());
+        measure.setSavePreprocessed(savePreprocessedImageCheckBox.isSelected());
         return measure;
 
     }
 
     public boolean isZproject() {
         return isZStackCheckBox.isSelected();
+    }
+
+    public boolean isSavePreprocessedImage() {
+        return savePreprocessedImageCheckBox.isSelected();
     }
 
     public void resetMeasures() {
@@ -420,6 +427,7 @@ public class QuantificationParametersGUI {
         summaryTableCheckBox.setSelected(Prefs.get("MICMAQ.summary", false));
         countOnlyPositiveCellsCheckBox.setEnabled(summaryTableCheckBox.isSelected());
         countOnlyPositiveCellsCheckBox.setSelected(Prefs.get("MICMAQ.summaryPositive", false));
+        savePreprocessedImageCheckBox.setSelected(Prefs.get("MICMAQ.quantif_savePreProcessed", false));
 
     }
 
@@ -448,6 +456,7 @@ public class QuantificationParametersGUI {
         Prefs.set("MICMAQ.macro" + type, macroTextArea.getText());
         Prefs.set("MICMAQ.summary", summaryTableCheckBox.isSelected());
         Prefs.set("MICMAQ.summaryPositive", countOnlyPositiveCellsCheckBox.isSelected());
+        Prefs.set("MICMAQ.quantif_savePreProcessed", savePreprocessedImageCheckBox.isSelected());
 //      the checkbox is automaticaly saved in update measures
 
     }
@@ -671,18 +680,21 @@ public class QuantificationParametersGUI {
         panel9.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         panel9.add(comboBoxPreProc, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel10 = new JPanel();
-        panel10.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel10.setLayout(new GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
         rootPanel.add(panel10, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel10.setBorder(BorderFactory.createTitledBorder(null, "summary", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         summaryTableCheckBox = new JCheckBox();
         summaryTableCheckBox.setText("create summary table");
         panel10.add(summaryTableCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer5 = new Spacer();
-        panel10.add(spacer5, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        panel10.add(spacer5, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         countOnlyPositiveCellsCheckBox = new JCheckBox();
         countOnlyPositiveCellsCheckBox.setEnabled(false);
         countOnlyPositiveCellsCheckBox.setText("count only positive cells to average spots");
         panel10.add(countOnlyPositiveCellsCheckBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        savePreprocessedImageCheckBox = new JCheckBox();
+        savePreprocessedImageCheckBox.setText("save preprocessed image");
+        panel10.add(savePreprocessedImageCheckBox, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

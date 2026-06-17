@@ -155,7 +155,7 @@ public class ExperimentSettings {
                     nucleiSegmentationParams.isMacroOutputImage(),
                     nucleiSegmentationParams.isExcludeOnEdge());
         }
-        nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs());
+        nucleiDetector.setSavings(nucleiSegmentationParams.isSaveMasks(),nucleiSegmentationParams.isSaveROIs(), nucleiSegmentationParams.isSavePreprocessed());
         nucleiDetector.setSegmentation(nucleiSegmentationParams.isUserValidation(),preview);
         if(nucleiSegmentationParams.getExpansionRadius()>0) nucleiDetector.setExpandRadius(nucleiSegmentationParams.getExpansionRadius());
 
@@ -221,7 +221,7 @@ public class ExperimentSettings {
             IJ.log("cell image: "+cellDetector.getImageTitle());
 
         }
-        cellDetector.setSavings(cellSegmentationParams.isSaveMasks(),cellSegmentationParams.isSaveROIs());
+        cellDetector.setSavings(cellSegmentationParams.isSaveMasks(),cellSegmentationParams.isSaveROIs(), cellSegmentationParams.isSavePreprocessed());
         return cellDetector;
     }
 
@@ -260,14 +260,17 @@ public class ExperimentSettings {
 
                     if(measureValue.isSpotFindMaxima()) {
                         tmp.setSpotByFindMaxima(measureValue.getMaximaProminence(), preview);
-                        tmp.setSaving(true,true);
+                        tmp.setSaving(true,true, measureValue.isSavePreprocessed());
                     }
 
                     if(measureValue.isSpotThreshold()) {
                         tmp.setSpotByThreshold(measureValue.getThresholdMethod(),
                                 measureValue.getMinThreshold(), measureValue.getMaxThreshold(),
                                 measureValue.getMinSizeSpot(), measureValue.isUseWatershed(), measureValue.isDarkBg(), preview);
-                        tmp.setSaving(true,true);
+                        tmp.setSaving(true,true, measureValue.isSavePreprocessed());
+                    }
+                    if(measureValue.isSavePreprocessed()&& !measureValue.isSpotFindMaxima() && !measureValue.isSpotThreshold()) {
+                        tmp.setSaving(false,false, measureValue.isSavePreprocessed());
                     }
 
                     tmp.setMeasurements(measureValue.getMeasure());

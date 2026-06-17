@@ -63,6 +63,7 @@ public class SegmentationParameters {
     boolean userValidation=false;
     boolean saveROIs=false;
     boolean saveMasks=false;
+    boolean savePreprocessed=false;
     MeasureValue measurements;
 
     int tileSize=-1;
@@ -296,6 +297,13 @@ public class SegmentationParameters {
 
     public void setSaveMasks(boolean saveMasks) {
         this.saveMasks = saveMasks;
+    }
+    public void setSavePreprocessed(boolean savePreprocessed) {
+        this.savePreprocessed = savePreprocessed;
+    }
+
+    public boolean isSavePreprocessed() {
+        return savePreprocessed;
     }
 
     public void setCytoplasmParameters(double minOverlap, double minCytoSize){
