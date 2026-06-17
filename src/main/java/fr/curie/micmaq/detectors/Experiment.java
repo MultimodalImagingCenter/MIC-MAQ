@@ -5,6 +5,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
+import ij.plugin.frame.RoiManager;
 import mcib3d.geom2.Object3DInt;
 import org.checkerframework.checker.units.qual.A;
 
@@ -149,24 +150,60 @@ public class Experiment {
         Instant dateBegin = Instant.now(); /*get starting time*/
 //        PREPARE NECESSARY IMAGES FOR MEASUREMENTS
         if(!preprocess()) return false;
-        if(nuclei!=null) nuclei.saveAll(nuclei.getAnalysisType());
-        if(cell!=null) cell.saveAll(cell.getAnalysisType());
 //        Prepare cytoplasm and get the ROIs for spot detection
         CytoDetector cytoDetector = null;
         if ((cell!=null && nuclei!=null)||(cell==null && nuclei!=null && nuclei.isExpand4Cells()) && !interrupt){
            /*Prepare cytoplasm et get new cellRois*/
                 cytoDetector = prepareCytoplams();
         }
+
         IJ.log("measurements launch");
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
         measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
-
+        if(nuclei!=null) nuclei.saveAll(nuclei.getAnalysisType());
+        if(cell!=null) cell.saveAll(cell.getAnalysisType());
         //perform summary
         if(summary!=null) {
             if(finalResultsNuclei!=null && finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsNuclei, finalResultsCellSpot,experimentName, onlyPositive4Spots);
             else if(finalResultsNuclei!=null) measureRois.summary(summary,finalResultsNuclei,experimentName);
             else if(finalResultsCellSpot!=null) measureRois.summary(summary,finalResultsCellSpot,experimentName);
+        }
+        //set the correct rois in the Roi manager
+        if(cytoDetector!=null) {
+            Roi[] roisCell= cytoDetector.getCellRois();
+            RoiManager rm=RoiManager.getInstance();
+            rm.reset();
+            if(roisCell!=null) for (int i = 0; i < roisCell.length; i++) {
+                roisCell[i].setName("Cell_"+(i+1));
+                rm.addRoi(roisCell[i]);
+            }
+        }else if(cell!=null) {
+            Roi[] roisCell= cell.getRoiArray();
+            RoiManager rm=RoiManager.getInstance();
+            rm.reset();
+            if(roisCell!=null) for (int i = 0; i < roisCell.length; i++) {
+                roisCell[i].setName("Cell_"+(i+1));
+                rm.addRoi(roisCell[i]);
+            }
+        }else if(nuclei!=null) {
+            if(nuclei.isExpand4Cells()){
+                Roi[] roisCell= nuclei.getExpandedRois().get(1);
+                RoiManager rm=RoiManager.getInstance();
+                rm.reset();
+                if(roisCell!=null) for (int i = 0; i < roisCell.length; i++) {
+                    roisCell[i].setName("ExpandedCell_"+(i+1));
+                    rm.addRoi(roisCell[i]);
+                }
+            }else{
+                Roi[] roisNuclei= nuclei.getRoiArray();
+                RoiManager rm=RoiManager.getInstance();
+                rm.reset();
+                if(roisNuclei!=null) for (int i = 0; i < roisNuclei.length; i++) {
+                    roisNuclei[i].setName("Nuclei_"+(i+1));
+                    rm.addRoi(roisNuclei[i]);
+                }
+            }
         }
 
 //        TIMING OF EXPERIENCE
@@ -195,6 +232,7 @@ public class Experiment {
                 interrupt=true;
                 return false;
             }
+
         }
 //        --> Spots images
         for (int i = 0; i < spots.size(); i++) {
@@ -206,6 +244,7 @@ public class Experiment {
                     interrupt=true;
                     return false;
                 }
+                IJ.log("experiment preprocess spot "+i+" imagetomeasure"+spot.getImageToMeasure().getNSlices()+" slices");
             }
         }
         return true;
@@ -248,10 +287,7 @@ public class Experiment {
 //        --> Nuclei images
         IJ.log("Nuclei image: "+nuclei.getImageTitle());
         nuclei.setMeasureCalibration(measureCalibration);
-        if (!nuclei.prepare()) {
-            interrupt=true;
-            return false;
-        }
+        nuclei.preview();
 
 //        Prepare cytoplasm and get the ROIs for spot detection
         Roi[] nucleiRois = null;
@@ -274,10 +310,7 @@ public class Experiment {
         IJ.log("Cell/Cytoplasm image: "+ cell.getImageTitle());
         cell.setMeasureCalibration(measureCalibration);
 
-        if (!cell.prepare()) {
-            interrupt=true;
-            return false;
-        }
+       cell.preview();
 
 //        Prepare cytoplasm and get the ROIs for spot detection
         Roi[] cellRois = null;
@@ -286,6 +319,27 @@ public class Experiment {
         cellRois = cell.getRoiArray();
         numberOfObject = cellRois.length;
         IJ.log("(cell"+((nuclei!=null)?"/nuclei":"")+")number of objects: "+numberOfObject);
+        RoiManager rm = RoiManager.getInstance();
+        rm.reset();
+        for (int i = 0; i < cellRois.length; i++) {
+            cellRois[i].setName("Cell_" + (i + 1));
+            rm.addRoi(cellRois[i]);
+        }
+        rm.runCommand("Show All");
+
+        /*CytoDetector cyto=prepareCytoplams();
+        if(cyto!=null) {
+            RoiManager rm = RoiManager.getInstance();
+            rm.reset();
+            Roi[] cytoRois = cyto.get();
+            for (int i = 0; i < cytoRois.length; i++) {
+                cytoRois[i].setName("Cyto_" + (i + 1));
+                rm.addRoi(cytoRois[i]);
+            }
+            rm.runCommand("Show All");
+        }else {
+
+        }*/
 
         return true;
     }
