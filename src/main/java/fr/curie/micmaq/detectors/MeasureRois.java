@@ -110,7 +110,7 @@ public class MeasureRois {
                 }
                 if (cyto!=null){
                     if(cyto.is3D()){
-                        Object3DInt[] rois = cyto.getCellRois3D();
+                        Object3DInt[] rois = cyto.getCytoRois3D();
                         measure3D(cellID, finalResultsCellSpot, rois[cellID], CYTO, calibration);
                     }else {
                         Roi[] rois = cyto.getCytoRois();
@@ -118,6 +118,7 @@ public class MeasureRois {
                     }
                 }
                 finalResultsCellSpot.incrementCounter();
+                //nuclei.saveAll(nuclei.getAnalysisType());
         }
     }
 
