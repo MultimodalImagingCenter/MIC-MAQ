@@ -39,6 +39,7 @@ public class MeasureValue {
     int projectionSliceMax=-1;
 
     double subtractBGRadius=-1;
+    boolean savePreprocessed=false;
 
 
     public MeasureValue(boolean morphology) {
@@ -223,5 +224,12 @@ public class MeasureValue {
 
     public void setDarkBg(boolean darkBg) {
         this.darkBg = darkBg;
+    }
+
+    public boolean isSavePreprocessed() {
+        return savePreprocessed;
+    }
+    public void setSavePreprocessed(boolean savePreprocessed) {
+        this.savePreprocessed = savePreprocessed;
     }
 }
