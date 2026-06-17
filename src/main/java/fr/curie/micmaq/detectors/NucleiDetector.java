@@ -33,6 +33,7 @@ import java.util.List;
  */
 public class NucleiDetector {
     private final ImagePlus image; /*Original image*/
+    private ImagePlus preprocessed;
     private final ResultsTable rawMeasures;
     //private Analyzer analyzer;
     private ImagePlus imageToMeasure; /*Projected or not image, that will be the one measured*/
@@ -66,6 +67,7 @@ public class NucleiDetector {
     private boolean excludeOnEdges;
     private boolean saveMask;
     private boolean saveRois;
+    private boolean savePreprocessed;
     private boolean showBinaryImage;
     private int measurements;
 
@@ -216,9 +218,10 @@ public class NucleiDetector {
      * @param saveMask : boolean to save the labeled mask or not
      * @param saveROIs : boolean to save the ROI obtained after segmentation or not
      */
-    public void setSavings(boolean saveMask,boolean saveROIs){
+    public void setSavings(boolean saveMask,boolean saveROIs, boolean savePreprocessed){
         this.saveMask = saveMask;
         this.saveRois = saveROIs;
+        this.savePreprocessed = savePreprocessed;
     }
 
     /**
@@ -333,41 +336,17 @@ public class NucleiDetector {
      * - show result labeled image
      */
     public void preview(){
-//        int[] idsToKeep = WindowManager.getIDList();
-        ImagePlus preprocessed = getPreprocessing();
-        if (preprocessed!=null){
-            preprocessed.show();
-            WindowManager.setWindow(WindowManager.getWindow("Log"));
-            if (cellpose){
-//            launch cellpose command to obtain mask
-                /*cyto channel = 0 for gray*/
-                /*nuclei channel = 0 for none*/
-                CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
-                cellposeLauncher.analysis();
-                ImagePlus cellposeOutput = cellposeLauncher.getCellposeMask();
-                cellposeOutput.show();
-                cellposeOutput.setDisplayRange(0,(cellposeLauncher.getCellposeRoiManager().getCount()+10));
-                cellposeOutput.updateAndDraw();
-            } else if(stardist){
-                StarDistLauncher starDistLauncher = new StarDistLauncher(preprocessed);
-                starDistLauncher.setModel(stardistModel);
-                starDistLauncher.setPercentileBottom(stardistPercentileBottom);
-                starDistLauncher.setPercentileTop(stardistPercentileTop);
-                starDistLauncher.setProbThresh(stardistProbThresh);
-                starDistLauncher.setNmsThresh(stardistNmsThresh);
-                starDistLauncher.setModelFile(stardistModelFile);
-                starDistLauncher.setScale(stardistScale);
-                starDistLauncher.setExcludeOnEdges(excludeOnEdges);
-                starDistLauncher.analysis();
-                ImagePlus stardistOuput = starDistLauncher.getInstanceMask();
-                stardistOuput.show();
-                stardistOuput.setDisplayRange(0,(starDistLauncher.getStardistRoiManager().getCount()+10));
-                stardistOuput.updateAndDraw();
-
-
-            }else {
-                thresholding(preprocessed);
+        prepare(true);
+        if(isExpand4Cells()){
+            ArrayList<Roi[]> expanded=getExpandedRois();
+            RoiManager rm=RoiManager.getInstance();
+            rm.reset();
+            Roi[] cellRois=expanded.get(1);
+            for (int i = 0; i < cellRois.length; i++) {
+                cellRois[i].setName("Cell_"+(i+1));
+                rm.addRoi(cellRois[i]);
             }
+            rm.runCommand("Show All");
         }
     }
 
@@ -390,7 +369,7 @@ public class NucleiDetector {
 
 //        PREPROCESSING
        // System.out.println("nuclei detector prepare macro preprocess: "+getPreprocessingMacro());
-        ImagePlus preprocessed = getPreprocessing();
+        preprocessed = getPreprocessing();
         if (preprocessed!=null){
             ArrayList<Object> segtmp = runSegmentation(preprocessed);
             labeledImage = (ImagePlus) segtmp.get(0);
@@ -418,6 +397,9 @@ public class NucleiDetector {
                 labeledImage.show();
                 labeledImage.setDisplayRange(0,roiManagerNuclei.getCount()+5);
                 labeledImage.updateAndDraw();
+            }
+            for (int i = 0; i < roiManagerNuclei.getCount(); i++) {
+                roiManagerNuclei.rename(i,"Nuclei_"+(i+1));
             }
 //            User can redefine ROIs if option selected
             if (finalValidation){
@@ -825,6 +807,10 @@ public class NucleiDetector {
             File tmp=new File(resultsDirectory + "/Images/");
             if(!tmp.exists()) tmp.mkdirs();
         }
+        if(savePreprocessed){
+            File tmp=new File(resultsDirectory + "/Images/Preprocessed/");
+            if(!tmp.exists()) tmp.mkdirs();
+        }
 
         //            SAVING
         if (resultsDirectory !=null && saveMask){
@@ -849,17 +835,21 @@ public class NucleiDetector {
        if(resultsDirectory!=null && saveRois){
            Detector.saveROI(resultsDirectory,image,nucleiRois,analysisType,"_NucleiDetectedROIs","Nucleus_","AllDetected");
            if(expand4Cells && roisExpanded!=null) {
-               Detector.saveROI(resultsDirectory,image,roisExpanded.get(1), analysisType, "_NucleiDetectedROIs_ExpandedCell", "Cell_","AllDetected");
-               Detector.saveROI(resultsDirectory,image, roisExpanded.get(1),  analysisType,"_NucleiDetectedROIs_ExpandedCyto", "Cyto_","AllDetected");
+               Detector.saveROI(resultsDirectory,image,roisExpanded.get(1), analysisType, "_NucleiDetectedROIs_ExpandedCell", "ExpandedCell_","AllDetected");
+               Detector.saveROI(resultsDirectory,image, roisExpanded.get(2),  analysisType,"_NucleiDetectedROIs_ExpandedCyto", "ExpandedCyto_","AllDetected");
+               Detector.saveROI(resultsDirectory,image, roisExpanded.get(2),  analysisType,"_NucleiDetectedROIs_ExpandedCyto", "ExpandedCyto_","AllDetected");
            }
            if(roi3Ds!=null) {
-               Detector.saveROI3D(resultsDirectory,image,roi3Ds,analysisType,"_NucleiDetectedROIs_3D","AllDetected");
+               Detector.saveROI3D(resultsDirectory,image,roi3Ds,analysisType,"NucleiDetectedROIs_3D","AllDetected");
                if(expand4Cells){
                    if(expandedRois3D!=null)Detector.saveROI3D(resultsDirectory,image,expandedRois3D,analysisType,"_NucleiDetectedROIs_ExpandedCell","AllDetected");
-                   if(cytoRois3D!=null)Detector.saveROI3D(resultsDirectory,image,cytoRois3D,analysisType,"_NucleiDetectedROIs_ExpandedCyto","AllDetected");
+                   if(cytoRois3D!=null)Detector.saveROI3D(resultsDirectory,image,cytoRois3D,analysisType,"NucleiDetectedROIs_ExpandedCyto","AllDetected");
                }
            }
        }
+        if (resultsDirectory !=null && savePreprocessed){
+            IJ.saveAsTiff(preprocessed,resultsDirectory + "/Images/Preprocessed/"+image.getTitle()+"_Nuclei_Preprocessed.tif");
+        }
     }
 
 
