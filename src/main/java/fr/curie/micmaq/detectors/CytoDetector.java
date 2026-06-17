@@ -266,6 +266,14 @@ public class CytoDetector {
     }
 
     /**
+     *
+     * @return Rois corresponding to cytoplasm
+     */
+    public Object3DInt[] getCytoRois3D() {
+        return cytoplasmRoi3D;
+    }
+
+    /**
      * For each cell, find each nucleus associated
      * The association is done through the verification of the overlap between a cell's and nuclei's bounding rectangle and then the verification
      * that at least a pixel is contained by both regions (in particular for cases of non-ovoid forms) and verify that the overlap is enough
@@ -273,6 +281,7 @@ public class CytoDetector {
      * Only the nuclei that are at minimum at 90% in the cell are considered
      */
     private void associateNucleiCell() {
+        if(nucleiRois==null) return;
         associationCell2Nuclei = new int[nucleiRois.length]; /*table of association between nuclei and cells*/
         Arrays.fill(associationCell2Nuclei,-1);
 
@@ -412,6 +421,7 @@ public class CytoDetector {
      * Subtract nucleus roi for associated cell Roi
      */
     private void getCytoplasmRois() {
+        if(trueCellRois==null) return;
         cytoplasmRois = new Roi[trueCellRois.length];
 //        Iterate on each cell roi
         for (int cellID = 0; cellID < trueCellRois.length; cellID++) {
