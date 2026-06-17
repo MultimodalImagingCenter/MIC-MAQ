@@ -1077,7 +1077,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             }
                         }
                     }
-                } else if (!cp.isNuclei() && !cp.isCell()) {
+                    //} else if (!cp.isNuclei() && !cp.isCell()) {
+                } else {
                     //TODO check that MAX projection is what should be done by default
                     if (imgs.getNSlices(i + 1) > 1) {
                         MeasureValue tmp = quantifPanel.getMeasuresQuantif(i + 1);
@@ -1097,6 +1098,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 measureValue.setSummary(quantifPanel.getMeasuresQuantif(i + 1).isSummary());
                 measureValue.setName("_C" + (i + 1) + "_" + cp.getProteinName());
                 measureValue.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
+                measureValue.setSavePreprocessed(quantifPanel.isSavePreprocessedImage());
                 settings.setQuantification(i + 1, measureValue);
                 //IJ.log("create exp: spot macro:" + measureValue.getPreprocessMacro());
                 //IJ.log("create exp: spot quantif macro:" + measureValue.getPreprocessMacroQuantif());
