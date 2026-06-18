@@ -623,7 +623,7 @@ public class SpotDetector {
             }
         }
 //        Measurement
-        resultsTableToAdd.addValue(type + spotName + " threshold nr. spots", numberSpot);
+        resultsTableToAdd.addValue(type + spotName + " Spot(threshold) nr. spots", numberSpot);
         if (numberSpot > 0) {
             ResultsTable resultsTable = new ResultsTable();
             Analyzer analyzer = new Analyzer(imageToMeasure, spotMeasurements, resultsTable);
@@ -638,17 +638,21 @@ public class SpotDetector {
                 for(int r=0;r<resultsTable.getCounter();r++){
                     spotMeasuresTable.addValue("Name experiment",nameExperiment);
                     spotMeasuresTable.addValue(type+" nr",regionID);
-                    for(int c=0;c<headings.length;c++)
-                        spotMeasuresTable.addValue(headings[c],resultsTable.getValue(headings[c],r));
+                    for(int c=0;c<headings.length;c++) {
+                        spotMeasuresTable.addValue(headings[c], resultsTable.getValue(headings[c], r));
+                        if(headings[c].startsWith("Area")){
+                            spotMeasuresTable.addValue("Area ("+measureCalibration.getUnit()+")", measureCalibration.getPixelArea()*resultsTable.getValue(headings[c], r));
+                        }
+                    }
                     spotMeasuresTable.incrementCounter();
                 }
             }
             detector.setSummarizedResults(resultsTable, resultsTableToAdd, type  + spotName);
         } else {
-            resultsTableToAdd.addValue(type + spotName + " threshold Area (pixel)", Double.NaN);
-            resultsTableToAdd.addValue(type + spotName + " threshold Area (" + measureCalibration.getUnit() + ")", Double.NaN);
-            resultsTableToAdd.addValue(type + spotName + " threshold Mean", Double.NaN);
-            resultsTableToAdd.addValue(type + spotName + " threshold RawIntDen", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(threshold) Area (pixel)", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(threshold) Area (" + measureCalibration.getUnit() + ")", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(threshold) Mean", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(threshold) RawIntDen", Double.NaN);
         }
     }
 
@@ -674,9 +678,9 @@ public class SpotDetector {
             mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
         }
         mean = mean / size;
-        resultsTableToAdd.addValue(type + spotName + " maxima prominence", prominence);
-        resultsTableToAdd.addValue(type + spotName + " maxima nr. spots", size);
-        resultsTableToAdd.addValue(type + spotName + " maxima mean", mean);
+        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) prominence", prominence);
+        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) nr. spots", size);
+        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean", mean);
     }
 
     /**

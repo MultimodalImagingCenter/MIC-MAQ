@@ -590,23 +590,23 @@ public class Detector {
             switch (measure) {
                 case "Area":
                     double sumArea = sum(rawMeasures.getColumn(measure));
-                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (pixel)", (sumArea));
-                    customMeasures.addValue(prenameColumn + " threshold " + measure + " (" + measureCalibration.getUnit() + ")", (sumArea * measureCalibration.getPixelArea()));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + " (pixel)", (sumArea));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + " (" + measureCalibration.getUnit() + ")", (sumArea * measureCalibration.getPixelArea()));
                     break;
                 case "IntDen":
                     continue;
                 case "Mean":
                     break;
                 case "RawIntDen":
-                    customMeasures.addValue(prenameColumn + " threshold " + measure, (sum(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure, (sum(rawMeasures.getColumn(measure))));
                     break;
                 default:
-                    customMeasures.addValue(prenameColumn + " threshold " + measure, (mean(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure, (mean(rawMeasures.getColumn(measure))));
                     break;
             }
         }
         /*Arithmetic mean*/
-        customMeasures.addValue(prenameColumn + " threshold Mean", (sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area"))));
+        customMeasures.addValue(prenameColumn + " Spot(threshold) Mean", (sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area"))));
     }
 
     /**

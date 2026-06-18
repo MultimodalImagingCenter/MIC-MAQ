@@ -34,6 +34,7 @@ public class MeasureCalibration {
         /*The values are considered as given as length, so they need to be converted to areas by multiplicating them*/
         double value_tmp;
         try {
+            System.out.println("pixelLength: "+pixelLength+"#");
             value_tmp = Double.parseDouble(pixelLength);
         }catch (NumberFormatException e){ /*If the value is not a number*/
             IJ.error("The value is not a number, please correct the file.");
@@ -155,7 +156,7 @@ public class MeasureCalibration {
         try {
             BufferedWriter output = new BufferedWriter(new FileWriter(calibration_filename,true));
             output.newLine();
-            output.append(name).append(";").append(String.valueOf(pixelLength)).append(String.valueOf(pixelsZ)).append(";").append(unit);
+            output.append(name).append(";").append(String.valueOf(pixelLength)).append(";").append(String.valueOf(pixelsZ)).append(";").append(unit);
             IJ.log("Added new calibration : name: "+ name +" value: " + pixelLength +" unit: "+ unit);
             output.close();
         } catch (IOException e) { /*If file can not be written in, display error message*/
