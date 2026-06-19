@@ -374,6 +374,7 @@ public class NucleiDetector {
             ArrayList<Object> segtmp = runSegmentation(preprocessed);
             labeledImage = (ImagePlus) segtmp.get(0);
             IJ.log("label image max "+new StackStatistics(labeledImage).max);
+            IJ.log("label image nslices "+labeledImage.getNSlices());
             RoiManager roiManagerNuclei = (RoiManager) segtmp.get(1);
             roi3Ds = (Objects3DIntPopulation) segtmp.get(2);
             if(roi3Ds!=null) IJ.log("nucleidetector analyse cellpose roi3D:"+roi3Ds.getNbObjects());
@@ -388,7 +389,9 @@ public class NucleiDetector {
                     IJ.log("after nb rois3D "+roi3Ds.getNbObjects());
 
                 }else if(Detector.excludeOnEdgesRois(image,roiManagerNuclei)){
+                    IJ.log("before nb rois2D "+roiManagerNuclei.getCount());
                     labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                    IJ.log("after nb rois2D "+roiManagerNuclei.getCount());
                 }
             }
 

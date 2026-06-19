@@ -462,6 +462,7 @@ public class Detector {
     public static boolean excludeOnEdgesRois(ImagePlus image, Objects3DIntPopulation rois3D){
         //IJ.log("detector excludeOnEdgesRois n slices = "+image.getNSlices());
         boolean removed=false;
+        if(rois3D==null) return removed;
         List<Object3DInt> rois = rois3D.getObjects3DInt();
         //IJ.log("detector excludeOnEdgesRois n rois = "+rois.size());
         for (int r= rois3D.getNbObjects()-1; r>=0;r--){

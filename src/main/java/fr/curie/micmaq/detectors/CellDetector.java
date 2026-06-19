@@ -309,12 +309,19 @@ public class CellDetector {
             }
         }
 
+        IJ.log("label image max "+new StackStatistics(labeledImage).max);
+        IJ.log("label image nslices "+labeledImage.getNSlices());
+        IJ.log("should do exclude on edge "+excludeOnEdges);
         if(excludeOnEdges) {
-            if(image.getNSlices()>1) {
+            if(labeledImage.getNSlices()>1) {
                 IJ.log("exclude on edge on 3D data");
+                IJ.log("before nb rois3D "+roi3D.getNbObjects());
                 if(Detector.excludeOnEdgesRois(image,roi3D)) labeledImage = Detector.labeledImage3D(image.getWidth(), image.getHeight(), image.getNSlices(), roi3D, nameExperiment+analysisType+"_Cell");
+                IJ.log("after nb rois3D "+roi3D.getNbObjects());
             }else if(Detector.excludeOnEdgesRois(image,roiManagerCell)){
+                IJ.log("before nb rois2D "+roiManagerCell.getCount());
                 labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
+                IJ.log("after nb rois2D "+roiManagerCell.getCount());
             }
         }
 
