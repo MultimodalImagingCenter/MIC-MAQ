@@ -665,7 +665,7 @@ public class SegmentationParametersGUI {
         thresholdMinSizeSpinner.setValue(Prefs.get("MICMAQ.minSize" + type, 1000));
         useWatershedCheckBox.setSelected(Prefs.get("MICMAQ.UseWaterShed" + type, false));
 //        --> cellpose
-        cellposeModelCB.setSelectedItem(Prefs.get("MICMAQ.cellposeMethods" + type, "cyto2"));
+        cellposeModelCB.setSelectedItem(Prefs.get("MICMAQ.cellposeMethods" + type, "cyto3"));
         if (cellposeModelCB.getSelectedItem() != "own_model") {
             cellposeOwnModelPanel.setVisible(false);
         }
@@ -935,6 +935,9 @@ public class SegmentationParametersGUI {
         cellposeModelCB = new JComboBox();
         final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
         defaultComboBoxModel2.addElement("cpsam");
+        defaultComboBoxModel2.addElement("cpsam_v2");
+        defaultComboBoxModel2.addElement("cpdino");
+        defaultComboBoxModel2.addElement("cpdino-vitb");
         defaultComboBoxModel2.addElement("nuclei");
         defaultComboBoxModel2.addElement("cyto");
         defaultComboBoxModel2.addElement("cyto2");

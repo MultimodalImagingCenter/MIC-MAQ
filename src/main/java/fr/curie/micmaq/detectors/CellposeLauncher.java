@@ -192,6 +192,7 @@ public class CellposeLauncher {
             }else {
                 label2Roi(cellposeMask);
             }
+            cellposeMask.setTitle(cellposeMask.getTitle() + "-"+model);
 
             IJ.log("RoiManager size: "+RoiManager.getInstance().getCount());
             return cellposeMask;
@@ -237,7 +238,7 @@ public class CellposeLauncher {
         IJ.showStatus("combine masks");
         //new ImagePlus("tiles masks",masks).show();
 
-        ImagePlus result = new ImagePlus(input.getTitle() + "TiledCellpose_mask", combineTileImage(masks));
+        ImagePlus result = new ImagePlus(input.getTitle() + "TiledCellpose_mask-"+model, combineTileImage(masks));
         //result.duplicate().show();
         return result;
     }
@@ -355,6 +356,9 @@ public class CellposeLauncher {
         settings.setEnvType(Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envType","conda"));
         switch (model) {
             case "cpsam":
+            case "cpsam_v2":
+            case "cpdino":
+            case "cpdino-vitb":
                 settings.setEnvPath(Prefs.get("ch.epfl.biop.wrappers.cellpose.CellposeSAM.envDirPath",null));
                 break;
             default:

@@ -291,6 +291,9 @@
             <properties>
               <model>
                 <item value="cpsam"/>
+                <item value="cpsam_v2"/>
+                <item value="cpdino"/>
+                <item value="cpdino-vitb"/>
                 <item value="nuclei"/>
                 <item value="cyto"/>
                 <item value="cyto2"/>
