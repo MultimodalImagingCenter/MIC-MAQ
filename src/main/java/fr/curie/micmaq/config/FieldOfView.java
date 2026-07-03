@@ -72,9 +72,9 @@ public class FieldOfView {
     public void addChannel(ImportProcess importProcess, int serieNb, int channelNb){
         this.serieNb=serieNb;
         try {
-            fieldname= "";
-            if(importProcess.getSeriesCount()>1) fieldname+= importProcess.getIdName()+"#";
-            fieldname+=importProcess.getOMEMetadata().getImageName(serieNb);
+            fieldname= importProcess.getIdName();
+            if(importProcess.getSeriesCount()>1) fieldname+= "#"+importProcess.getOMEMetadata().getImageName(serieNb);
+
             fieldname=fieldname.replaceAll("[\\\\/:*?\"<>|]","_");
             IJ.log("idname: "+importProcess.getIdName()+"\nserieslabel: "+importProcess.getSeriesLabel(serieNb));
             IJ.log("fieldname: "+fieldname);
