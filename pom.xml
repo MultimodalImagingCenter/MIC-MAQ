@@ -68,6 +68,14 @@
             </roles>
             <!--properties><id></id></properties-->
         </contributor>
+        <contributor>
+            <name>Frederic Coquelle</name>
+            <url>https://curie.fr/personne/frederic-coquelle</url>
+            <roles>
+                <role>supervisor</role>
+            </roles>
+            <!--properties><id></id></properties-->
+        </contributor>
     </contributors>
 
     <mailingLists>
