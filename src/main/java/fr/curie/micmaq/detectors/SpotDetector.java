@@ -26,6 +26,7 @@ import mcib3d.image3d.ImageHandler;
 
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -83,6 +84,17 @@ public class SpotDetector {
     private boolean useWatershed;
     private final Detector detector;
 
+    /* Spotiflow */
+    private boolean spotBySpotiflow;
+    private String spotiflowModel = "general";
+    private boolean pretrainedModel = true;
+    private double spotiflowMinProbability = 0;
+    private ArrayList<PointRoi> spotiflowRois;
+    private double spotiflowScale = 1.0;
+    private int spotiflowMinDistance = 0;
+    private int spotiflowSubpixRadius = 0;
+
+
     private int measurements = Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
 
     private int spotMeasurements =Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY+Measurements.SHAPE_DESCRIPTORS+Measurements.ELLIPSE+Measurements.FERET;
@@ -118,6 +130,8 @@ public class SpotDetector {
         this.useRollingBallSize = false;
         this.spotByThreshold = false;
         this.spotByFindMaxima = false;
+        this.spotBySpotiflow = false;
+        this.spotiflowRois = null;
 //        this.regionROI = null;
 
     }
@@ -137,6 +151,8 @@ public class SpotDetector {
         this.nameExperiment = "livePreview";
         this.resultsDirectory = "";
         showPreprocessedImage = false;
+        this.spotBySpotiflow = false;
+        this.spotiflowRois = null;
     }
 
     /**
@@ -214,7 +230,7 @@ public class SpotDetector {
      * @param minSizeSpot        : minimum size of particle to consider
      * @param useWatershed       : if true, use watershed method in addition to thresholding
      * @param showThresholdImage : chooice to show the resulting image
-     * @see Detector#setThresholdParameters(String, boolean, double)
+     *
      */
     public void setSpotByThreshold(String thresholdMethod, double minTreshold, double maxThreshold, double minSizeSpot, boolean useWatershed, boolean darkBg, boolean showThresholdImage) {
         this.spotByThreshold = true;
@@ -222,6 +238,16 @@ public class SpotDetector {
         this.useWatershed = useWatershed;
         //macroText = null;
         detector.setThresholdParameters(thresholdMethod, minTreshold, maxThreshold, false, darkBg, minSizeSpot); /*does not exclude spot on edges*/
+    }
+
+    public void setSpotBySpotiflow(String model, boolean pretrainedModel, double minProbability, double spotiflowScale, int minDistance, int subpixRadius) {
+        this.spotBySpotiflow = true;
+        this.spotiflowModel = model;
+        this.pretrainedModel = pretrainedModel;
+        this.spotiflowMinProbability = minProbability;
+        this.spotiflowScale = spotiflowScale;
+        this.spotiflowMinDistance = minDistance;
+        this.spotiflowSubpixRadius = subpixRadius;
     }
 
 
@@ -345,6 +371,58 @@ public class SpotDetector {
 
     }
 
+    public void livePreviewSpotiflow(double threshold,double scale, int minDist, int subpixRadius, boolean show) {
+        if (livePreview == null) {
+            livePreview = preprocessing();
+            autocontrast(livePreview);
+            liveOriginal = detector.getImage();
+            liveOriginal.show();
+        }
+        Roi old=livePreview.getRoi();
+        livePreview.resetRoi();
+        livePreview.show();
+        livePreview.setHideOverlay(true);
+        IJ.log("live preview spotiflow show : "+show);
+        if(show) {
+            IJ.log("live preview (" + threshold + ") is already started :" + (spotiflowRois!=null));
+            if(spotiflowRois==null || threshold<spotiflowMinProbability ||scale != spotiflowScale || spotiflowMinDistance != minDist || spotiflowSubpixRadius != subpixRadius ) {
+                IJ.log("compute spotiflow");
+                try {
+                    this.spotiflowScale = scale;
+                    this.spotiflowMinProbability = threshold;
+                    this.spotiflowMinDistance = minDist;
+                    this.spotiflowSubpixRadius = subpixRadius;
+                    SpotiflowLauncher launcher = new SpotiflowLauncher(livePreview);
+                    if (pretrainedModel) launcher.setPretrainedModel(spotiflowModel);
+                    else launcher.setModelPath(spotiflowModel);
+                    launcher.setMinProbability(spotiflowMinProbability);
+                    if(scale!=1.0) launcher.setScale(spotiflowScale);
+                    if(minDist>0) launcher.setMinDistance(spotiflowMinDistance);
+                    if(subpixRadius>0) launcher.setSubpixRadius(spotiflowSubpixRadius);
+                    IJ.setDebugMode(true);
+                    File csv = launcher.runSpotiflow();
+                    IJ.setDebugMode(true);
+                    spotiflowRois = launcher.loadPoints(csv);
+                    PointRoi globalRoi = SpotiflowLauncher.getGlobalPointRoi(spotiflowRois,threshold);
+                    livePreview.setOverlay(new Overlay(globalRoi));
+                    launcher.cleanup();
+                    IJ.log("Spotiflow detected " + spotiflowRois.size() + " spots for " + image.getTitle());
+                } catch (Exception e) {
+                    IJ.error("Spotiflow detection failed: " + e.getMessage());
+                    e.printStackTrace();
+                    spotiflowRois = new ArrayList<>();
+                }
+            }else{
+                PointRoi globalRoi = SpotiflowLauncher.getGlobalPointRoi(spotiflowRois,threshold);
+                livePreview.setOverlay(new Overlay(globalRoi));
+                IJ.log("Spotiflow detected " + spotiflowRois.size() + " spots for " + image.getTitle());
+            }
+        }
+        //livePreview.setRoi(old);
+        livePreview.updateAndRepaintWindow();
+
+    }
+
     void autocontrast(ImagePlus imp) {
         ImageStatistics stats = imp.getRawStatistics();
         int limit = stats.pixelCount / 10;
@@ -435,6 +513,10 @@ public class SpotDetector {
                 tmp = new File(resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/");
                 if (!tmp.exists()) tmp.mkdirs();
             }
+            if (spotBySpotiflow) {
+                tmp = new File(resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/");
+                if (!tmp.exists()) tmp.mkdirs();
+            }
         }
         if (saveImage) {
             File tmp = new File(resultsDirectory + "/Images/Spot" + spotName + "/");
@@ -510,9 +592,32 @@ public class SpotDetector {
                             IJ.log("The find maxima spots image " + findMaximaIP.getTitle() + " could not be saved in " + resultsDirectory + "/Images/Spot" + spotName + "/findmaxima/");
                         }
                     }
-
                 }
             }
+            if (spotBySpotiflow) {
+                try {
+                    SpotiflowLauncher launcher = new SpotiflowLauncher(preprocessed);
+                    if(pretrainedModel)launcher.setPretrainedModel(spotiflowModel);
+                    else launcher.setModelPath(spotiflowModel);
+                    launcher.setMinProbability(spotiflowMinProbability);
+                    if(spotiflowScale!=1.0) launcher.setScale(spotiflowScale);
+                    if(spotiflowMinDistance>0) launcher.setMinDistance(spotiflowMinDistance);
+                    if(spotiflowSubpixRadius>0) launcher.setSubpixRadius(spotiflowSubpixRadius);
+                    IJ.setDebugMode(true);
+                    File csv = launcher.runSpotiflow();
+                    IJ.setDebugMode(true);
+                    spotiflowRois = launcher.loadPoints(csv);
+                    IJ.log("Spotiflow detected " + spotiflowRois.size() + " spots for " + image.getTitle());
+                    PointRoi globalRoi=SpotiflowLauncher.getGlobalPointRoi(spotiflowRois, spotiflowMinProbability);
+                    RoiEncoder.save(globalRoi, resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_all_roi.roi");
+                    launcher.cleanup();
+                } catch (Exception e) {
+                    IJ.error("Spotiflow detection failed: " + e.getMessage());
+                    e.printStackTrace();
+                    spotiflowRois = new ArrayList<>();
+                }
+            }
+
             if(resultsDirectory!=null && savePreprocessedImage ) {
                 IJ.log("savePreprocessedImage "+savePreprocessedImage +" "+imageToMeasure.getNSlices()+" slices");
                 IJ.saveAsTiff(imageToMeasure, resultsDirectory + "/Images/preprocessed/" + image.getTitle()+spotName+"_quantif_preprocessed.tif");
@@ -544,6 +649,12 @@ public class SpotDetector {
         }
         if (spotByThreshold) {
             findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
+        }
+        if (spotBySpotiflow) {
+            PointRoi roiAll = findSpotiflow(regionID, regionROI, resultsTableFinal, type, spotsMeasuresTable);
+            if (resultsDirectory != null && saveRois && roiAll!=null) {
+                RoiEncoder.save(roiAll, resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_" + type + (regionID + 1) + "_ROIs.roi");
+            }
         }
     }
 
@@ -681,6 +792,64 @@ public class SpotDetector {
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) prominence", prominence);
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) nr. spots", size);
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean", mean);
+    }
+
+    protected PointRoi findSpotiflow(int regionID, Roi regionROI, ResultsTable resultsTableToAdd, String type, ResultsTable spotsMeasuresTable) {
+        if (spotiflowRois == null) {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model", spotiflowModel);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) probathr", spotiflowMinProbability);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) nr. spots", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", Double.NaN);
+            return null;
+        }
+
+        int numberSpot = 0;
+        double sumIntensity = 0;
+        double sumProbability = 0;
+
+        PointRoi roiAll = null;
+
+        for (PointRoi spot : spotiflowRois) {
+            double x = spot.getFloatPolygon().xpoints[0];
+            double y = spot.getFloatPolygon().ypoints[0];
+
+            if (regionROI != null && !regionROI.contains((int)Math.round(x), (int)Math.round(y))) continue;
+            if(roiAll==null) roiAll= new PointRoi(x,y);
+            else roiAll.addPoint(x,y);
+
+            double intensity = SpotiflowLauncher.getIntensity(spot);
+            double probability = SpotiflowLauncher.getProbability(spot);
+
+            numberSpot++;
+            sumIntensity += intensity;
+            sumProbability += probability;
+
+            if (spotsMeasuresTable != null) {
+                spotsMeasuresTable.addValue("Name experiment", nameExperiment);
+                spotsMeasuresTable.addValue(type + " nr", regionID);
+                spotsMeasuresTable.addValue("Spot method", "Spotiflow");
+                spotsMeasuresTable.addValue("Spot X", x);
+                spotsMeasuresTable.addValue("Spot Y", y);
+                spotsMeasuresTable.addValue("Spotiflow intensity", intensity);
+                spotsMeasuresTable.addValue("Spotiflow probability", probability);
+                spotsMeasuresTable.incrementCounter();
+            }
+        }
+
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model", spotiflowModel);
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) probathr", spotiflowMinProbability);
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) nr. spots", numberSpot);
+
+        if (numberSpot > 0) {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", sumIntensity / numberSpot);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", sumProbability / numberSpot);
+        } else {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", Double.NaN);
+        }
+
+        return roiAll;
     }
 
     /**

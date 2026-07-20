@@ -7,6 +7,7 @@ import com.jgoodies.common.collect.ArrayListModel;
 import fr.curie.micmaq.config.*;
 import fr.curie.micmaq.detectors.CellposeLauncher;
 import fr.curie.micmaq.detectors.Experiment;
+import fr.curie.micmaq.detectors.SpotiflowLauncher;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.segment.SegmentationParameters;
@@ -314,8 +315,27 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             }
         });
 
+        JMenuItem itemE3 = new JMenuItem("set Spotiflow environment");
+        itemE3.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                GenericDialog gd = new GenericDialog("Spotiflow environment");
+                gd.addDirectoryField("Cellpose3 conda_environment_path", Prefs.get("micmaq.spotiflow.envdir", "C:/Users/miniconda3/envs/spotiflow"), 80);
+
+                gd.showDialog();
+
+                if (!gd.wasCanceled()) {
+                    String path = gd.getNextString();
+                    Prefs.set("micmaq.spotiflow.envdir", path);
+                    IJ.log("changed Spotiflow environment to : " + "path: " + Prefs.get("micmaq.spotiflow.envdir", "C:/Users/miniconda3/envs/spotiflow"));
+                }
+
+            }
+        });
+
         menuEdit.add(itemE1);
         menuEdit.add(itemE2);
+        menuEdit.add(itemE3);
         bar.add(menuEdit);
 
 

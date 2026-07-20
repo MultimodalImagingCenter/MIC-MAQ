@@ -57,6 +57,7 @@
             <url>https://curie.fr/personne/laetitia-besse</url>
             <roles>
 			<role>reviewer</role>
+                <role>debugger</role>
 			</roles>
             <!--properties><id></id></properties-->
         </contributor>
@@ -72,7 +73,7 @@
             <name>Frederic Coquelle</name>
             <url>https://curie.fr/personne/frederic-coquelle</url>
             <roles>
-                <role>supervisor</role>
+                <role>lead</role>
             </roles>
             <!--properties><id></id></properties-->
         </contributor>
@@ -125,7 +126,7 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
-            <scope>provided</scope>
+            <!--scope>provided</scope-->
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
@@ -137,7 +138,7 @@
 			<groupId>ch.epfl.biop</groupId>
 			<artifactId>ijl-utilities-wrappers</artifactId>
 			<version>0.12.1</version>
-            <scope>provided</scope>
+            <!--scope>provided</scope-->
 		</dependency>
         <!-- https://mvnrepository.com/artifact/ome/pom-bio-formats -->
         <dependency>
@@ -145,7 +146,7 @@
             <artifactId>pom-bio-formats</artifactId>
             <version>8.3.0</version>
             <type>pom</type>
-            <scope>provided</scope>
+            <!--scope>provided</scope-->
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
@@ -153,7 +154,7 @@
             <groupId>ome</groupId>
             <artifactId>bio-formats_plugins</artifactId>
             <version>6.1.1</version>
-            <scope>provided</scope>
+            <!--scope>provided</scope-->
         </dependency>
 
         <dependency>

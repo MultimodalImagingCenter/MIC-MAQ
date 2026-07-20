@@ -7,8 +7,10 @@ import fr.curie.micmaq.config.FieldOfViewProvider;
 import fr.curie.micmaq.config.MeasureValue;
 import fr.curie.micmaq.detectors.SpotDetector;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
+import ij.IJ;
 import ij.Prefs;
 import ij.measure.Measurements;
+import ij.plugin.frame.RoiManager;
 import ij.process.AutoThresholder;
 
 import javax.swing.*;
@@ -54,6 +56,16 @@ public class SpotsParametersGUI {
     private JToggleButton liveMaximaButton;
     private JToggleButton liveThresholdButton;
     private JCheckBox showHideCheckBox;
+    private JCheckBox spotiflowCheckBox;
+    private JComboBox spotiflowModelComboBox;
+    private JTextField SpotiflowPathTextField;
+    private JSpinner spotiflowThresholdSpinner1;
+    private JPanel spotiflowPanel;
+    private JCheckBox showHideCheckBox1;
+    private JToggleButton liveSpotiflowButton;
+    private JSpinner spotiflowScaleSpinner;
+    private JSpinner spotiflowMinDistSpinner1;
+    private JSpinner spotiflowSubPixRadiusSpinner1;
 
     protected int channel = -1;
     FieldOfViewProvider imageProvider;
@@ -198,6 +210,91 @@ public class SpotsParametersGUI {
             }
         });
 
+        spotiflowCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setEnablingOfSpotiFlowPanel(spotiflowCheckBox.isSelected());
+            }
+        });
+
+
+        liveSpotiflowButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                IJ.log("live spotiflow");
+                boolean start = liveSpotiflowButton.getModel().isSelected();
+                if (start) {
+                    IJ.log("start live spotiflow");
+                    ProgressMonitor pm = new ProgressMonitor(null, "Live spotiFlow", "Please wait...", 0, 100);
+                    pm.setMillisToDecideToPopup(1);
+                    pm.setMillisToPopup(1);
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
+                    if (isZStackCheckBox.isSelected())
+                        spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+                    if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
+                    if (subtractBackgroundCheckBox.isSelected())
+                        spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
+                    IJ.log("spotDetectorLive created should now run preview");
+                    pm.setProgress(1);
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                    pm.setProgress(100);
+                    pm.close();
+                } else {
+                    IJ.log("end live spotiflow");
+                    if (spotDetectorLive != null) {
+                        spotDetectorLive.endLivePreview();
+                        spotDetectorLive = null;
+                    }
+                }
+
+            }
+        });
+        showHideCheckBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (spotDetectorLive != null) {
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                }
+            }
+        });
+        spotiflowThresholdSpinner1.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (spotDetectorLive != null) {
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                }
+            }
+        });
+        spotiflowScaleSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (spotDetectorLive != null) {
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                }
+            }
+        });
+        spotiflowMinDistSpinner1.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (spotDetectorLive != null) {
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                }
+            }
+        });
+        spotiflowSubPixRadiusSpinner1.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (spotDetectorLive != null) {
+                    IJ.showStatus("update detection by spotiflow");
+                    spotDetectorLive.livePreviewSpotiflow((double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+                }
+            }
+        });
     }
 
     private void updateLiveThreshold() {
@@ -253,6 +350,12 @@ public class SpotsParametersGUI {
         liveMaximaButton.setEnabled(enabled);
     }
 
+    private void setEnablingOfSpotiFlowPanel(boolean enabled) {
+        spotiflowPanel.setEnabled(enabled);
+        spotiflowModelComboBox.setEnabled(enabled);
+        spotiflowThresholdSpinner1.setEnabled(enabled);
+    }
+
     public MeasureValue getMeasure() {
         MeasureValue measureValue = new MeasureValue(false);
         measureValue.setMeasure(Measurements.MEAN + Measurements.INTEGRATED_DENSITY);
@@ -275,6 +378,20 @@ public class SpotsParametersGUI {
         }
         if (findMaximaCheckBox.isSelected()) {
             measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());
+        }
+        if (spotiflowCheckBox.isSelected()) {
+            String model = spotiflowModelComboBox.getSelectedItem().toString();
+            boolean pretrained = true;
+            if (spotiflowModelComboBox.getSelectedIndex() == spotiflowModelComboBox.getItemCount() - 1) {
+                pretrained = false;
+            }
+            measureValue.setSpotFindSpotiflow(model, pretrained, (Double) spotiflowThresholdSpinner1.getValue());
+            if ((double) spotiflowScaleSpinner.getValue() != 1.0)
+                measureValue.setSpotiflowScale((Double) spotiflowScaleSpinner.getValue());
+            if ((int) spotiflowMinDistSpinner1.getValue() > 0)
+                measureValue.setSpotiflowMinDistance((Integer) spotiflowMinDistSpinner1.getValue());
+            if ((int) spotiflowSubPixRadiusSpinner1.getValue() > 0)
+                measureValue.setSpotiflowSubpixRadius((Integer) spotiflowSubPixRadiusSpinner1.getValue());
         }
         setPreferences();
         return measureValue;
@@ -325,6 +442,15 @@ public class SpotsParametersGUI {
         darkBGCheckBox.setSelected(Prefs.get("MICMAQ_darkBG_" + id, true));
         minSizeSpinner.setValue((int) Prefs.get("MICMAQ.minSizeSpot_" + id, 10));
         useWatershedCheckBox.setSelected(Prefs.get("MICMAQ.useWatershedSpot_" + id, false));
+        //spotiflow
+        boolean spotiflowEnable = Prefs.get("MICMAQ.spotiflowSelectedSpot_" + id, false);
+        spotiflowCheckBox.setSelected(spotiflowEnable);
+        setEnablingOfSpotiFlowPanel(spotiflowEnable);
+        spotiflowModelComboBox.setSelectedItem(Prefs.get("MICMAQ.spotiflowModelSpot_" + id, "spotiflow_resnet50_dilated"));
+        spotiflowThresholdSpinner1.setValue((double) Prefs.get("MICMAQ.spotiflowThresholdSpot_" + id, 0.5));
+        spotiflowScaleSpinner.setValue((double) Prefs.get("MICMAQ.spotiflowScaleSpot_", 1.0));
+        spotiflowMinDistSpinner1.setValue((int) Prefs.get("MICMAQ.spotiflowMinDistSpot_", 1));
+        spotiflowSubPixRadiusSpinner1.setValue((int) Prefs.get("MICMAQ.spotiflowSubPixRadiusSpot_", 1));
 
 
     }
@@ -359,6 +485,17 @@ public class SpotsParametersGUI {
 
             result += "\n\tMinimum spot diameter: " + (int) minSizeSpinner.getValue();
             result += "\n\tWatershed: " + (useWatershedCheckBox.isSelected() ? "yes" : "no");
+        }
+        if (spotiflowCheckBox.isSelected()) {
+            result += "\nFind Spots by spotiflow:";
+            result += "\n\tSpotiflow model: " + spotiflowModelComboBox.getSelectedItem();
+            result += "\n\tSpotiflow threshold: " + spotiflowThresholdSpinner1.getValue();
+            if ((double) spotiflowScaleSpinner.getValue() != 1.0)
+                result += "\n\tSpotiflow scale: " + spotiflowScaleSpinner.getValue();
+            if ((int) spotiflowMinDistSpinner1.getValue() > 0)
+                result += "\n\tSpotiflow min distance: " + spotiflowMinDistSpinner1.getValue();
+            if ((int) spotiflowSubPixRadiusSpinner1.getValue() > 0)
+                result += "\n\tSpotiflow subpix radius: " + spotiflowSubPixRadiusSpinner1.getValue();
         }
 
         return result;
@@ -413,14 +550,14 @@ public class SpotsParametersGUI {
                     if (params.get(i).startsWith("Subtract Background:")) {
                         subtractBackgroundCheckBox.setSelected(false);
                         subtractBackgroundCheckBox.doClick();
-                        sbgSpinner.setValue(new Double(params.get(i).split(": ")[1].split(" ")[1]));
+                        sbgSpinner.setValue(Double.parseDouble(params.get(i).split(": ")[1].split(" ")[1]));
                     }
 
                     if (params.get(i).endsWith("Local Maxima:")) {
                         //System.out.println("spots using local maxima");
                         findMaximaCheckBox.setSelected(false);
                         findMaximaCheckBox.doClick();
-                        prominenceSpinner.setValue(new Double(params.get(i + 1).split(": ")[1]));
+                        prominenceSpinner.setValue(Double.parseDouble(params.get(i + 1).split(": ")[1]));
                     }
                     if (params.get(i).endsWith("thresholding:")) {
                         //System.out.println("spots using thresholds");
@@ -437,14 +574,24 @@ public class SpotsParametersGUI {
                         offset++;
                         if (params.get(i + offset).startsWith("User defined threshold:")) {
                             String tmp = params.get(i + offset).split(": ")[1];
-                            userThresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            userThresholdSpinner.setValue(Double.parseDouble(params.get(i + offset).split(": ")[1]));
                             offset++;
                         }
                         darkBGCheckBox.setSelected(params.get(i + offset).endsWith("true"));
                         offset++;
-                        minSizeSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
+                        minSizeSpinner.setValue(Integer.parseInt(params.get(i + offset).split(": ")[1]));
                         offset++;
                         useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
+                    }
+                    if (params.get(i).startsWith("Spotiflow")) {
+                        spotiflowCheckBox.setSelected(false);
+                        spotiflowCheckBox.doClick();
+                        String model = params.get(i + 1).split(": ")[1];
+                        spotiflowModelComboBox.setSelectedItem(model);
+                        spotiflowThresholdSpinner1.setValue(Double.parseDouble(params.get(i + 2).split(": ")[1]));
+                        spotiflowScaleSpinner.setValue(Double.parseDouble(params.get(i + 3).split(": ")[1]));
+                        spotiflowMinDistSpinner1.setValue(Integer.parseInt(params.get(i + 4).split(": ")[1]));
+                        spotiflowSubPixRadiusSpinner1.setValue(Integer.parseInt(params.get(i + 5).split(": ")[1]));
                     }
                 }
 
@@ -492,6 +639,12 @@ public class SpotsParametersGUI {
         Prefs.set("MICMAQ.minSizeSpot_" + id, (int) minSizeSpinner.getValue());
         Prefs.set("MICMAQ.useWatershedSpot_" + id, useWatershedCheckBox.isSelected());
 
+        Prefs.set("MICMAQ.spotiflowSelectedSpot_" + id, spotiflowCheckBox.isSelected());
+        Prefs.set("MICMAQ.spotiflowModelSpot_" + id, (String) spotiflowModelComboBox.getSelectedItem());
+        Prefs.set("MICMAQ.spotiflowThresholdSpot_" + id, (double) spotiflowThresholdSpinner1.getValue());
+        Prefs.set("MICMAQ.spotiflowScaleSpot_" + id, (double) spotiflowScaleSpinner.getValue());
+        Prefs.set("MICMAQ.spotiflowMinDistSpot_" + id, (int) spotiflowMinDistSpinner1.getValue());
+        Prefs.set("MICMAQ.spotiflowSubpixRadiusSpot_" + id, (int) spotiflowSubPixRadiusSpinner1.getValue());
 
     }
 
@@ -576,7 +729,7 @@ public class SpotsParametersGUI {
         sbgPanel.add(label2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         sbgPanel.add(sbgSpinner, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotDetectionPanel = new JPanel();
-        spotDetectionPanel.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
+        spotDetectionPanel.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(spotDetectionPanel, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         spotDetectionPanel.setBorder(BorderFactory.createTitledBorder(null, "Spots detection parameters", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         findMaximaCheckBox = new JCheckBox();
@@ -624,6 +777,56 @@ public class SpotsParametersGUI {
         liveThresholdButton = new JToggleButton();
         liveThresholdButton.setText("live testing");
         thresholdPanel.add(liveThresholdButton, new GridConstraints(2, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowCheckBox = new JCheckBox();
+        spotiflowCheckBox.setText("spotiflow");
+        spotDetectionPanel.add(spotiflowCheckBox, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowPanel = new JPanel();
+        spotiflowPanel.setLayout(new GridLayoutManager(6, 3, new Insets(0, 0, 0, 0), -1, -1));
+        spotiflowPanel.setEnabled(false);
+        spotDetectionPanel.add(spotiflowPanel, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        spotiflowPanel.setBorder(BorderFactory.createTitledBorder(null, "Spotiflow method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
+        final JLabel label3 = new JLabel();
+        label3.setText("model");
+        spotiflowPanel.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowModelComboBox = new JComboBox();
+        final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
+        defaultComboBoxModel2.addElement("general");
+        defaultComboBoxModel2.addElement("hybiss");
+        defaultComboBoxModel2.addElement("synth_complex");
+        defaultComboBoxModel2.addElement("fluo_live");
+        defaultComboBoxModel2.addElement("synth_3d");
+        defaultComboBoxModel2.addElement("smfish_3d");
+        defaultComboBoxModel2.addElement("own_model");
+        spotiflowModelComboBox.setModel(defaultComboBoxModel2);
+        spotiflowPanel.add(spotiflowModelComboBox, new GridConstraints(0, 1, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label4 = new JLabel();
+        label4.setText("path to own model");
+        spotiflowPanel.add(label4, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        SpotiflowPathTextField = new JTextField();
+        spotiflowPanel.add(SpotiflowPathTextField, new GridConstraints(1, 1, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label5 = new JLabel();
+        label5.setText("probability threshold");
+        spotiflowPanel.add(label5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowPanel.add(spotiflowThresholdSpinner1, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        showHideCheckBox1 = new JCheckBox();
+        showHideCheckBox1.setSelected(true);
+        showHideCheckBox1.setText("show/hide");
+        spotiflowPanel.add(showHideCheckBox1, new GridConstraints(2, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        liveSpotiflowButton = new JToggleButton();
+        liveSpotiflowButton.setText("live testing");
+        spotiflowPanel.add(liveSpotiflowButton, new GridConstraints(3, 2, 3, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setText("scale factor");
+        spotiflowPanel.add(label6, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowPanel.add(spotiflowScaleSpinner, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label7 = new JLabel();
+        label7.setText("min dist");
+        spotiflowPanel.add(label7, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowPanel.add(spotiflowMinDistSpinner1, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label8 = new JLabel();
+        label8.setText("subPixel radius");
+        spotiflowPanel.add(label8, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        spotiflowPanel.add(spotiflowSubPixRadiusSpinner1, new GridConstraints(5, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     private void createUIComponents() {
@@ -637,5 +840,10 @@ public class SpotsParametersGUI {
         //IJ.log("threshold methods:" + Arrays.toString(thresholdMethods));
         thresholdMethodCB = new JComboBox<>(thresholdMethods);
         userThresholdSpinner = new JSpinner(new SpinnerNumberModel(100.0, Integer.MIN_VALUE, Integer.MAX_VALUE, 1));
+
+        spotiflowThresholdSpinner1 = new JSpinner(new SpinnerNumberModel(0.8, 0.0, 1.0, 0.01));
+        spotiflowScaleSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 100, 0.01));
+        spotiflowMinDistSpinner1 = new JSpinner(new SpinnerNumberModel(10, 0, Integer.MAX_VALUE, 1));
+        spotiflowSubPixRadiusSpinner1 = new JSpinner(new SpinnerNumberModel(10, 0, Integer.MAX_VALUE, 1));
     }
 }

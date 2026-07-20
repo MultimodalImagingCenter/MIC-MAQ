@@ -1,7 +1,5 @@
 package fr.curie.micmaq.config;
 
-import fr.curie.micmaq.detectors.SpotDetector;
-import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.measure.Measurements;
 
 public class MeasureValue {
@@ -29,6 +27,14 @@ public class MeasureValue {
 
     protected boolean spotFindMaxima=false;
     protected double maximaProminence;
+
+    protected boolean spotFindSpotiflow=false;
+    protected String spotiflowModel="general";
+    protected boolean spotiflowpretrainedModel =true;
+    protected double spotiflowMinProbability=0;
+    protected double spotiflowScale=1;
+    protected int spotiflowMinDistance=0;
+    protected int spotiflowSubpixRadius=0;
 
     //preprocessing parameters
     String preprocessMacro=null;
@@ -142,6 +148,50 @@ public class MeasureValue {
 
     public void setMaximaProminence(double maximaProminence) {
         this.maximaProminence = maximaProminence;
+    }
+
+    public void setSpotFindSpotiflow(String spotiflowModel, boolean pretrainedModel, double spotiflowMinProbability) {
+        this.spotFindSpotiflow = true;
+        this.spotiflowModel = spotiflowModel;
+        this.spotiflowpretrainedModel = pretrainedModel;
+        this.spotiflowMinProbability = spotiflowMinProbability;
+    }
+
+    public boolean isSpotFindSpotiflow() {
+        return spotFindSpotiflow;
+    }
+
+    public String getSpotiflowModel() {
+        return spotiflowModel;
+    }
+
+    public boolean isSpotiflowPretrainedModel() {
+        return spotiflowpretrainedModel;
+    }
+
+    public double getSpotiflowMinProbability() {
+        return spotiflowMinProbability;
+    }
+
+    public void setSpotiflowScale(double spotiflowScale) {
+        this.spotiflowScale = spotiflowScale;
+    }
+    public double getSpotiflowScale() {
+        return spotiflowScale;
+    }
+
+    public void setSpotiflowMinDistance(int spotiflowMinDistance) {
+        this.spotiflowMinDistance = spotiflowMinDistance;
+    }
+    public int getSpotiflowMinDistance() {
+        return spotiflowMinDistance;
+    }
+
+    public void setSpotiflowSubpixRadius(int spotiflowSubpixRadius) {
+        this.spotiflowSubpixRadius = spotiflowSubpixRadius;
+    }
+    public int getSpotiflowSubpixRadius() {
+        return spotiflowSubpixRadius;
     }
 
     //preprocess

@@ -269,7 +269,12 @@ public class ExperimentSettings {
                                 measureValue.getMinSizeSpot(), measureValue.isUseWatershed(), measureValue.isDarkBg(), preview);
                         tmp.setSaving(true,true, measureValue.isSavePreprocessed());
                     }
-                    if(measureValue.isSavePreprocessed()&& !measureValue.isSpotFindMaxima() && !measureValue.isSpotThreshold()) {
+                    if(measureValue.isSpotFindSpotiflow()){
+                        tmp.setSpotBySpotiflow(measureValue.getSpotiflowModel(), measureValue.isSpotiflowPretrainedModel(), measureValue.getSpotiflowMinProbability(), measureValue.getSpotiflowScale(),measureValue.getSpotiflowMinDistance(), measureValue.getSpotiflowSubpixRadius());
+                        tmp.setSaving(true,true, measureValue.isSavePreprocessed());
+                    }
+
+                    if(measureValue.isSavePreprocessed()&& !measureValue.isSpotFindMaxima() && !measureValue.isSpotThreshold()&& !measureValue.isSpotFindSpotiflow()) {
                         tmp.setSaving(false,false, measureValue.isSavePreprocessed());
                     }
 
