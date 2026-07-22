@@ -21,6 +21,7 @@ import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.process.LUT;
 import mcib3d.geom2.Object3DInt;
+import mcib3d.geom2.VoxelInt;
 import mcib3d.geom2.measurements.MeasureObject;
 import mcib3d.image3d.ImageHandler;
 
@@ -371,7 +372,8 @@ public class SpotDetector {
 
     }
 
-    public void livePreviewSpotiflow(double threshold,double scale, int minDist, int subpixRadius, boolean show) {
+    public void livePreviewSpotiflow(String model, boolean pretrained, double threshold,double scale, int minDist,
+                                     int subpixRadius, boolean show) {
         if (livePreview == null) {
             livePreview = preprocessing();
             autocontrast(livePreview);
@@ -385,13 +387,15 @@ public class SpotDetector {
         IJ.log("live preview spotiflow show : "+show);
         if(show) {
             IJ.log("live preview (" + threshold + ") is already started :" + (spotiflowRois!=null));
-            if(spotiflowRois==null || threshold<spotiflowMinProbability ||scale != spotiflowScale || spotiflowMinDistance != minDist || spotiflowSubpixRadius != subpixRadius ) {
+            if(this.spotiflowModel.compareTo(model) != 0 || spotiflowRois==null || threshold<spotiflowMinProbability ||scale != spotiflowScale || spotiflowMinDistance != minDist || spotiflowSubpixRadius != subpixRadius ) {
                 IJ.log("compute spotiflow");
                 try {
                     this.spotiflowScale = scale;
                     this.spotiflowMinProbability = threshold;
                     this.spotiflowMinDistance = minDist;
                     this.spotiflowSubpixRadius = subpixRadius;
+                    this.spotiflowModel = model;
+                    this.pretrainedModel = pretrained;
                     SpotiflowLauncher launcher = new SpotiflowLauncher(livePreview);
                     if (pretrainedModel) launcher.setPretrainedModel(spotiflowModel);
                     else launcher.setModelPath(spotiflowModel);
@@ -399,10 +403,17 @@ public class SpotDetector {
                     if(scale!=1.0) launcher.setScale(spotiflowScale);
                     if(minDist>0) launcher.setMinDistance(spotiflowMinDistance);
                     if(subpixRadius>0) launcher.setSubpixRadius(spotiflowSubpixRadius);
-                    IJ.setDebugMode(true);
+                    //IJ.setDebugMode(true);
                     File csv = launcher.runSpotiflow();
-                    IJ.setDebugMode(true);
+                    //IJ.setDebugMode(true);
                     spotiflowRois = launcher.loadPoints(csv);
+                    RoiManager rm=RoiManager.getRoiManager();
+                    rm.reset();
+                    for (int i = 0; i < spotiflowRois.size(); i++) {
+                        //spotiflowRois.get(i).setName("Cell_"+(i+1));
+                        rm.addRoi(spotiflowRois.get(i));
+                    }
+                    rm.runCommand("Show All");
                     PointRoi globalRoi = SpotiflowLauncher.getGlobalPointRoi(spotiflowRois,threshold);
                     livePreview.setOverlay(new Overlay(globalRoi));
                     launcher.cleanup();
@@ -603,9 +614,9 @@ public class SpotDetector {
                     if(spotiflowScale!=1.0) launcher.setScale(spotiflowScale);
                     if(spotiflowMinDistance>0) launcher.setMinDistance(spotiflowMinDistance);
                     if(spotiflowSubpixRadius>0) launcher.setSubpixRadius(spotiflowSubpixRadius);
-                    IJ.setDebugMode(true);
+                    //IJ.setDebugMode(true);
                     File csv = launcher.runSpotiflow();
-                    IJ.setDebugMode(true);
+                    //IJ.setDebugMode(true);
                     spotiflowRois = launcher.loadPoints(csv);
                     IJ.log("Spotiflow detected " + spotiflowRois.size() + " spots for " + image.getTitle());
                     PointRoi globalRoi=SpotiflowLauncher.getGlobalPointRoi(spotiflowRois, spotiflowMinProbability);
@@ -692,6 +703,12 @@ public class SpotDetector {
         }
         if (spotByThreshold) {
             //findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
+        }
+        if (spotBySpotiflow) {
+            PointRoi roiAll = findSpotiflow(regionID, measureRoi3D, resultsTableFinal, type, spotsMeasuresTable);
+            if (resultsDirectory != null && saveRois && roiAll!=null) {
+                RoiEncoder.save(roiAll, resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_" + type + (regionID + 1) + "_ROIs.roi");
+            }
         }
     }
 
@@ -831,6 +848,69 @@ public class SpotDetector {
                 spotsMeasuresTable.addValue("Spot method", "Spotiflow");
                 spotsMeasuresTable.addValue("Spot X", x);
                 spotsMeasuresTable.addValue("Spot Y", y);
+                spotsMeasuresTable.addValue("Spotiflow intensity", intensity);
+                spotsMeasuresTable.addValue("Spotiflow probability", probability);
+                spotsMeasuresTable.incrementCounter();
+            }
+        }
+
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model", spotiflowModel);
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) probathr", spotiflowMinProbability);
+        resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) nr. spots", numberSpot);
+
+        if (numberSpot > 0) {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", sumIntensity / numberSpot);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", sumProbability / numberSpot);
+        } else {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", Double.NaN);
+        }
+
+        return roiAll;
+    }
+
+    protected PointRoi findSpotiflow(int regionID, Object3DInt regionROI, ResultsTable resultsTableToAdd, String type, ResultsTable spotsMeasuresTable) {
+        if (spotiflowRois == null) {
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model", spotiflowModel);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) probathr", spotiflowMinProbability);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) nr. spots", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean intensity", Double.NaN);
+            resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) mean probability", Double.NaN);
+            return null;
+        }
+
+        int numberSpot = 0;
+        double sumIntensity = 0;
+        double sumProbability = 0;
+
+        PointRoi roiAll = null;
+
+        for (PointRoi spot : spotiflowRois) {
+            double x = spot.getFloatPolygon().xpoints[0];
+            double y = spot.getFloatPolygon().ypoints[0];
+            double z = spot.getPosition();
+            IJ.log("Spot " + x + " " + y + " " + z);
+            double intensity = SpotiflowLauncher.getIntensity(spot);
+            VoxelInt point3D=new VoxelInt((int)Math.round(x), (int)Math.round(y), (int)z,(int)intensity);
+            IJ.log("Spot " + point3D);
+            if (regionROI != null && !regionROI.contains(point3D)) continue;
+            if(roiAll==null) roiAll= new PointRoi(x,y);
+            else roiAll.addPoint(x,y);
+            IJ.log("Spot " + roiAll.size());
+
+            double probability = SpotiflowLauncher.getProbability(spot);
+
+            numberSpot++;
+            sumIntensity += intensity;
+            sumProbability += probability;
+
+            if (spotsMeasuresTable != null) {
+                spotsMeasuresTable.addValue("Name experiment", nameExperiment);
+                spotsMeasuresTable.addValue(type + " nr", regionID);
+                spotsMeasuresTable.addValue("Spot method", "Spotiflow");
+                spotsMeasuresTable.addValue("Spot X", x);
+                spotsMeasuresTable.addValue("Spot Y", y);
+                spotsMeasuresTable.addValue("Spot Z", z);
                 spotsMeasuresTable.addValue("Spotiflow intensity", intensity);
                 spotsMeasuresTable.addValue("Spotiflow probability", probability);
                 spotsMeasuresTable.incrementCounter();

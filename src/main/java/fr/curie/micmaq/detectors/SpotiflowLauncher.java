@@ -283,9 +283,9 @@ public class SpotiflowLauncher {
                 int offset = (parts.length>4) ? 1: 0;
                 is3D = (parts.length>4);
 
-                double y = Double.parseDouble(parts[0].trim());
-                double x = Double.parseDouble(parts[1].trim());
-                double z = (is3D) ? Double.parseDouble(parts[2].trim()) : 0;
+                double z = (is3D) ? Double.parseDouble(parts[0].trim()) : 0;
+                double y = Double.parseDouble(parts[0+offset].trim());
+                double x = Double.parseDouble(parts[1+offset].trim());
                 double intensity = Double.parseDouble(parts[2+offset].trim());
                 double probability = Double.parseDouble(parts[3+offset].trim());
                 if (probability < minProbability) continue;
@@ -359,12 +359,14 @@ public class SpotiflowLauncher {
                         .getLocation()
         );
 
-        boolean is3D = false;
+        boolean is3D = true;
         String imageName = is3D ? "ForSpotiflow3D.tif":"ForSpotiflow.tif";
         String model = is3D ? "smfish_3d":"general";
         //String modelPath = "C:/Users/cedric/.spotiflow/models/smfish_3d";
-        String imgPath = (false)? "C:/Users/cedric/Desktop/tests/DL/"+imageName :  "C:/Users/cedric/Desktop/tests/test MIC-MAQ/dir_tif/mock+HU_020_w2FITC.TIF";
+        String imgPath = (true)? "C:/Users/cedric/Desktop/tests/DL/"+imageName :  "C:/Users/cedric/Desktop/tests/test MIC-MAQ/dir_tif/mock+HU_020_w2FITC.TIF";
         ImagePlus imp = IJ.openImage(imgPath);
+        imp.setHideOverlay(true);
+        imp.deleteRoi();
 
         if (imp == null) {
             System.err.println("Impossible d'ouvrir l'image");
@@ -379,10 +381,10 @@ public class SpotiflowLauncher {
             launcher.setPretrainedModel(model);
             //launcher.setModelPath(modelPath);
             launcher.setMinProbability(0.5);
-            launcher.setScale(0.5);
-            launcher.setSubpixRadius(10);
+            //launcher.setScale(0.5);
+            //launcher.setSubpixRadius(10);
             //launcher.setSubpix("False");
-            launcher.setMinDistance(10);
+            //launcher.setMinDistance(10);
             //launcher.getOptions();
 
             File csv = launcher.runSpotiflow();
