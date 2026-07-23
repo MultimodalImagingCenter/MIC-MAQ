@@ -8,6 +8,7 @@ import fr.curie.micmaq.config.MeasureValue;
 import fr.curie.micmaq.detectors.SpotDetector;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import ij.IJ;
+import ij.ImagePlus;
 import ij.Prefs;
 import ij.measure.Measurements;
 import ij.process.AutoThresholder;
@@ -140,12 +141,10 @@ public class SpotsParametersGUI {
                 //liveButton.getModel().setPressed(start);
                 if (start) {
                     spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
-                    if (isZStackCheckBox.isSelected())
-                        spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+                    if (isZStackCheckBox.isSelected()) spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
                     if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
-                    if (subtractBackgroundCheckBox.isSelected())
-                        spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
-                    spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
+                    if (subtractBackgroundCheckBox.isSelected()) spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
+                    updateLiveMaxima();
                 } else {
                     if (spotDetectorLive != null) {
                         spotDetectorLive.endLivePreview();
@@ -157,15 +156,16 @@ public class SpotsParametersGUI {
         prominenceSpinner.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                if (spotDetectorLive != null)
-                    spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
+                updateLiveMaxima();
             }
         });
         showHideCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (spotDetectorLive != null)
-                    spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
+                if (spotDetectorLive != null) {
+                    spotDetectorLive.showHideToggle(showHideCheckBox.isSelected());
+                    //spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
+                }
             }
         });
         liveThresholdButton.addActionListener(new ActionListener() {
@@ -223,6 +223,10 @@ public class SpotsParametersGUI {
                 IJ.log("live spotiflow");
                 boolean start = liveSpotiflowButton.getModel().isSelected();
                 if (start) {
+                    if(!isSpotiflowModelValid()){
+                        IJ.error( "Spotiflow model not valid", "please check if you are using a 2D or 3D model and if your image is a 2D or 3D image ");
+                        return;
+                    }
                     IJ.log("start live spotiflow");
                     ProgressMonitor pm = new ProgressMonitor(null, "Live spotiFlow", "Please wait...", 0, 100);
                     pm.setMillisToDecideToPopup(1);
@@ -258,7 +262,8 @@ public class SpotsParametersGUI {
         showHideCheckBox1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateLiveSpotiflow();
+                if(spotDetectorLive != null) spotDetectorLive.showHideToggle(showHideCheckBox1.isSelected());
+                //updateLiveSpotiflow();
             }
         });
         spotiflowThresholdSpinner1.addChangeListener(new ChangeListener() {
@@ -287,6 +292,12 @@ public class SpotsParametersGUI {
         });
     }
 
+    private void updateLiveMaxima() {
+        if (spotDetectorLive == null) return;
+        spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
+    }
+
+
     private void updateLiveThreshold() {
         if (spotDetectorLive == null) return;
         if (isZStackCheckBox.isSelected())
@@ -313,8 +324,22 @@ public class SpotsParametersGUI {
                 pretrained = false;
                 model = spotiflowPathTextField.getText();
             }
-            spotDetectorLive.livePreviewSpotiflow(model, pretrained,(double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
+            spotDetectorLive.livePreviewSpotiflow(model, pretrained, (double) spotiflowThresholdSpinner1.getValue(), (double) spotiflowScaleSpinner.getValue(), (int) spotiflowMinDistSpinner1.getValue(), (int) spotiflowSubPixRadiusSpinner1.getValue(), showHideCheckBox1.isSelected());
         }
+    }
+    public boolean isSpotiflowModelValid() {
+        if(!spotiflowCheckBox.isSelected()) return true;
+        if (spotiflowModelComboBox.getSelectedIndex() < spotiflowModelComboBox.getItemCount() - 1) {
+            IJ.log("spotiflow model is "+(spotiflowModelComboBox.getSelectedItem().toString()) + " is 3D processing "+is3DProcessing());
+            if(spotiflowModelComboBox.getSelectedItem().toString().endsWith("3d")) {
+                if(is3DProcessing()) return true;
+                else return false;
+            } else {
+                if(is3DProcessing()) return false;
+                else return true;
+            }
+        }
+        return true;
     }
 
     public JPanel getMainPanel() {
@@ -380,7 +405,12 @@ public class SpotsParametersGUI {
             measureValue.setSpotThreshold((String) (thresholdMethodCB.getSelectedItem()), minTh, maxTh, (Integer) minSizeSpinner.getValue(), useWatershedCheckBox.isSelected(), darkBGCheckBox.isSelected());
         }
         if (findMaximaCheckBox.isSelected()) {
-            measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());
+            if (is3DProcessing()) {
+                IJ.log("3D processing, maxima detection will be done on each slice");
+                measureValue.setSpotFindMaxima3D(0, 1.5, 1.5, (double) prominenceSpinner.getValue());
+            } else {
+                measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());
+            }
         }
         if (spotiflowCheckBox.isSelected()) {
             String model = spotiflowModelComboBox.getSelectedItem().toString();
@@ -650,6 +680,13 @@ public class SpotsParametersGUI {
         Prefs.set("MICMAQ.spotiflowMinDistSpot_" + id, (int) spotiflowMinDistSpinner1.getValue());
         Prefs.set("MICMAQ.spotiflowSubpixRadiusSpot_" + id, (int) spotiflowSubPixRadiusSpinner1.getValue());
 
+    }
+
+    public boolean is3DProcessing() {
+        ImagePlus imptmp = imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel);
+        if (imptmp.getNSlices() == 1) return false;
+        if (isZStackCheckBox.isSelected()) return false;
+        return true;
     }
 
     /**

@@ -13,14 +13,13 @@ import ij.plugin.ZProjector;
 import ij.plugin.filter.EDM;
 import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.frame.RoiManager;
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
-import ij.process.ShortProcessor;
+import ij.process.*;
 import mcib3d.geom2.BoundingBox;
 import mcib3d.geom2.Object3DInt;
 import mcib3d.geom2.Object3DPlane;
 import mcib3d.geom2.Objects3DIntPopulation;
 import mcib3d.image3d.ImageHandler;
+import mcib_plugins.Manager3D.ImportImage;
 
 import java.awt.*;
 import java.awt.image.IndexColorModel;
@@ -272,6 +271,76 @@ public class Detector {
         particleAnalyzer.analyze(threshold_IP); /*adds particles found to RoiManager and add overlay (see options)*/
         return roiManager;
     }
+    public ImagePlus getThresholdMask(ImagePlus image){
+        return thresholdImage(image);
+    }
+    private ImagePlus thresholdImage(ImagePlus image) {
+        ImagePlus result = image.duplicate();
+        ImageStatistics stats;
+        if (result.getNSlices() > 1) {
+            stats = new StackStatistics(result);
+        } else {
+            stats = result.getStatistics();
+        }
+
+        double threshold;
+        if (!thresholdMethod.startsWith("user")) {
+            AutoThresholder thresholder = new AutoThresholder();
+            int thr = thresholder.getThreshold(AutoThresholder.Method.valueOf(thresholdMethod.replace(" dark","")), stats.histogram);
+            threshold = stats.histMin + thr * stats.binSize;
+            IJ.log("Automatic threshold (" + thresholdMethod + ") = " + threshold);
+        } else {
+            threshold = minThreshold;
+            IJ.log("User threshold = " + threshold);
+        }
+
+        ImageStack stack = result.getStack();
+        for (int z = 1; z <= stack.getSize(); z++) {
+            ImageProcessor ip = stack.getProcessor(z);
+            if (thresholdMethod.startsWith("user")) {
+                for (int y = 0; y < ip.getHeight(); y++) {
+                    for (int x = 0; x < ip.getWidth(); x++) {
+                        double v = ip.getPixelValue(x, y);
+                        ip.set(x, y, (v >= minThreshold && v <= maxThreshold) ? 255 : 0);
+                    }
+                }
+            } else {
+                for (int y = 0; y < ip.getHeight(); y++) {
+                    for (int x = 0; x < ip.getWidth(); x++) {
+                        ip.set(x, y, ip.getPixelValue(x, y) >= threshold ? 255 : 0);
+                    }
+                }
+            }
+        }
+        renameImage(result, "binary_mask");
+        return result;
+    }
+
+    public RoiManager maskToRoiManager(ImagePlus binaryMask) {
+        RoiManager roiManager = RoiManager.getRoiManager();
+        roiManager.reset();
+        binaryMask.getProcessor().setThreshold(128,255, ImageProcessor.NO_LUT_UPDATE);
+        ParticleAnalyzer.setRoiManager(roiManager);
+        ParticleAnalyzer pa =
+                new ParticleAnalyzer(
+                        ParticleAnalyzer.ADD_TO_MANAGER,
+                        0,
+                        null,
+                        minSizeParticle,
+                        Integer.MAX_VALUE
+                );
+
+        pa.analyze(binaryMask);
+
+        return roiManager;
+    }
+
+
+    public Objects3DIntPopulation maskToObjects3D(ImagePlus binaryMask) {
+        return new ImportImage(
+                ImageHandler.wrap(binaryMask)
+        ).importImage();
+    }
 
     /**
      * Creates a binary image to differentiate the objects to analyze
@@ -279,7 +348,7 @@ public class Detector {
      * @param image : image to threshold
      * @return binary image
      */
-    public ImagePlus getThresholdMask(ImagePlus image) {
+    public ImagePlus getThresholdMask_old(ImagePlus image) {
 //        GET IMAGE TO THRESHOLD
         ImagePlus threshold_IP = image.duplicate();
         ImageProcessor threshold_proc = threshold_IP.getProcessor(); /*get processor*/
@@ -311,6 +380,8 @@ public class Detector {
         renameImage(mask_IP, "binary_mask");
         return mask_IP;
     }
+
+
 
     /**
      * same as Detector#getThresholdMask(ImagePlus) without RoiManager stuff

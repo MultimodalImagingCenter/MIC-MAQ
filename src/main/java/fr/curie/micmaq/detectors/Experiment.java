@@ -352,13 +352,14 @@ public class Experiment {
 
         IJ.log("macro: "+spot.getPreprocessingMacro());
         IJ.log("macro quantif: "+spot.getPreprocessingMacroQuantif());
-        spot.setMeasureCalibration(measureCalibration);
+        spot.preview(index);
+        /*spot.setMeasureCalibration(measureCalibration);
         if (!spot.prepare()) {
             interrupt=true;
             return false;
         }
         spot.analysisPerRegion(0,(Roi)null, finalResultsCellSpot,"Image",null);
-
+*/
         return true;
     }
 

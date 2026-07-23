@@ -921,6 +921,10 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 SpotsParametersGUI sp = spotPanels.get(i);
                 if (sp != null && current == sp.getMainPanel()) {
                     IJ.log("preview spot detection " + i + " (" + sp.getChannel() + ")");
+                    if(!sp.isSpotiflowModelValid()) {
+                        IJ.error("Spotiflow model not valid", "please check if you are using a 2D or 3D model and if your image is a 2D or 3D image for channel " + sp.getChannel());
+                        return;
+                    }
                     exp.previewSpotDetection(sp.getChannel());
                 }
             }
@@ -928,7 +932,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         progress.dispose();
         new WindowOrganizer().run("tile");
         //WindowManager.getWindow("Log").toFront();
-        RoiManager.getInstance().toFront();
+        RoiManager.getRoiManager().toFront();
     }
 
     public void runAllExperiments() {

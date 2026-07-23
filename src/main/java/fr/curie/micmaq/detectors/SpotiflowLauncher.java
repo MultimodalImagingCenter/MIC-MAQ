@@ -291,7 +291,7 @@ public class SpotiflowLauncher {
                 if (probability < minProbability) continue;
 
                 PointRoi roi = new PointRoi(x, y);
-                if(is3D) roi.setPosition((int)Math.round(z));
+                if(is3D) roi.setPosition((int)Math.round(z)+1);
                 roi.setProperty(PROP_INTENSITY,Double.toString(intensity));
                 roi.setProperty(PROP_PROBABILITY,Double.toString(probability));
                 roi.setName("Spot_x"+x+"_y"+y+"_z"+z+"_prob"+probability+"_int"+intensity);

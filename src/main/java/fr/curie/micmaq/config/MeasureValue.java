@@ -27,6 +27,9 @@ public class MeasureValue {
 
     protected boolean spotFindMaxima=false;
     protected double maximaProminence;
+    private float maxima3D_minThreshold=0;
+    private float maxima3D_rxy=0;
+    private float maxima3D_rz=0;
 
     protected boolean spotFindSpotiflow=false;
     protected String spotiflowModel="general";
@@ -139,7 +142,7 @@ public class MeasureValue {
 
     public void setSpotFindMaxima(double prominence) {
         this.spotFindMaxima = true;
-        this.maximaProminence=prominence;
+        this.maximaProminence = prominence;
     }
 
     public double getMaximaProminence() {
@@ -148,6 +151,38 @@ public class MeasureValue {
 
     public void setMaximaProminence(double maximaProminence) {
         this.maximaProminence = maximaProminence;
+    }
+
+    public void setSpotFindMaxima3D(double minThreshold, double rxy, double rz, double noise) {
+        this.spotFindMaxima = true;
+        this.maxima3D_minThreshold = (float) minThreshold;
+        this.maxima3D_rxy = (float) rxy;
+        this.maxima3D_rz =(float) rz;
+        this.maximaProminence = noise;
+    }
+
+    public float getMaxima3D_minThreshold() {
+        return maxima3D_minThreshold;
+    }
+
+    public float getMaxima3D_rxy() {
+        return maxima3D_rxy;
+    }
+
+    public float getMaxima3D_rz() {
+        return maxima3D_rz;
+    }
+
+    public void setMaxima3D_minThreshold(float maxima3D_minThreshold) {
+        this.maxima3D_minThreshold = maxima3D_minThreshold;
+    }
+
+    public void setMaxima3D_rxy(float maxima3D_rxy) {
+        this.maxima3D_rxy = maxima3D_rxy;
+    }
+
+    public void setMaxima3D_rz(float maxima3D_rz) {
+        this.maxima3D_rz = maxima3D_rz;
     }
 
     public void setSpotFindSpotiflow(String spotiflowModel, boolean pretrainedModel, double spotiflowMinProbability) {

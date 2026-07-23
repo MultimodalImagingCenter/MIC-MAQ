@@ -259,7 +259,11 @@ public class ExperimentSettings {
                     if (measureValue.getSubtractBGRadius()>0) tmp.setRollingBallSize(measureValue.getSubtractBGRadius());
 
                     if(measureValue.isSpotFindMaxima()) {
-                        tmp.setSpotByFindMaxima(measureValue.getMaximaProminence(), preview);
+                        if(tmpchan.getNSlices()>1&&!measureValue.isZproject()){
+                            tmp.setSpotByFindMaxima3D(preview, measureValue.getMaxima3D_minThreshold(), measureValue.getMaxima3D_rxy(), measureValue.getMaxima3D_rz(), (float)measureValue.getMaximaProminence());
+                        }else {
+                            tmp.setSpotByFindMaxima(measureValue.getMaximaProminence(), preview);
+                        }
                         tmp.setSaving(true,true, measureValue.isSavePreprocessed());
                     }
 
