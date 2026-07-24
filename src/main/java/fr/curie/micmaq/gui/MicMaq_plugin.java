@@ -13,6 +13,7 @@ import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.*;
 import ij.gui.GenericDialog;
+import ij.gui.PointRoi;
 import ij.gui.YesNoCancelDialog;
 import ij.io.OpenDialog;
 import ij.measure.ResultsTable;
@@ -921,7 +922,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 SpotsParametersGUI sp = spotPanels.get(i);
                 if (sp != null && current == sp.getMainPanel()) {
                     IJ.log("preview spot detection " + i + " (" + sp.getChannel() + ")");
-                    if(!sp.isSpotiflowModelValid()) {
+                    if (!sp.isSpotiflowModelValid()) {
                         IJ.error("Spotiflow model not valid", "please check if you are using a 2D or 3D model and if your image is a 2D or 3D image for channel " + sp.getChannel());
                         return;
                     }

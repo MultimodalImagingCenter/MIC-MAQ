@@ -11,7 +11,7 @@
 
     <groupId>fr.curie.mic-maq</groupId>
     <artifactId>MIC-MAQ</artifactId>
-    <version>1.15i-SNAPSHOT</version>
+    <version>1.20.0-SNAPSHOT</version>
 
     <name>MIC-MAQ</name>
     <description>MIC-MAQ is an ImageJ plugin to segment nuclei/cells and provide measurements on many channels including foci detection</description>
@@ -90,7 +90,7 @@
         <connection>scm:git:https://github.com/MultimodalImagingCenter/MIC-MAQ</connection>
         <developerConnection>scm:git:git@github.com:MultimodalImagingCenter/MIC-MAQ</developerConnection>
         <tag>HEAD</tag>
-        <url>https://github.com/MultimodalImagingCenter/MiC</url>
+        <url>https://github.com/MultimodalImagingCenter/MIC-MAQ</url>
     </scm>
 
     <issueManagement>
@@ -126,11 +126,12 @@
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej</artifactId>
-            <!--scope>provided</scope-->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.imagej</groupId>
             <artifactId>imagej-legacy</artifactId>
+            <scope>provided</scope>
         </dependency>
 		
 		<!-- https://mvnrepository.com/artifact/ch.epfl.biop/ijl-utilities-wrappers -->
@@ -138,7 +139,7 @@
 			<groupId>ch.epfl.biop</groupId>
 			<artifactId>ijl-utilities-wrappers</artifactId>
 			<version>0.12.1</version>
-            <!--scope>provided</scope-->
+            <scope>provided</scope>
 		</dependency>
         <!-- https://mvnrepository.com/artifact/ome/pom-bio-formats -->
         <dependency>
@@ -146,7 +147,7 @@
             <artifactId>pom-bio-formats</artifactId>
             <version>8.3.0</version>
             <type>pom</type>
-            <!--scope>provided</scope-->
+            <scope>provided</scope>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/ome/bio-formats_plugins -->
@@ -154,7 +155,7 @@
             <groupId>ome</groupId>
             <artifactId>bio-formats_plugins</artifactId>
             <version>6.1.1</version>
-            <!--scope>provided</scope-->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

@@ -657,29 +657,33 @@ public class Detector {
      * @param customMeasures : ResultTable that will contain the summarized results
      * @param prenameColumn  : prefix for column
      */
-    public void setSummarizedResults(ResultsTable rawMeasures, ResultsTable customMeasures, String prenameColumn) {
-        for (String measure : rawMeasures.getHeadings()) {
-            switch (measure) {
+    public void setSummarizedResults(ResultsTable rawMeasures,ResultsTable customMeasures,String prenameColumn){
+        setSummarizedResults(rawMeasures,customMeasures,prenameColumn,Double.NaN);
+    }
+    public void setSummarizedResults(ResultsTable rawMeasures,ResultsTable customMeasures,String prenameColumn,double regionAreaPix){
+        for(String measure : rawMeasures.getHeadings()){
+            switch(measure){
                 case "Area":
                     double sumArea = sum(rawMeasures.getColumn(measure));
-                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + " (pixel)", (sumArea));
-                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + " (" + measureCalibration.getUnit() + ")", (sumArea * measureCalibration.getPixelArea()));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + "Total (pixel)",sumArea);
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + "Total (" + measureCalibration.getUnit() + ")",sumArea * measureCalibration.getPixelArea());
+                    if(!Double.isNaN(regionAreaPix) && regionAreaPix > 0) customMeasures.addValue(prenameColumn + " Spot(threshold) AreaOccupancy (%)",100.0 * sumArea / regionAreaPix);
                     break;
                 case "IntDen":
                     continue;
                 case "Mean":
                     break;
                 case "RawIntDen":
-                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure, (sum(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + "Total",sum(rawMeasures.getColumn(measure)));
                     break;
                 default:
-                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure, (mean(rawMeasures.getColumn(measure))));
+                    customMeasures.addValue(prenameColumn + " Spot(threshold) " + measure + "Mean",mean(rawMeasures.getColumn(measure)));
                     break;
             }
         }
-        /*Arithmetic mean*/
-        customMeasures.addValue(prenameColumn + " Spot(threshold) Mean", (sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area"))));
+        customMeasures.addValue(prenameColumn + " Spot(threshold) MeanGlobal",sum(rawMeasures.getColumn("RawIntDen")) / sum(rawMeasures.getColumn("Area")));
     }
+
 
     /**
      * Sum an array
