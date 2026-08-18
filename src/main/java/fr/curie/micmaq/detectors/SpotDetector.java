@@ -630,10 +630,10 @@ public class SpotDetector {
         RoiManager rm = RoiManager.getRoiManager();
         rm.reset();
         preprocessed.show();
-        int nThreshold = spotByThreshold ? previewThreshold(preprocessed, baseGroup + GROUP_THRESHOLD) : 0;
         int nMaxima = spotByFindMaxima ? previewFindMaxima(preprocessed, baseGroup + GROUP_MAXIMA) : 0;
         int nSpotiflow = spotBySpotiflow ? previewSpotiflow(preprocessed, baseGroup + GROUP_SPOTIFLOW) : 0;
-        preprocessed.setTitle(image.getTitle() + "_" + spotName + "_preview_T" + nThreshold + "_M" + nMaxima + "_S" + nSpotiflow);
+        int nThreshold = spotByThreshold ? previewThreshold(preprocessed, baseGroup + GROUP_THRESHOLD) : 0;
+        preprocessed.setTitle(image.getTitle() + "_" + spotName + "_preview_M" + nMaxima + "_S" + nSpotiflow + "_T" + nThreshold);
         rm.runCommand("Show All");
     }
 
@@ -706,7 +706,7 @@ public class SpotDetector {
         for (Object3DInt obj : threshold3DObjects.getObjects3DInt()) {
             Rois3D rois3D = Create3DRoi.computeRois(obj);
             for (Object3DPlane plane : obj.getObject3DPlanes()) {
-                int z = plane.getZPlane();
+                int z = plane.getZPlane() + 1;
                 Roi roi = rois3D.getRoi(z);
                 if (roi == null) continue;
                 roisBySlice.computeIfAbsent(z, k -> new ArrayList<>()).add(roi);
@@ -821,8 +821,8 @@ public class SpotDetector {
     private int getPointSliceSafe(PointRoi spot){
         int z = 1;
         try{
-            if(spot.getZPosition() > 0) z = spot.getZPosition();
-            else if(spot.getPosition() > 0) z = spot.getPosition();
+            if(spot.getZPosition() > 0) z = spot.getZPosition() + 1;
+            else if(spot.getPosition() > 0) z = spot.getPosition() + 1;
         }catch(Exception e){
             z = 1;
         }
@@ -1031,18 +1031,18 @@ public class SpotDetector {
 
         if (resultsDirectory == null) return;
 
-        if (saveRois && findMaximaIP.getNSlices() == 1) {
+        /*if (saveRois && findMaximaIP.getNSlices() == 1) {
             findMaximaIP.setRoi((Roi) null);
             PointRoi roiMaxima = findMaxima(findMaximaIP, prominence, "full");
             findMaximaIP.setRoi(roiMaxima);
-            boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/" + image.getTitle() + "_findMaxima_all_roi.roi");
+            boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory + "/ROI/Spot" + spotName + "/maxima/" + image.getTitle() + "_findMaxima_all_roi.roi");
 
             if (!wasSaved) {
                 IJ.error("Could not save ROIs");
             } else {
-                IJ.log("The ROIs of the spot found by find Maxima method of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/");
+                IJ.log("The ROIs of the spot found by find Maxima method of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/Spot" + spotName + "/maxima/");
             }
-        }
+        }*/
     }
     private ArrayList<PointRoi> findMaximaPoints2D(ImagePlus preprocessed) {
         ArrayList<PointRoi> points = new ArrayList<>();
@@ -1067,7 +1067,9 @@ public class SpotDetector {
 
         for (Voxel3D v : list) {
             PointRoi tmp = new PointRoi(v.getX(), v.getY());
-            tmp.setPosition(0, (int) v.getZ(), 0);
+            int z= (int) v.getZ();
+            tmp.setPosition(z);
+            tmp.setPosition(0, z, 0);
             tmp.setProperty("intensity", Double.toString(v.getValue()));
             maxima3D_maximaList.add(tmp);
         }
@@ -1102,9 +1104,10 @@ public class SpotDetector {
                 rm.reset();
                 for (PointRoi roi : spotiflowRois) rm.addRoi(roi);
                 rm.runCommand("Show All");
-            }else if(resultsDirectory != null && saveRois && globalRoi != null && preprocessed.getNSlices() == 1){
-                RoiEncoder.save(globalRoi,resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_all_roi.roi");
             }
+            /*else if(resultsDirectory != null && saveRois && globalRoi != null && preprocessed.getNSlices() == 1){
+                RoiEncoder.save(globalRoi,resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_all_roi.roi");
+            }*/
 
             launcher.cleanup();
         } catch (Exception e) {
@@ -1132,17 +1135,21 @@ public class SpotDetector {
         //IJ.log("SpotDetector analysis per region : "+spotName);
         //IJ.log("SpotDetector analysis per region : "+type);
 //        Detection and measurements
-        if (spotByFindMaxima) {
-            findMaximaPerRegion(regionROI, resultsTableFinal, type);
-        }
-        if (spotByThreshold) {
-            findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
+        if(spotByFindMaxima){
+            PointRoi roiMaxima = findMaximaPerRegion(regionROI, resultsTableFinal, type);
+
+            if(resultsDirectory != null && saveRois && roiMaxima != null && roiMaxima.getContainedPoints().length > 0){
+                RoiEncoder.save(roiMaxima, resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/" + image.getTitle() + "_findmaxima_" + type + (regionID + 1) + "_ROIs.roi");
+            }
         }
         if (spotBySpotiflow) {
             PointRoi roiAll = findSpotiflow(regionID, regionROI, resultsTableFinal, type, spotsMeasuresTable);
             if (resultsDirectory != null && saveRois && roiAll!=null) {
                 RoiEncoder.save(roiAll, resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow/" + image.getTitle() + "_spotiflow_" + type + (regionID + 1) + "_ROIs.roi");
             }
+        }
+        if (spotByThreshold) {
+            findThresholdPerRegion(regionID, regionROI, resultsTableFinal, type,spotsMeasuresTable);
         }
     }
 
@@ -1281,7 +1288,7 @@ public class SpotDetector {
      * @param resultsTableToAdd : results table to fill
      * @param type              : image, cell, nucleus or cytoplasm
      */
-    private void findMaximaPerRegion(Roi regionROI, ResultsTable resultsTableToAdd, String type) {
+    private PointRoi findMaximaPerRegion(Roi regionROI, ResultsTable resultsTableToAdd, String type) {
         ImagePlus tmp = (findMaximaMask != null) ? findMaximaMask : findMaximaIP;
         double prom = (findMaximaMask != null) ? 10 : prominence;
         tmp.setRoi(regionROI);
@@ -1299,6 +1306,7 @@ public class SpotDetector {
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) prominence", prominence);
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) nr. spots", size);
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean", mean);
+        return roiMaxima;
     }
 
     protected PointRoi findSpotiflow(int regionID, Roi regionROI, ResultsTable resultsTableToAdd, String type, ResultsTable spotsMeasuresTable) {
@@ -1650,8 +1658,9 @@ public class SpotDetector {
 
     private void saveRoiManager(RoiManager rm,String path,String logName){
         if(rm == null || rm.getCount() == 0) return;
-        if(rm.save(path)) IJ.log(logName + " saved in " + path);
-        else IJ.log(logName + " could not be saved in " + path);
+        String outputPath = rm.getCount() == 1 && path.toLowerCase().endsWith(".zip") ? path.substring(0,path.length() - 4) + ".roi" : path;
+        if(rm.save(outputPath)) IJ.log(logName + " saved in " + outputPath);
+        else IJ.log(logName + " could not be saved in " + outputPath);
     }
 
     private RoiManager createPointRoiManagerBySlice(ArrayList<PointRoi> points,String prefix,boolean stack){
@@ -1712,17 +1721,32 @@ public class SpotDetector {
 
     private void saveAllDetectedSpotRois(boolean stack){
         if(resultsDirectory == null || !saveRois) return;
-        if(spotByFindMaxima && maxima3D_maximaList != null){
-            RoiManager rm = createPointRoiManagerBySlice(maxima3D_maximaList,"Maxima",stack);
-            saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/maxima" + (stack ? "3D" : "") + "/" + image.getTitle() + "_maxima_allSpotsDetected.zip","Maxima all spots ROI");
+        if(spotByFindMaxima){
+            if(stack && maxima3D_maximaList != null){
+                RoiManager rm = createPointRoiManagerBySlice(maxima3D_maximaList,"Maxima",true);
+                saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/maxima3D/" + image.getTitle() + "_maxima3D_allSpotsDetected.zip","Maxima3D all spots ROI");
+            }else if(!stack && findMaximaIP != null){
+                findMaximaIP.setRoi((Roi)null);
+                PointRoi roiMaxima = findMaxima(findMaximaIP,prominence,"full");
+                RoiManager rm = new RoiManager(false);
+                if(roiMaxima != null && roiMaxima.getContainedPoints().length > 0) rm.addRoi(roiMaxima);
+                saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/" + image.getTitle() + "_findmaxima_allSpotsDetected.zip","Maxima all spots ROI");
+            }
         }
         if(spotBySpotiflow && spotiflowRois != null){
             RoiManager rm = createPointRoiManagerBySlice(spotiflowRois,"Spotiflow",stack);
-            saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow" + (stack ? "3D" : "") + "/" + image.getTitle() + "_spotiflow_allSpotsDetected.zip","Spotiflow all spots ROI");
+            String folder = stack ? "spotiflow3D" : "spotiflow";
+            String suffix = stack ? "_spotiflow3D_allSpotsDetected.zip" : "_spotiflow_allSpotsDetected.zip";
+            saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/" + folder + "/" + image.getTitle() + suffix,stack ? "Spotiflow3D all spots ROI" : "Spotiflow all spots ROI");
         }
-        if(spotByThreshold && threshold3DObjects != null && stack){
-            RoiManager rm = createThreshold3DRoiManager(threshold3DObjects.getObjects3DInt(),"Threshold");
-            saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/thresholding3D/" + image.getTitle() + "_threshold_allSpotsDetected.zip","Threshold3D all spots ROI");
+        if(spotByThreshold){
+            if(stack && threshold3DObjects != null){
+                RoiManager rm = createThreshold3DRoiManager(threshold3DObjects.getObjects3DInt(),"Threshold");
+                saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/thresholding3D/" + image.getTitle() + "_threshold3D_allSpotsDetected.zip","Threshold3D all spots ROI");
+            }else if(!stack && thresholdIP != null){
+                RoiManager rm = detector.maskToRoiManager(thresholdIP);
+                saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/thresholding/" + image.getTitle() + "_threshold_allSpotsDetected.zip","Threshold all spots ROI");
+            }
         }
     }
 
