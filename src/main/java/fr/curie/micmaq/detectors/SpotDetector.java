@@ -1136,7 +1136,7 @@ public class SpotDetector {
         //IJ.log("SpotDetector analysis per region : "+type);
 //        Detection and measurements
         if(spotByFindMaxima){
-            PointRoi roiMaxima = findMaximaPerRegion(regionROI, resultsTableFinal, type);
+            PointRoi roiMaxima = findMaximaPerRegion(regionID, regionROI, resultsTableFinal, type, spotsMeasuresTable);
 
             if(resultsDirectory != null && saveRois && roiMaxima != null && roiMaxima.getContainedPoints().length > 0){
                 RoiEncoder.save(roiMaxima, resultsDirectory + "/ROI/Spot" + spotName + "/findmaxima/" + image.getTitle() + "_findmaxima_" + type + (regionID + 1) + "_ROIs.roi");
@@ -1183,14 +1183,14 @@ public class SpotDetector {
         //IJ.log("SpotDetector analysis per region : "+type);
 //        Detection and measurements
         if(spotByFindMaxima){
-            ArrayList<PointRoi> nucleusPoints = findMaximaPerRegion(measureRoi3D,resultsTableFinal,type);
+            ArrayList<PointRoi> nucleusPoints = findMaximaPerRegion(regionID,measureRoi3D,resultsTableFinal,type,spotsMeasuresTable);
             if(resultsDirectory != null && saveRois && nucleusPoints != null && !nucleusPoints.isEmpty()){
                 RoiManager rm = createPointRoiManagerBySlice(nucleusPoints,"Maxima",true);
                 saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/maxima3D/" + image.getTitle() + "_maxima3D_" + type + (regionID + 1) + "_ROIs.zip","Maxima3D " + type + (regionID + 1) + " ROI");
             }
         }
         if(spotBySpotiflow){
-            ArrayList<PointRoi> nucleusPoints = findSpotiflow(regionID,measureRoi3D,resultsTableFinal,type);
+            ArrayList<PointRoi> nucleusPoints = findSpotiflow(regionID,measureRoi3D,resultsTableFinal,type,spotsMeasuresTable);
             if(resultsDirectory != null && saveRois && nucleusPoints != null && !nucleusPoints.isEmpty()){
                 RoiManager rm = createPointRoiManagerBySlice(nucleusPoints,"Spotiflow",true);
                 saveRoiManager(rm,resultsDirectory + "/ROI/Spot" + spotName + "/spotiflow3D/" + image.getTitle() + "_spotiflow3D_" + type + (regionID + 1) + "_ROIs.zip","Spotiflow3D " + type + (regionID + 1) + " ROI");
@@ -1288,24 +1288,33 @@ public class SpotDetector {
      * @param resultsTableToAdd : results table to fill
      * @param type              : image, cell, nucleus or cytoplasm
      */
-    private PointRoi findMaximaPerRegion(Roi regionROI, ResultsTable resultsTableToAdd, String type) {
+    private PointRoi findMaximaPerRegion(int regionID,Roi regionROI,ResultsTable resultsTableToAdd,String type,ResultsTable spotsMeasuresTable){
         ImagePlus tmp = (findMaximaMask != null) ? findMaximaMask : findMaximaIP;
         double prom = (findMaximaMask != null) ? 10 : prominence;
         tmp.setRoi(regionROI);
-//                    Find maxima
-
-        PointRoi roiMaxima = findMaxima(tmp, prom, type);
-//                    Get statistics
+        PointRoi roiMaxima = findMaxima(tmp,prom,type);
         int size = 0;
-        float mean = 0;
-        for (Point p : roiMaxima) {
+        double sumIntensity = 0;
+        int spotID = 1;
+        for(Point p : roiMaxima){
+            double intensity = findMaximaIP.getProcessor().getPixelValue(p.x,p.y);
             size++;
-            mean += findMaximaIP.getProcessor().getPixelValue(p.x, p.y);
+            sumIntensity += intensity;
+            if(spotsMeasuresTable != null){
+                spotsMeasuresTable.addValue("Name experiment",nameExperiment);
+                spotsMeasuresTable.addValue(type + " nr",regionID + 1);
+                spotsMeasuresTable.addValue("Spot method","Maxima2D");
+                spotsMeasuresTable.addValue("Spot ID",spotID++);
+                spotsMeasuresTable.addValue("X",p.x);
+                spotsMeasuresTable.addValue("Y",p.y);
+                spotsMeasuresTable.addValue("Intensity",intensity);
+                spotsMeasuresTable.incrementCounter();
+            }
         }
-        mean = mean / size;
-        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) prominence", prominence);
-        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) nr. spots", size);
-        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean", mean);
+        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) prominence",prominence);
+        resultsTableToAdd.addValue(type + spotName + " Spot(maxima) nr. spots",size);
+        if(size > 0) resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean",sumIntensity / size);
+        else resultsTableToAdd.addValue(type + spotName + " Spot(maxima) mean",Double.NaN);
         return roiMaxima;
     }
 
@@ -1344,10 +1353,10 @@ public class SpotDetector {
                 spotsMeasuresTable.addValue("Name experiment", nameExperiment);
                 spotsMeasuresTable.addValue(type + " nr", regionID + 1);
                 spotsMeasuresTable.addValue("Spot method", "Spotiflow");
-                spotsMeasuresTable.addValue("Spot X", x);
-                spotsMeasuresTable.addValue("Spot Y", y);
-                spotsMeasuresTable.addValue("Spotiflow intensity", intensity);
-                spotsMeasuresTable.addValue("Spotiflow probability", probability);
+                spotsMeasuresTable.addValue("X", x);
+                spotsMeasuresTable.addValue("Y", y);
+                spotsMeasuresTable.addValue("Intensity", intensity);
+                spotsMeasuresTable.addValue("Probability", probability);
                 spotsMeasuresTable.incrementCounter();
             }
         }
@@ -1442,7 +1451,7 @@ public class SpotDetector {
      * @param resultsTableToAdd : results table to fill
      * @param type              : image, cell, nucleus or cytoplasm
      */
-    private ArrayList<PointRoi> findMaximaPerRegion(Object3DInt regionROI,ResultsTable resultsTableToAdd,String type){
+    private ArrayList<PointRoi> findMaximaPerRegion(int regionID,Object3DInt regionROI,ResultsTable resultsTableToAdd,String type,ResultsTable spotsMeasuresTable){
         ArrayList<PointRoi> nucleusPoints = new ArrayList<>();
         if(maxima3D_maximaList == null){
             resultsTableToAdd.addValue(type + spotName + " Spot(maxima3D) threshold",maxima3D_minThreshold);
@@ -1452,6 +1461,7 @@ public class SpotDetector {
             return nucleusPoints;
         }
         int numberSpot = 0;
+        int spotID = 1;
         double sumIntensity = 0;
         for(PointRoi spot : maxima3D_maximaList){
             double x = spot.getFloatPolygon().xpoints[0];
@@ -1463,6 +1473,17 @@ public class SpotDetector {
             nucleusPoints.add(spot);
             numberSpot++;
             sumIntensity += intensity;
+            if(spotsMeasuresTable != null){
+                spotsMeasuresTable.addValue("Name experiment",nameExperiment);
+                spotsMeasuresTable.addValue(type + " nr",regionID + 1);
+                spotsMeasuresTable.addValue("Spot method","Maxima3D");
+                spotsMeasuresTable.addValue("Spot ID",spotID++);
+                spotsMeasuresTable.addValue("X",x);
+                spotsMeasuresTable.addValue("Y",y);
+                spotsMeasuresTable.addValue("Z",z);
+                spotsMeasuresTable.addValue("Intensity",intensity);
+                spotsMeasuresTable.incrementCounter();
+            }
         }
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima3D) threshold",maxima3D_minThreshold);
         resultsTableToAdd.addValue(type + spotName + " Spot(maxima3D) noise",maxima3D_noise);
@@ -1472,7 +1493,7 @@ public class SpotDetector {
         return nucleusPoints;
     }
 
-    protected ArrayList<PointRoi> findSpotiflow(int regionID,Object3DInt regionROI,ResultsTable resultsTableToAdd,String type){
+    protected ArrayList<PointRoi> findSpotiflow(int regionID,Object3DInt regionROI,ResultsTable resultsTableToAdd,String type,ResultsTable spotsMeasuresTable){
         ArrayList<PointRoi> nucleusPoints = new ArrayList<>();
         if(spotiflowRois == null){
             resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model",spotiflowModel);
@@ -1483,6 +1504,7 @@ public class SpotDetector {
             return nucleusPoints;
         }
         int numberSpot = 0;
+        int spotID = 1;
         double sumIntensity = 0;
         double sumProbability = 0;
         for(PointRoi spot : spotiflowRois){
@@ -1490,13 +1512,25 @@ public class SpotDetector {
             double y = spot.getFloatPolygon().ypoints[0];
             int z = getPointSliceSafe(spot);
             double intensity = SpotiflowLauncher.getIntensity(spot);
+            double probability = SpotiflowLauncher.getProbability(spot);
             VoxelInt point3D = new VoxelInt((int)Math.round(x),(int)Math.round(y),z,(int)intensity);
             if(regionROI != null && !regionROI.contains(point3D)) continue;
-            double probability = SpotiflowLauncher.getProbability(spot);
             nucleusPoints.add(spot);
             numberSpot++;
             sumIntensity += intensity;
             sumProbability += probability;
+            if(spotsMeasuresTable != null){
+                spotsMeasuresTable.addValue("Name experiment",nameExperiment);
+                spotsMeasuresTable.addValue(type + " nr",regionID + 1);
+                spotsMeasuresTable.addValue("Spot method","Spotiflow3D");
+                spotsMeasuresTable.addValue("Spot ID",spotID++);
+                spotsMeasuresTable.addValue("X",x);
+                spotsMeasuresTable.addValue("Y",y);
+                spotsMeasuresTable.addValue("Z",z);
+                spotsMeasuresTable.addValue("Intensity",intensity);
+                spotsMeasuresTable.addValue("Probability",probability);
+                spotsMeasuresTable.incrementCounter();
+            }
         }
         resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) model",spotiflowModel);
         resultsTableToAdd.addValue(type + spotName + " Spot(Spotiflow) probathr",spotiflowMinProbability);
