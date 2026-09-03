@@ -81,7 +81,7 @@ public class ExperimentSettings {
         File tmp=new File(resultsDir);
         if(!tmp.exists()) tmp.mkdirs();
         System.out.println("outputs will be saved in "+resultsDir);
-        IJ.log("create experiment: working directory is "+resultsDir);
+        IJ.log("create experiment: \nworking directory is "+resultsDir);
 
         NucleiDetector nucl=getNucleiDetector(preview);
         CellDetector cell=getCellDetector(preview);
@@ -237,14 +237,14 @@ public class ExperimentSettings {
                     //IJ.log("exp settings getSpotDetector: macro: "+measureValue.getPreprocessMacro());
                     //IJ.log("exp settings getSpotDetector: macro quantif: "+measureValue.getPreprocessMacroQuantif());
                     ImagePlus tmpchan=imgs.getImagePlus(i+1);
-                    IJ.log("exp settings getSpotDetector: image: "+tmpchan.getNSlices()+" slices");
-                    IJ.log("exp settings getSpotDetector: zproject: "+measureValue.isZproject());
+                    //IJ.log("exp settings getSpotDetector: image: "+tmpchan.getNSlices()+" slices");
+                    //IJ.log("exp settings getSpotDetector: zproject: "+measureValue.isZproject());
                     //System.out.println(tmpchan.getTitle());
                     //System.out.println(measureValue.getMeasure());
                     SpotDetector tmp=new SpotDetector(tmpchan, measureValue.getName(), imgs.getFieldname(), resultsDir, preview);
                     //        Projection ?
                     if (measureValue.isZproject()) {
-                        IJ.log("exp settings getSpotDetector: zproject");
+                        //IJ.log("exp settings getSpotDetector: zproject");
                         if (measureValue.getProjectionSliceMin()>=0) {
                             tmp.setzStackParameters(measureValue.getProjectionMethodAsString(), measureValue.getProjectionSliceMin(), measureValue.getProjectionSliceMax());
                         } else {
@@ -295,7 +295,7 @@ public class ExperimentSettings {
         }else{
             IJ.log("experiment settings get spot : no channel defined");
         }
-        IJ.log("spots size: "+ spots.size());
+        //IJ.log("spots size: "+ spots.size());
         return spots;
     }
 

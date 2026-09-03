@@ -56,7 +56,7 @@ public class MeasureRois {
     }
 
     public void measureAll(ResultsTable finalResultsNuclei, ResultsTable finalResultsCellSpot, String experimentName, MeasureCalibration calibration){
-        IJ.log("measureAll");
+        //IJ.log("measureAll");
         Objects3DIntPopulation expandLabels=null;
         if(cells!=null && nuclei!=null){
             if(nuclei.getNumberOfNuclei()>0) prepareCytoMeasure(finalResultsNuclei,experimentName,calibration);
@@ -255,8 +255,8 @@ public class MeasureRois {
     }
 
     public void measure3DCell(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
-        IJ.log("measure3D "+type);
-        IJ.log(measureRoi3D.getName());
+        //IJ.log("measure3D "+type);
+        //IJ.log(measureRoi3D.getName());
         measureRoi3D.setVoxelSizeXY(calib.getPixelArea());
         measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
         measureRoi3D.setUnit(calib.getUnit());
@@ -277,8 +277,8 @@ public class MeasureRois {
         setResults3D(measurementsIntensity, headingsMeasureIntensity, resultsTableFinal, type + cells.getNameChannel(), calib);
     }
     public void measure3DNuclei(int cellID, ResultsTable resultsTableFinal, Object3DInt measureRoi3D, String type, MeasureCalibration calib){
-        IJ.log("measure3D "+type);
-        IJ.log(measureRoi3D.getName());
+        //IJ.log("measure3D "+type);
+        //IJ.log(measureRoi3D.getName());
         measureRoi3D.setVoxelSizeXY(calib.getPixelArea());
         measureRoi3D.setVoxelSizeZ(calib.getPixelsZ());
         measureRoi3D.setUnit(calib.getUnit());

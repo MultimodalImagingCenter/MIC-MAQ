@@ -120,9 +120,9 @@ public class CellposeLauncher {
         cellposeMask = Detector.labeledImage(cellposeMask.getWidth(), cellposeMask.getHeight(),cellposeMask.getNSlices(), cellposeRoiManager.getRoisAsArray());
         cellposeMask.setTitle(imagePlus.getShortTitle() + "-cellpose");
 
-        if(roi3D!=null) IJ.log("cellpose roi3D:"+roi3D.getNbObjects());
-        IJ.log("cellpose roimanager:"+cellposeRoiManager.getCount());
-        IJ.log("cellpose mask (n objects):"+new StackStatistics(cellposeMask).max);
+        //if(roi3D!=null) IJ.log("cellpose roi3D:"+roi3D.getNbObjects());
+        //IJ.log("cellpose roimanager:"+cellposeRoiManager.getCount());
+        //IJ.log("cellpose mask 2D (n objects):"+new StackStatistics(cellposeMask).max);
     }
 
     /**
@@ -187,7 +187,7 @@ public class CellposeLauncher {
             if(input.getNSlices()>1){
                 IJ.log("convert to ROI_3D and measure");
                 label2Roi3D(cellposeMask,input);
-                IJ.log("should display measures");
+                //IJ.log("should display measures");
                 label2Roi(cellposeMask);
             }else {
                 label2Roi(cellposeMask);
@@ -423,7 +423,7 @@ public class CellposeLauncher {
         if (cellposeIP == null) System.out.println("error cellposeIP is null!");
         //Set RoiManager
         RoiManager cellposeRoiManager = RoiManager.getRoiManager();
-        IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
+        //IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
 
         for(int slice=0;slice<cellposeIP.getNSlices();slice++){
             ImageProcessor cellposeProc = cellposeIP.getProcessor().duplicate();
@@ -481,24 +481,24 @@ public class CellposeLauncher {
             }
         }
 
-        IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi end: "+cellposeRoiManager.getCount());
-        IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
+       // IJ.log("label2Roi ("+xoffset+", "+yoffset+") nb roi end: "+cellposeRoiManager.getCount());
+        //IJ.log("RoiManager size: "+cellposeRoiManager.getCount());
         return cellposeRoiManager;
     }
 
     public void label2Roi3D(ImagePlus cellposeIP, ImagePlus input) {
-        IJ.log("label2Roi3D");
+        //IJ.log("label2Roi3D");
         //TODO remove this display?
-        cellposeIP.show();
+        //cellposeIP.show();
         Objects3DIntPopulation population1 = new ImportImage(ImageHandler.wrap(cellposeIP.getImageStack())).importImage();
-        IJ.log("label2Roi3D nb objects: "+population1.getObjects3DInt().size());
+        //IJ.log("label2Roi3D nb objects: "+population1.getObjects3DInt().size());
         //RoiManager3D_2
         if(roi3D == null){
             roi3D=population1;
         }else{
             roi3D.addObjects(population1.getObjects3DInt(),true);
         }
-        IJ.log("label2Roi3D nb objects after add: "+roi3D.getObjects3DInt().size()+"\nmeasure3D");
+        //IJ.log("label2Roi3D nb objects after add: "+roi3D.getObjects3DInt().size()+"\nmeasure3D");
     }
 
     /**

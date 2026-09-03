@@ -311,17 +311,18 @@ public class CellDetector {
 
         IJ.log("label image max "+new StackStatistics(labeledImage).max);
         IJ.log("label image nslices "+labeledImage.getNSlices());
-        IJ.log("should do exclude on edge "+excludeOnEdges);
+        IJ.log("number of detected cells "+roiManagerCell.getCount()+" (2D)");
+        if(roi3D !=null && roi3D.getNbObjects()>0) IJ.log("number of detected cells "+roi3D.getNbObjects()+" (3D)");
+        //IJ.log("should do exclude on edge "+excludeOnEdges);
         if(excludeOnEdges) {
             if(labeledImage.getNSlices()>1) {
-                IJ.log("exclude on edge on 3D data");
-                IJ.log("before nb rois3D "+roi3D.getNbObjects());
+                int previousRoiCount = roi3D.getNbObjects();
                 if(Detector.excludeOnEdgesRois(image,roi3D)) labeledImage = Detector.labeledImage3D(image.getWidth(), image.getHeight(), image.getNSlices(), roi3D, nameExperiment+analysisType+"_Cell");
-                IJ.log("after nb rois3D "+roi3D.getNbObjects());
+                IJ.log("exclude on edge 3D : from "+previousRoiCount+" to "+roi3D.getNbObjects()+" ROIs");
             }else if(Detector.excludeOnEdgesRois(image,roiManagerCell)){
-                IJ.log("before nb rois2D "+roiManagerCell.getCount());
+                int previousRoiCount = roiManagerCell.getCount();
                 labeledImage = detector.labeledImage(roiManagerCell.getRoisAsArray());
-                IJ.log("after nb rois2D "+roiManagerCell.getCount());
+                IJ.log("exclude on edge 2D : from "+previousRoiCount+" to "+roiManagerCell.getCount()+" ROIs");
             }
         }
 
@@ -480,7 +481,7 @@ public class CellDetector {
         detector.renameImage(labeledImage, "cellpose_Cells");
 
         RoiManager roiManagerCell = cellposeLauncher.getCellposeRoiManager();
-        IJ.log("cellpose segmentation "+roiManagerCell.getCount()+" ROIs");
+        //IJ.log("cellpose segmentation "+roiManagerCell.getCount()+" ROIs");
         ArrayList<Object> returndata = new ArrayList<>();
         returndata.add(labeledImage);
         returndata.add(roiManagerCell);
@@ -562,7 +563,7 @@ public class CellDetector {
     }
 
     public int getNumberOfCells(){
-        IJ.log("celldetector getNbCells "+ roi3D);
+        //IJ.log("celldetector getNbCells "+ roi3D);
         if(roi3D !=null) return roi3D.getNbObjects();
         else if(cellRois!=null) return cellRois.length;
         else return 0;

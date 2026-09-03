@@ -214,7 +214,7 @@ public class SpotiflowLauncher {
         DefaultSpotiflowTask task = new DefaultSpotiflowTask();
         task.setSettings(settings);
         task.run();
-        IJ.log("Spotiflow finished.");
+        //IJ.log("Spotiflow finished.");
         System.out.println("CSV trouvé = " + outputFile.exists());
         return outputFile;
     }
@@ -299,7 +299,7 @@ public class SpotiflowLauncher {
                 rois.add(roi);
             }
         }
-        IJ.log("spotiflow nb rois found :"+rois.size());
+        //IJ.log("spotiflow nb rois found :"+rois.size());
         return rois;
     }
 

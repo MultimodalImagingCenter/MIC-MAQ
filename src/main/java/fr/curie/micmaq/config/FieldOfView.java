@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 
 public class FieldOfView {
+    boolean debug = false;
     ArrayList<ImportProcess> channelsImagePlus;
     ArrayList<Integer> originalChannelNb;
     String fieldname;
@@ -76,9 +77,11 @@ public class FieldOfView {
             if(importProcess.getSeriesCount()>1) fieldname+= "#"+importProcess.getOMEMetadata().getImageName(serieNb);
 
             fieldname=fieldname.replaceAll("[\\\\/:*?\"<>|]","_");
-            IJ.log("idname: "+importProcess.getIdName()+"\nserieslabel: "+importProcess.getSeriesLabel(serieNb));
-            IJ.log("fieldname: "+fieldname);
-            IJ.log("getImageName(serieNb)"+importProcess.getOMEMetadata().getImageName(serieNb));
+            if(debug) {
+                IJ.log("idname: " + importProcess.getIdName() + "\nserieslabel: " + importProcess.getSeriesLabel(serieNb));
+                IJ.log("fieldname: " + fieldname);
+                IJ.log("getImageName(serieNb)" + importProcess.getOMEMetadata().getImageName(serieNb));
+            }
             //IJ.log("getImageName(channelNb)"+importProcess.getOMEMetadata().getImageName(channelNb-1));
             channelsImagePlus.add(importProcess);
             originalChannelNb.add(channelNb);
@@ -116,7 +119,7 @@ public class FieldOfView {
                 addChannel(process,serieNb,c);
                 Instant end = Instant.now();
                 long duration= Duration.between(start, end).toMillis();
-                IJ.log("FoV adding channel "+(nbchannelOffset+c)+" : "+duration+"ms");
+                IJ.log("FoV adding channel "+(nbchannelOffset+c)+" "+fieldname+" : "+duration+"ms");
 
             }
         } catch (Exception e) {

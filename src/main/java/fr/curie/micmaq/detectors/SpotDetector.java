@@ -113,7 +113,7 @@ public class SpotDetector {
 
     private int measurements = Measurements.MEAN + Measurements.INTEGRATED_DENSITY;
 
-    private int spotMeasurements = Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY + Measurements.MIN_MAX + Measurements.SHAPE_DESCRIPTORS + Measurements.ELLIPSE + Measurements.FERET;
+    private int spotMeasurements = Measurements.AREA + Measurements.MEAN + Measurements.INTEGRATED_DENSITY + Measurements.MIN_MAX + Measurements.SHAPE_DESCRIPTORS + Measurements.ELLIPSE + Measurements.FERET + Measurements.CENTROID;
 
     // for groups in RoiManager
     private static final int GROUP_STEP = 10;
@@ -417,7 +417,7 @@ public class SpotDetector {
         int numberObjects;
         if (thresholdIP.getNSlices() > 1) {
             Objects3DIntPopulation pop = detector.maskToObjects3D(thresholdIP);
-            threshold3DObjects = fixThreshold3DObjects(pop);
+            threshold3DObjects = detector.fixThreshold3DObjects(pop);
             numberObjects = threshold3DObjects.getNbObjects();
         } else {
             RoiManager rm = detector.maskToRoiManager(thresholdIP);
@@ -673,7 +673,7 @@ public class SpotDetector {
         thresholdIP = detector.getThresholdMask(preprocessed);
         if (thresholdIP.getNSlices() > 1) {
             Objects3DIntPopulation pop = detector.maskToObjects3D(thresholdIP);
-            threshold3DObjects = fixThreshold3DObjects(pop);
+            threshold3DObjects = detector.fixThreshold3DObjects(pop);
             IJ.log("Threshold3D detected " + threshold3DObjects.getNbObjects() + " objects");
             return previewThreshold3D(group);
         }
@@ -836,17 +836,17 @@ public class SpotDetector {
     public boolean prepare(boolean preview) {
 
 
-        if (image != null) IJ.log("spotdetector prepare start image " + image.getNSlices() + " slices");
-        else IJ.log("spotdetector prepare start image is null");
+        //if (image != null) IJ.log("spotdetector prepare start image " + image.getNSlices() + " slices");
+        //else IJ.log("spotdetector prepare start image is null");
 
-        if (imageToMeasure != null) IJ.log("spotdetector prepare start image to measure " + imageToMeasure.getNSlices() + " slices");
-        else IJ.log("spotdetector prepare start image to measure is null ");
+        //if (imageToMeasure != null) IJ.log("spotdetector prepare start image to measure " + imageToMeasure.getNSlices() + " slices");
+        //else IJ.log("spotdetector prepare start image to measure is null ");
 
         ImagePlus preprocessed = preprocessing();
         if (preprocessed == null) return false;
         if(!preview) createSavingDirectories(preprocessed.getNSlices() > 1);
 
-        IJ.log("spotdetector prepare getPreprocessed " + preprocessed.getNSlices() + " slices");
+        //IJ.log("spotdetector prepare getPreprocessed " + preprocessed.getNSlices() + " slices");
 
         if (showPreprocessedImage) preprocessed.show();
 
@@ -898,20 +898,20 @@ public class SpotDetector {
     }
 
     private void prepareThreshold(ImagePlus preprocessed, boolean preview) {
-        IJ.log("################### prepareThreshold ##########################");
+        IJ.log("# prepareThreshold");
         thresholdIP = detector.getThresholdMask(preprocessed);
         int numberObjects;
         if (thresholdIP.getNSlices() > 1) {
             Objects3DIntPopulation pop = detector.maskToObjects3D(thresholdIP);
             //IJ.log("avant fix : " + pop.getNbObjects());
-            threshold3DObjects = fixThreshold3DObjects(pop);
+            threshold3DObjects = detector.fixThreshold3DObjects(pop);
             numberObjects = threshold3DObjects.getNbObjects();
             //IJ.log("après fix : " + numberObjects);
-            IJ.log("Threshold3D detected " + numberObjects + " objects");
+            IJ.log("Threshold3D detected " + numberObjects + " spots");
         } else {
             RoiManager rm = detector.maskToRoiManager(thresholdIP);
             numberObjects = rm.getCount();
-            IJ.log("Threshold2D detected " + numberObjects + " objects");
+            IJ.log("Threshold2D detected " + numberObjects + " spots");
         }
         if (preview) {
             showThresholdPreview(preprocessed, thresholdIP, numberObjects);
@@ -928,13 +928,7 @@ public class SpotDetector {
             }
         }
     }
-    private Objects3DIntPopulation fixThreshold3DObjects(Objects3DIntPopulation pop) {
-        ArrayList<Object3DInt> corrected = new ArrayList<>();
-        for (Object3DInt obj : pop.getObjects3DInt()) corrected.addAll(new Object3DComputation(obj).getConnexComponents());
-        Objects3DIntPopulation fixed = new Objects3DIntPopulation();
-        fixed.addObjects(corrected);
-        return fixed;
-    }
+
 
     private void showThresholdPreview(ImagePlus preprocessed, ImagePlus binaryMask, int numberObjects) {
         if (thresholdPreviewIP != null) {
@@ -1011,6 +1005,7 @@ public class SpotDetector {
 
 
     private void prepareFindMaxima(ImagePlus preprocessed, boolean preview) {
+        IJ.log("# prepareFindMaxima");
         findMaximaIP = preprocessed.duplicate();
         detector.renameImage(findMaximaIP, "maxima");
 
@@ -1029,20 +1024,9 @@ public class SpotDetector {
             return;
         }
 
+
         if (resultsDirectory == null) return;
 
-        /*if (saveRois && findMaximaIP.getNSlices() == 1) {
-            findMaximaIP.setRoi((Roi) null);
-            PointRoi roiMaxima = findMaxima(findMaximaIP, prominence, "full");
-            findMaximaIP.setRoi(roiMaxima);
-            boolean wasSaved = RoiEncoder.save(roiMaxima, resultsDirectory + "/ROI/Spot" + spotName + "/maxima/" + image.getTitle() + "_findMaxima_all_roi.roi");
-
-            if (!wasSaved) {
-                IJ.error("Could not save ROIs");
-            } else {
-                IJ.log("The ROIs of the spot found by find Maxima method of " + image.getTitle() + " were saved in " + resultsDirectory + "/ROI/Spot" + spotName + "/maxima/");
-            }
-        }*/
     }
     private ArrayList<PointRoi> findMaximaPoints2D(ImagePlus preprocessed) {
         ArrayList<PointRoi> points = new ArrayList<>();
@@ -1054,20 +1038,21 @@ public class SpotDetector {
     }
     private void prepareFindMaxima3D() {
         ImageHandler img = ImageHandler.wrap(this.findMaximaIP);
-        IJ.log("Removing peaks below " + this.maxima3D_minThreshold);
+        //IJ.log("Removing peaks below " + this.maxima3D_minThreshold);
 
         ImageHandler thresholded = img.duplicate();
         thresholded.thresholdCut(this.maxima3D_minThreshold, false, true);
 
         MaximaFinder maximaFinder = new MaximaFinder(thresholded, this.maxima3D_noise);
         maximaFinder.setRadii(this.maxima3D_rxy, this.maxima3D_rz);
+        maximaFinder.setVerbose(false);
 
         ArrayList<Voxel3D> list = maximaFinder.getListPeaks();
         maxima3D_maximaList = new ArrayList<>();
 
         for (Voxel3D v : list) {
             PointRoi tmp = new PointRoi(v.getX(), v.getY());
-            int z= (int) v.getZ();
+            int z= (int) v.getZ() ;
             tmp.setPosition(z);
             tmp.setPosition(0, z, 0);
             tmp.setProperty("intensity", Double.toString(v.getValue()));
@@ -1078,6 +1063,7 @@ public class SpotDetector {
     }
 
     private void prepareSpotiflow(ImagePlus preprocessed, boolean preview) {
+        IJ.log("# prepareSpotiflow");
         try {
             SpotiflowLauncher launcher = new SpotiflowLauncher(preprocessed);
 
@@ -1212,12 +1198,12 @@ public class SpotDetector {
     private void findThresholdPerRegion(int regionID, Roi regionROI, ResultsTable resultsTableToAdd, String type, ResultsTable spotMeasuresTable) {
         RoiManager roiManagerFoci = null;
         int numberSpot = 0; /*count number of spot detected*/
-
-        double nucleusAreaPix = regionROI.getStatistics().area;
+        double nucleusAreaPix = Double.NaN;
+        if (regionROI != null) {
+            nucleusAreaPix = regionROI.getStatistics().area;
 
 //        Detection
-        ImageProcessor tmpIP = thresholdIP.getProcessor().duplicate();
-        if (regionROI != null) {
+            ImageProcessor tmpIP = thresholdIP.getProcessor().duplicate();
             if (regionROI instanceof PolygonRoi || regionROI instanceof ShapeRoi) {
                 Roi tmproi = regionROI.getInverse(thresholdIP);
                 tmpIP.setValue(0);
@@ -1262,11 +1248,12 @@ public class SpotDetector {
                     spotMeasuresTable.addValue(type+" nr",regionID + 1);
                     spotMeasuresTable.addValue("Spot method","Threshold2D");
                     spotMeasuresTable.addValue("Spot ID",spotID++);
-                    for(int c=0;c<headings.length;c++) {
-                        spotMeasuresTable.addValue(headings[c], resultsTable.getValue(headings[c], r));
-                        if(headings[c].startsWith("Area")){
-                            spotMeasuresTable.addValue("Area ("+measureCalibration.getUnit()+")", measureCalibration.getPixelArea()*resultsTable.getValue(headings[c], r));
-                        }
+                    for(int c=0;c<headings.length;c++){
+                        String heading = headings[c];
+                        double value = resultsTable.getValue(heading,r);
+                        if(heading.equals("Mean")) spotMeasuresTable.addValue("Intensity",value);
+                        else spotMeasuresTable.addValue(heading,value);
+                        if(heading.startsWith("Area")) spotMeasuresTable.addValue("Area (" + measureCalibration.getUnit() + ")",measureCalibration.getPixelArea() * value);
                     }
                     spotMeasuresTable.incrementCounter();
                 }
@@ -1329,6 +1316,7 @@ public class SpotDetector {
         }
 
         int numberSpot = 0;
+        int spotID = 1;
         double sumIntensity = 0;
         double sumProbability = 0;
 
@@ -1352,7 +1340,8 @@ public class SpotDetector {
             if (spotsMeasuresTable != null) {
                 spotsMeasuresTable.addValue("Name experiment", nameExperiment);
                 spotsMeasuresTable.addValue(type + " nr", regionID + 1);
-                spotsMeasuresTable.addValue("Spot method", "Spotiflow");
+                spotsMeasuresTable.addValue("Spot method", "Spotiflow2D");
+                spotsMeasuresTable.addValue("Spot ID",spotID++);
                 spotsMeasuresTable.addValue("X", x);
                 spotsMeasuresTable.addValue("Y", y);
                 spotsMeasuresTable.addValue("Intensity", intensity);
@@ -1381,7 +1370,7 @@ public class SpotDetector {
         for(Object3DInt spot : threshold3DObjects.getObjects3DInt()){
             Point3D center = new MeasureCentroid(spot).getCentroidAsPoint();
             VoxelInt voxel = new VoxelInt((int)Math.round(center.getX()),(int)Math.round(center.getY()),(int)Math.round(center.getZ()),1);
-            if(regionROI.contains(voxel)) nucleusObjects.add(spot);
+            if(containsSafe(regionROI,voxel)) nucleusObjects.add(spot);
         }
         int numberSpot = nucleusObjects.size();
         if(resultsDirectory != null && saveRois && numberSpot > 0){
@@ -1417,7 +1406,7 @@ public class SpotDetector {
                 spotMeasuresTable.addValue("Spot ID",spotID);
                 spotMeasuresTable.addValue("Volume (pixel3)",volumePix);
                 spotMeasuresTable.addValue("Volume (" + measureCalibration.getUnit() + "3)",volumePix * voxelVolume);
-                spotMeasuresTable.addValue("Mean",mean);
+                spotMeasuresTable.addValue("Intensity",mean);
                 spotMeasuresTable.addValue("RawIntDen",rawIntDen);
                 spotMeasuresTable.addValue("X",center.getX());
                 spotMeasuresTable.addValue("Y",center.getY());
@@ -1463,13 +1452,19 @@ public class SpotDetector {
         int numberSpot = 0;
         int spotID = 1;
         double sumIntensity = 0;
+
+
+        //IJ.log("find maxima per region : nb spot" + maxima3D_maximaList.size() + " (" + regionID + ") " );
         for(PointRoi spot : maxima3D_maximaList){
+
             double x = spot.getFloatPolygon().xpoints[0];
             double y = spot.getFloatPolygon().ypoints[0];
             int z = getPointSliceSafe(spot);
             double intensity = Double.parseDouble(spot.getProperty("intensity"));
             VoxelInt point3D = new VoxelInt((int)Math.round(x),(int)Math.round(y),z,(int)intensity);
-            if(regionROI != null && !regionROI.contains(point3D)) continue;
+
+
+            if(regionROI != null && !containsSafe(regionROI,point3D)) continue;
             nucleusPoints.add(spot);
             numberSpot++;
             sumIntensity += intensity;
@@ -1493,6 +1488,16 @@ public class SpotDetector {
         return nucleusPoints;
     }
 
+    private boolean containsSafe(Object3DInt object,VoxelInt voxel){
+        if(object == null) return false;
+        for(Object3DPlane plane : object.getObject3DPlanes()){
+            if(plane.getZPlane() == voxel.getZ()) return plane.contains(voxel);
+        }
+        return false;
+    }
+
+
+
     protected ArrayList<PointRoi> findSpotiflow(int regionID,Object3DInt regionROI,ResultsTable resultsTableToAdd,String type,ResultsTable spotsMeasuresTable){
         ArrayList<PointRoi> nucleusPoints = new ArrayList<>();
         if(spotiflowRois == null){
@@ -1514,7 +1519,7 @@ public class SpotDetector {
             double intensity = SpotiflowLauncher.getIntensity(spot);
             double probability = SpotiflowLauncher.getProbability(spot);
             VoxelInt point3D = new VoxelInt((int)Math.round(x),(int)Math.round(y),z,(int)intensity);
-            if(regionROI != null && !regionROI.contains(point3D)) continue;
+            if(regionROI != null && !containsSafe(regionROI,point3D)) continue;
             nucleusPoints.add(spot);
             numberSpot++;
             sumIntensity += intensity;
@@ -1546,12 +1551,18 @@ public class SpotDetector {
     }
 
     private void addAdditional3DSpotMeasures(Object3DInt spot,ImageHandler imageHandler,ResultsTable spotMeasuresTable){
+        spot.setVoxelSizeXY(measureCalibration.getPixelArea());
+        spot.setVoxelSizeZ(measureCalibration.getPixelsZ());
+        spot.setUnit(measureCalibration.getUnit());
         MeasureObject measureObject = new MeasureObject(spot);
         String[] morphoHeadings = MeasureRois.getValidMeasurements3DMorpho(spotMeasurements);
         Double[] morphoValues = measureObject.measureList(morphoHeadings);
         for(int i=0;i<morphoHeadings.length;i++){
             if(morphoHeadings[i].equals(MeasureVolume.VOLUME_PIX)) continue;
             if(morphoHeadings[i].equals(MeasureVolume.VOLUME_UNIT)) continue;
+            if(morphoHeadings[i].contains("CX")) continue;
+            if(morphoHeadings[i].contains("CY")) continue;
+            if(morphoHeadings[i].contains("CZ")) continue;
             spotMeasuresTable.addValue("3D " + morphoHeadings[i],morphoValues[i]);
         }
         String[] intensityHeadings = MeasureRois.getValidMeasurements3DIntensity(spotMeasurements);
@@ -1578,8 +1589,8 @@ public class SpotDetector {
 //        PROJECTION : convert stack to one image
             imageToMeasure = detector.getImageQuantification();
             ImagePlus imageToReturn = detector.getImage();
-            IJ.log("SpotDetector preprocessing imageToMeasure "+imageToMeasure.getNSlices()+" slices");
-            IJ.log("SpotDetector preprocessing imageToReturn "+imageToReturn.getNSlices()+" slices");
+            //IJ.log("SpotDetector preprocessing imageToMeasure "+imageToMeasure.getNSlices()+" slices");
+            //IJ.log("SpotDetector preprocessing imageToReturn "+imageToReturn.getNSlices()+" slices");
             ImagePlus temp;
 //      MACRO : apply custom commands of user
             if (macroText != null) {
@@ -1627,6 +1638,8 @@ public class SpotDetector {
         PointRoi roiMaxima = new PointRoi(maxima);
         findMaximaIP.setRoi(roiMaxima);
         findMaximaMask = new ImagePlus("find maxima mask", findMaximaIP.createRoiMask());
+        findMaximaMask.setRoi(roiMaxima);
+        IJ.log("Maxima2D detected " + maxima.npoints + " spots for " + image.getTitle());
         //findMaximaMask.show();
         return findMaximaMask;
     }
@@ -1683,10 +1696,10 @@ public class SpotDetector {
 
     public ImagePlus getImageToMeasure() {
         if(imageToMeasure==null) {
-            IJ.log("SpotDetector imageToMeasure : null");
+            IJ.log("SpotDetector imageToMeasure : null give quantification image");
             imageToMeasure=detector.getImageQuantification();
         }
-        IJ.log("SpotDetector imageToMeasure : "+imageToMeasure.getNSlices());
+        //IJ.log("SpotDetector imageToMeasure : "+imageToMeasure.getNSlices());
         return imageToMeasure;
     }
 
@@ -1724,7 +1737,7 @@ public class SpotDetector {
         return rm;
     }
 
-    private RoiManager createThreshold3DRoiManager(Collection<Object3DInt> objects, String prefix){
+    public static RoiManager createThreshold3DRoiManager(Collection<Object3DInt> objects, String prefix){
         RoiManager rm = new RoiManager(false);
         if(objects == null || objects.isEmpty()) return rm;
         TreeMap<Integer,ArrayList<Roi>> roisBySlice = new TreeMap<>();

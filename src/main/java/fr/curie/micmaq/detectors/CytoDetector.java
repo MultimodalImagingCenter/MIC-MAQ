@@ -161,7 +161,7 @@ public class CytoDetector {
         }
         //3D or 2D ???
         if(nucleiRois3D!=null){
-            IJ.log("##########\ncytoplasm detector 3D nuclei ROIs are used\n##########");
+            IJ.log("# cytoplasm detector 3D nuclei ROIs are used");
 //        Associated each cell to a nuclei
             associateNucleiCell3D();
             IJ.log(trueCellRoi3D.length+" cells associated to "+trueAssociatedRoi3D.length+" nuclei" );
@@ -169,7 +169,7 @@ public class CytoDetector {
             getCytoplasmRois3D();
 //        Get mask associated to cytoplasm
         }else {
-            IJ.log("##########\n2D nuclei ROIs are used\n##########");
+            IJ.log("# cytoplasm detector 2D nuclei ROIs are used");
 //        Associated each cell to a nuclei
             associateNucleiCell();
 //        Subtract nuclei regions from cell to obtain cytoplasm regions
@@ -477,15 +477,15 @@ public class CytoDetector {
             for (int nucleusID = 0; nucleusID < nucleiRois3D.length; nucleusID++) {
                 Object3DInt nucleusROI = nucleiRois3D[nucleusID];
                 BoundingBox nucleiBounding = nucleusROI.getBoundingBox();
-                IJ.log("checking association cell "+cellID+" nucleus "+nucleusID);
+                //IJ.log("checking association cell "+cellID+" nucleus "+nucleusID);
 //                Verify overlap
                 if (roisBoundingBoxOverlap(cellBounding,nucleiBounding)) {
-                    IJ.log("overlap detected");
+                    //IJ.log("overlap detected");
                     Object3DComputation comp1=new Object3DComputation(cellROI);
                     Object3DComputation comp2=new Object3DComputation(comp1.getObject3DCopy());
                     Object3DInt intersection = comp2.getIntersection(nucleusROI);
                     double commonPoints = nbVoxelsInRoi3D( intersection);
-                    IJ.log("common points : "+commonPoints);
+                    //IJ.log("common points : "+commonPoints);
 
                     if (commonPoints>minNucleiCellOverlap*nbVoxelsInRoi3D(nucleusROI)){
 //                            If multiple nuclei in cell, consider it is a cell in division. The nuclei are thus combined to be considered as only one
@@ -493,12 +493,12 @@ public class CytoDetector {
                         numberOfNucleiPerCell[cellID]++;
                         //counttmp1++;
 //                        Associate nuclei in same cell
-                        IJ.log("association validated");
+                        //IJ.log("association validated");
                         if (associatedNucleiRois[cellID]!=null){
                             Object3DInt roi1 = associatedNucleiRois[cellID];
                             Object3DComputation comptmp = new Object3DComputation(roi1);
                             associatedNucleiRois[cellID] = comptmp.getUnion(nucleusROI);
-                            IJ.log("union of nuclei ROI for cell "+cellID + associatedNucleiRois[cellID]);
+                            //IJ.log("union of nuclei ROI for cell "+cellID + associatedNucleiRois[cellID]);
                         }else {
                             associatedNucleiRois[cellID]=nucleusROI;
                         }
@@ -578,9 +578,9 @@ public class CytoDetector {
                 int sizeCell = nbVoxelsInRoi3D(cell);
                 int sizeNuclei = nbVoxelsInRoi3D(nuclei);
                 double common = (double) (sizeCell - sizeNuclei)/sizeCell;
-                IJ.log("ID "+cellID+" size cell "+sizeCell+" size nuclei "+sizeNuclei+" common "+common);
+                //IJ.log("ID "+cellID+" size cell "+sizeCell+" size nuclei "+sizeNuclei+" common "+common);
                 if (common > minCytoSize){
-                    IJ.log("cells nb planes : "+cell.getObject3DPlanes().size()+" nuclei nb planes : "+nuclei.getObject3DPlanes().size() );
+                    //IJ.log("cells nb planes : "+cell.getObject3DPlanes().size()+" nuclei nb planes : "+nuclei.getObject3DPlanes().size() );
                     cytoplasm = computeCytoplasmROI3D(cell, nuclei);
                 }else {
                     cytoplasm = null;
@@ -672,8 +672,8 @@ public class CytoDetector {
         double cx=(nucleusRec.xmax+nucleusRec.xmin)/2.0;
         double cy=(nucleusRec.ymax+nucleusRec.ymin)/2.0;
         double cz=(nucleusRec.zmax+nucleusRec.zmin)/2.0;
-        IJ.log("nucleus cx : "+cx+" cy : "+cy+" cz : "+cz);
-        IJ.log("cell xmin : "+cellRec.xmin+" xmax : "+cellRec.xmax+" ymin : "+cellRec.ymin+" ymax : "+cellRec.ymax+" zmin : "+cellRec.zmin+" zmax : "+cellRec.zmax);
+        //IJ.log("nucleus cx : "+cx+" cy : "+cy+" cz : "+cz);
+        //IJ.log("cell xmin : "+cellRec.xmin+" xmax : "+cellRec.xmax+" ymin : "+cellRec.ymin+" ymax : "+cellRec.ymax+" zmin : "+cellRec.zmin+" zmax : "+cellRec.zmax);
         return (cellRec.contains(cx,cy,cz));
     }
 

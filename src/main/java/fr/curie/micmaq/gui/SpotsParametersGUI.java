@@ -409,7 +409,7 @@ public class SpotsParametersGUI {
         }
         if (findMaximaCheckBox.isSelected()) {
             if (is3DProcessing()) {
-                IJ.log("3D processing, maxima detection will be done on each slice");
+                //IJ.log("3D processing, maxima detection will be done on each slice");
                 measureValue.setSpotFindMaxima3D(0, 1.5, 1.5, (double) prominenceSpinner.getValue());
             } else {
                 measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());

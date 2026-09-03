@@ -60,7 +60,7 @@ public class Experiment {
                 spotsInCellsTable.add(null);
                 spotsInCytoplasmsTable.add(null);
             }
-            IJ.log("experiment spot tables "+spots.size()+", "+spotsInNucleiTable.size()+", "+spotsInCellsTable.size()+", "+spotsInCytoplasmsTable.size());
+            //IJ.log("experiment spot tables "+spots.size()+", "+spotsInNucleiTable.size()+", "+spotsInCellsTable.size()+", "+spotsInCytoplasmsTable.size());
         }
         if (nucleiDetector!=null) this.experimentName = nucleiDetector.getNameExperiment();
         else if (cellDetector!=null) this.experimentName = cellDetector.getNameExperiment();
@@ -122,10 +122,10 @@ public class Experiment {
         this.spotsInNucleiTable.set(index,spotsInNucleiTable);
         this.spotsInCellsTable.set(index,spotsInCellsTable);
         this.spotsInCytoplasmsTable.set(index, spotsInCytoplasmsTable);
-        IJ.log("experiment set Spots tables at index "+index);
-        if(spotsInNucleiTable!=null) IJ.log("spots in nuclei size:"+spotsInNucleiTable.size());
-        if(spotsInCellsTable!=null) IJ.log("spots in nuclei size:"+spotsInCellsTable.size());
-        if(spotsInCytoplasmsTable!=null) IJ.log("spots in nuclei size:"+spotsInCytoplasmsTable.size());
+        //IJ.log("experiment set Spots tables at index "+index);
+        //if(spotsInNucleiTable!=null) IJ.log("spots in nuclei size:"+spotsInNucleiTable.size());
+        //if(spotsInCellsTable!=null) IJ.log("spots in nuclei size:"+spotsInCellsTable.size());
+        //if(spotsInCytoplasmsTable!=null) IJ.log("spots in nuclei size:"+spotsInCytoplasmsTable.size());
     }
 
     public void setSummaryTable(ResultsTable summary,boolean onlyPositive4Spots) {
@@ -146,7 +146,7 @@ public class Experiment {
      * @return true if everything worked
      */
     public boolean run() {
-        IJ.log("start experiment");
+        IJ.log("--    start experiment    --");
         Instant dateBegin = Instant.now(); /*get starting time*/
 //        PREPARE NECESSARY IMAGES FOR MEASUREMENTS
         if(!preprocess()) return false;
@@ -157,7 +157,7 @@ public class Experiment {
                 cytoDetector = prepareCytoplams();
         }
 
-        IJ.log("measurements launch");
+        IJ.log("# measurements launch");
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
         measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
@@ -197,7 +197,7 @@ public class Experiment {
                 }
             }else{
                 Roi[] roisNuclei= nuclei.getRoiArray();
-                RoiManager rm=RoiManager.getInstance();
+                RoiManager rm=RoiManager.getRoiManager();
                 rm.reset();
                 if(roisNuclei!=null) for (int i = 0; i < roisNuclei.length; i++) {
                     roisNuclei[i].setName("Nuclei_"+(i+1));
@@ -216,17 +216,17 @@ public class Experiment {
     public boolean preprocess(){
         //        --> Cells images
         if (cell !=null && !interrupt){
-            IJ.log("Cell/Cytoplasm image: "+ cell.getImageTitle());
+            IJ.log("## Cell/Cytoplasm image: "+ cell.getImageTitle());
             cell.setMeasureCalibration(measureCalibration);
             if (!cell.prepare()) {
                 interrupt=true;
                 return false;
             }
-            IJ.log("Cell/Cytoplasm image: "+ (cell.getRoi3D()!=null?"3D":"2D"));
+            IJ.log("## Cell/Cytoplasm Annalysis: "+ (cell.getRoi3D()!=null? cell.getRoi3D().getNbObjects()+" cells (3D)":cell.getRoiArray().length+" cells (2D)") );
         }
 //        --> Nuclei images
         if (nuclei!=null && !interrupt){
-            IJ.log("Nuclei image: "+nuclei.getImageTitle());
+            IJ.log("## Nuclei image: "+nuclei.getImageTitle());
             nuclei.setMeasureCalibration(measureCalibration);
             if (!nuclei.prepare()) {
                 interrupt=true;
@@ -238,19 +238,20 @@ public class Experiment {
         for (int i = 0; i < spots.size(); i++) {
             if (!interrupt && spots.get(i)!=null){
                 SpotDetector spot = spots.get(i);
-                IJ.log("Quantification channel "+(i+1)+ " image:" + spot.getImageTitle());
+                IJ.log("## Quantification channel "+(i+1)+ " image:" + spot.getImageTitle());
                 spot.setMeasureCalibration(measureCalibration);
                 if (!spot.prepare()) {
                     interrupt=true;
                     return false;
                 }
-                IJ.log("experiment preprocess spot "+i+" imagetomeasure"+spot.getImageToMeasure().getNSlices()+" slices");
+                //IJ.log("experiment preprocess spot "+i+" imagetomeasure"+spot.getImageToMeasure().getNSlices()+" slices");
             }
         }
         return true;
     }
 
     public CytoDetector prepareCytoplams(){
+        IJ.log("## prepare cytoplasm");
         CytoDetector cytoDetector = null;
         Roi[] cellRois = null;
         int numberOfObject = -1;

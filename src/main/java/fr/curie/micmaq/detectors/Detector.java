@@ -14,20 +14,15 @@ import ij.plugin.filter.EDM;
 import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.*;
-import mcib3d.geom2.BoundingBox;
-import mcib3d.geom2.Object3DInt;
-import mcib3d.geom2.Object3DPlane;
-import mcib3d.geom2.Objects3DIntPopulation;
+import mcib3d.geom2.*;
 import mcib3d.image3d.ImageHandler;
 import mcib_plugins.Manager3D.ImportImage;
 
 import java.awt.*;
 import java.awt.image.IndexColorModel;
 import java.io.File;
+import java.util.*;
 import java.util.List;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 
 
 /**
@@ -72,7 +67,7 @@ public class Detector {
      */
     public Detector(ImagePlus image, String nameObject) {
         this.image = image;
-        IJ.log("detector constructor "+ image.getNSlices() +" slices");
+        //IJ.log("detector constructor "+ image.getNSlices() +" slices");
 //        this.image = image.duplicate();
         this.nameImage = image.getTitle().replaceAll("[\\\\/:,;*?\"<>|]","_");
         this.nameObject = nameObject;
@@ -119,6 +114,7 @@ public class Detector {
         this.thresholdMethod = thresholdMethod + ((darkBg)? " dark":"");
         this.excludeOnEdges = excludeOnEdges;
         this.minSizeParticle = minSizeParticle;
+        //IJ.log("detector : threshold "+minSizeParticle+"px min");
     }
 
     public void setThresholdParameters(String thresholdMethod, double minThreshold, double maxThreshold, boolean excludeOnEdges,boolean darkBg, double minSizeParticle) {
@@ -131,6 +127,14 @@ public class Detector {
 
 //    GETTER
 
+
+    public double getMinSizeParticle() {
+        return minSizeParticle;
+    }
+
+    public String getThresholdMethod() {
+        return thresholdMethod;
+    }
 
     /**
      * returns a copy of original image
@@ -151,7 +155,7 @@ public class Detector {
      * @return
      */
     public ImagePlus getImageQuantification() {
-        IJ.log("detector getimage quantif "+image.getNSlices()+" slices");
+        //IJ.log("detector getimage quantif "+image.getNSlices()+" slices");
         //if (image.getNSlices() > 1) projection();
         //System.out.println("detector getimage quantif preprocess macro: "+quantifMacro);
         if (quantifMacro != null && !quantifMacro.isEmpty()) {
@@ -170,10 +174,10 @@ public class Detector {
                 temp.close();
             }
             if(temp.isVisible()) temp.hide();
-            IJ.log("detector getimage quantif with macro: "+imageToReturn.getNSlices()+" slices");
+            //IJ.log("detector getimage quantif with macro: "+imageToReturn.getNSlices()+" slices");
             return imageToReturn;
         }
-        IJ.log("detector getimage quantif without macro: "+image.getNSlices()+" slices");
+        //IJ.log("detector getimage quantif without macro: "+image.getNSlices()+" slices");
         return image.duplicate();
     }
 
@@ -274,13 +278,14 @@ public class Detector {
     public ImagePlus getThresholdMask(ImagePlus image){
         return thresholdImage(image);
     }
-    private ImagePlus thresholdImage(ImagePlus image) {
-        ImagePlus result = image.duplicate();
+
+    public double getThresholdValue(ImagePlus image){
         ImageStatistics stats;
-        if (result.getNSlices() > 1) {
-            stats = new StackStatistics(result);
+        if (image.getNSlices() > 1) {
+            IJ.log("detector determine threshold value from stack histogram");
+            stats = new StackStatistics(image);
         } else {
-            stats = result.getStatistics();
+            stats = image.getStatistics();
         }
 
         double threshold;
@@ -293,6 +298,12 @@ public class Detector {
             threshold = minThreshold;
             IJ.log("User threshold = " + threshold);
         }
+        return threshold;
+    }
+
+    private ImagePlus thresholdImage(ImagePlus image) {
+        ImagePlus result = image.duplicate();
+        double threshold = getThresholdValue(image);
 
         ImageStack stack = result.getStack();
         for (int z = 1; z <= stack.getSize(); z++) {
@@ -314,6 +325,39 @@ public class Detector {
         }
         renameImage(result, "binary_mask");
         return result;
+    }
+
+
+    public Objects3DIntPopulation fixThreshold3DObjects(Objects3DIntPopulation pop){
+        Objects3DIntPopulation fixed = new Objects3DIntPopulation();
+        int label = 1;
+        for(Object3DInt obj : pop.getObjects3DInt()){
+            for(Object3DInt component : new Object3DComputation(obj).getConnexComponents()){
+                Object3DInt corrected = new Object3DInt(label);
+                List<Object3DPlane> planes = component.getObject3DPlanes();
+                for(Object3DPlane plane : planes) corrected.addPlane(plane);
+                corrected.setLabel(label++);
+                fixed.addObject(corrected);
+            }
+        }
+        return fixed;
+    }
+
+
+
+    public Objects3DIntPopulation filterWithSize3D(Objects3DIntPopulation pop) {
+        Objects3DIntPopulation fixed = new Objects3DIntPopulation();
+        int val = 1;
+        for(Object3DInt obj: pop.getObjects3DInt()) {
+            //IJ.log("filterWithSize3DObjects obj.size()="+obj.size() + " VS " + minSizeParticle);
+            if(obj.size() >= minSizeParticle) {
+                obj.setLabel(val);
+                fixed.addObject(obj);
+                val++;
+            }
+        }
+        //IJ.log("detector filterWithSize3DObjects fixed.getNbObjects()="+fixed.getNbObjects()+ "VS " + (--val));
+        return fixed;
     }
 
     public RoiManager maskToRoiManager(ImagePlus binaryMask) {
@@ -479,7 +523,7 @@ public class Detector {
      * @return ImagePlus with an intensity per object
      */
     public static ImagePlus labeledImage3D(int imageWidth, int imageHeight,int nslices,Objects3DIntPopulation rois3D,String name) {
-        IJ.log("detector labeledImage3D n slices = "+nslices);
+        //IJ.log("detector labeledImage3D n slices = "+nslices);
         /*ImageStack is=new ImageStack(image.getWidth(), image.getHeight());
         for(int z=1;z<=image.getNSlices();z++){
             is.addSlice(new ShortProcessor(image.getWidth(),image.getHeight()));
@@ -751,7 +795,7 @@ public class Detector {
      * @param type to signal the compartment
      */
     public static void saveMasks(String resultsDirectory, ImagePlus labeledImage,String type, String step){
-        IJ.log("save mask "+ labeledImage.getNSlices());
+        //IJ.log("save mask "+ labeledImage.getNSlices());
         File dir=new File(resultsDirectory + "/Images/"+step+"/");
         if(!dir.exists()) dir.mkdirs();
         IJ.saveAsTiff(labeledImage,resultsDirectory + "/Images/"+step+"/" + type +"_" +labeledImage.getTitle()+".tif");

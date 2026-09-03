@@ -1026,7 +1026,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         for (int i = 0; i < channelPanels.size(); i++) {
             ChannelPanel cp = channelPanels.get(i);
             if (cp.isUsed() && cp.isNuclei()) {
-                System.out.println("nuclei channel: " + (i + 1));
+                IJ.log("channel: " + (i + 1)+" is used for Nuclei segmentation");
                 SegmentationParameters params = nucleiParam.getParameters();
                 if (params.getMethod() == SegmentationParameters.CELLPOSE) {
                     //@TODO
@@ -1043,18 +1043,21 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationNuclei(i + 1, params);
                 if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
-                    System.out.println("channel " + (i + 1) + "there should be projection!");
+                    IJ.log("channel " + (i + 1) + " is 3D");
                     if (checkproj[0]) {
-                        System.out.println("set projection to the one from quantification");
+                        IJ.log("set projection to the one from quantification");
                         params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
                     } else {
-                        System.out.println("do nothing (should be in macro)!");
+                        IJ.log("compute in 3D or projection in macro");
                     }
+                }else{
+                    String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                    IJ.log("channel " + (i + 1) + " is 2D " + stackdata);
                 }
                 nucleus = true;
             }
             if (cp.isUsed() && cp.isCell()) {
-                System.out.println("cell channel: " + (i + 1));
+                IJ.log("channel: " + (i + 1)+" is used for Cell segmentation");
                 SegmentationParameters params = cellParam.getParameters();
                 if (params.getMethod() == SegmentationParameters.CELLPOSE) {
                     //@TODO
@@ -1070,19 +1073,22 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 params.setPreprocessMacroQuantif(quantifPanel.getMacro(i + 1));
                 settings.setSegmentationCell(i + 1, params);
                 if (!params.isZproject() && imgs.getNSlices(i + 1) > 1) {
-                    System.out.println("channel " + (i + 1) + "there should be projection!");
+                    System.out.println("channel " + (i + 1) + " is 3D");
                     if (checkproj[0]) {
                         IJ.log("set projection to the one from quantification");
                         params.setProjection(tmp.getProjectionMethod(), tmp.getProjectionSliceMin(), tmp.getProjectionSliceMax());
                     } else {
-                        IJ.log("do nothing (should be in macro)!");
+                        IJ.log("computes in 3D or projection in macro");
                     }
+                }else{
+                    String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                    IJ.log("channel " + (i + 1) + " is 2D " + stackdata);
                 }
                 cell = true;
             }
             if (cp.isUsed()) {
                 System.out.println("quantification channel: " + (i + 1));
-                IJ.log("MIC-MAQ: create experiment: quantification channel: " + (i + 1) + " is spot " + cp.isSpot());
+                IJ.log("channel: " + (i + 1) + " (quantification) is spot " + cp.isSpot());
                 //IJ.log("number of slices: " + imgs.getNSlices(i + 1));
                 MeasureValue measureValue = new MeasureValue(false);
                 if (cp.isSpot()) {
@@ -1091,15 +1097,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         measureValue = sp.getMeasure();
                         MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
                         if (!measureValue.isZproject() && imgs.getNSlices(i + 1) > 1) {
-                            IJ.log("channel " + (i + 1) + "there should be projection!");
+                            IJ.log("channel " + (i + 1) + " is 3D");
                             if (tmp.isZproject() && checkproj[0]) {
-                                IJ.log("set projection to the one from quantification");
+                                IJ.log("channel " + (i + 1) + " uses projection for quantification (including spots)");
                                 measureValue.setProjection(tmp.getProjectionMethod());
                                 measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
                                 measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
                             } else {
-                                IJ.log("do nothing (should be in macro)!");
+                                IJ.log("channel " + (i + 1) + " quantification in 3D or projection in macro");
                             }
+                        }else{
+                            String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                            IJ.log("channel " + (i + 1) + " is 2D for quantification " + stackdata);
                         }
                     }
                     //} else if (!cp.isNuclei() && !cp.isCell()) {
@@ -1108,13 +1117,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     if (imgs.getNSlices(i + 1) > 1) {
                         MeasureValue tmp = quantifPanel.getMeasuresQuantif(i + 1);
                         if (tmp.isZproject() && checkproj[0]) {
-                            IJ.log("set projection to the one from quantification");
+                            IJ.log("channel " + (i + 1) + " is 3D");
+                            IJ.log("channel " + (i + 1) + " uses projection for quantification");
                             measureValue.setProjection(tmp.getProjectionMethod());
                             measureValue.setProjectionSliceMin(tmp.getProjectionSliceMin());
                             measureValue.setProjectionSliceMax(tmp.getProjectionSliceMax());
-                            IJ.log("C" + (i + 1) + " quantification without spots: 3D -> set projection to the one defined in quantification");
+                            //IJ.log("C" + (i + 1) + " quantification without spots: 3D -> set projection to the one defined in quantification");
                         } else {
-                            IJ.log("do nothing (should be in macro)!");
+                            IJ.log("channel " + (i + 1) + " quantification in 3D or projection in macro");
                         }
 
                     }
@@ -1131,6 +1141,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         }
 
         settings.setCalibration((MeasureCalibration) calibrationCombo.getSelectedItem());
+        IJ.log("------");
         IJ.log("using calibration " + calibrationCombo.getSelectedItem());
         if (cellResults == null) cellResults = new ResultsTable();
         if (nucleus && cell && nucleusResults == null) nucleusResults = new ResultsTable();
@@ -1141,31 +1152,32 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             exp.setSummaryTable(summary, onlyPositive4Spots);
         }
         if (spotPanels != null) {
-            IJ.log("there are spots");
+            //IJ.log("there are spots");
             for (int s = 0; s < spotPanels.size(); s++) {
                 if (spotPanels.get(s) != null) {
-                    IJ.log("spots for channel " + (s + 1));
+                    //IJ.log("spots for channel " + (s + 1));
                     if (spotsInNuclei == null) spotsInNuclei = new ResultsTable[spotPanels.size()];
                     if (spotsInCells == null) spotsInCells = new ResultsTable[spotPanels.size()];
                     if (spotsInCyto == null) spotsInCyto = new ResultsTable[spotPanels.size()];
                     if (nucleus && spotsInNuclei[s] == null) {
-                        IJ.log("create result table for spots in nuclei");
+                        //IJ.log("create result table for spots in nuclei");
                         spotsInNuclei[s] = new ResultsTable();
                     }
                     if (cell && spotsInCells[s] == null) {
-                        IJ.log("create result table for spots in cells");
+                        //IJ.log("create result table for spots in cells");
                         spotsInCells[s] = new ResultsTable();
                     }
                     if (nucleus && cell && spotsInCyto[s] == null) {
-                        IJ.log("create result table for spots in cytoplasms");
+                        //IJ.log("create result table for spots in cytoplasms");
                         spotsInCyto[s] = new ResultsTable();
                     }
-                    IJ.log("set tables in experiments");
+                    //IJ.log("set tables in experiments");
                     exp.setSpotsTables(s, spotsInNuclei[s], spotsInCells[s], spotsInCyto[s]);
                 }
             }
         }
         IJ.log("create experiment finished");
+        IJ.log("---------------------------");
         return exp;
     }
 

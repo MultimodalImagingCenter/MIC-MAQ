@@ -8,16 +8,17 @@ import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.*;
 import ij.io.FileSaver;
+import ij.measure.Calibration;
 import ij.measure.ResultsTable;
+import ij.plugin.GaussianBlur3D;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
-import ij.process.Blitter;
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
-import ij.process.StackStatistics;
+import ij.process.*;
 import mcib3d.geom2.*;
-import mcib3d.image3d.ImageByte;
-import mcib3d.image3d.ImageHandler;
+import mcib3d.image3d.*;
+import mcib3d.image3d.distanceMap3d.EDT;
+import mcib3d.image3d.processing.FastFilters3D;
+import mcib3d.image3d.regionGrowing.Watershed3D;
 import mcib_plugins.Manager3D.ImportImage;
 
 import java.awt.*;
@@ -311,7 +312,7 @@ public class NucleiDetector {
     }
 
     public int getNumberOfNuclei(){
-        IJ.log("nucleidetector getNbCells "+ roi3Ds);
+        //IJ.log("nucleidetector getNbCells "+ roi3Ds);
         if(roi3Ds !=null) return roi3Ds.getNbObjects();
         else if(nucleiRois!=null) return nucleiRois.length;
         else return 0;
@@ -336,6 +337,8 @@ public class NucleiDetector {
      * - show result labeled image
      */
     public void preview(){
+        boolean bkp=showBinaryImage;
+        showBinaryImage = true;
         prepare(true);
         if(isExpand4Cells()){
             ArrayList<Roi[]> expanded=getExpandedRois();
@@ -348,6 +351,7 @@ public class NucleiDetector {
             }
             rm.runCommand("Show All");
         }
+        showBinaryImage = bkp;
     }
 
     public boolean prepare(){
@@ -364,38 +368,36 @@ public class NucleiDetector {
      * @return true if no error
      */
     public boolean prepare(boolean preview){
-        IJ.log("nuclei detector prepare "+macroSegmentation);
+        //IJ.log("nuclei detector prepare "+macroSegmentation);
 
 
 //        PREPROCESSING
        // System.out.println("nuclei detector prepare macro preprocess: "+getPreprocessingMacro());
         preprocessed = getPreprocessing();
         if (preprocessed!=null){
-            ArrayList<Object> segtmp = runSegmentation(preprocessed);
+            ArrayList<Object> segtmp = runSegmentation(preprocessed, preview);
             labeledImage = (ImagePlus) segtmp.get(0);
-            IJ.log("label image max "+new StackStatistics(labeledImage).max);
-            IJ.log("label image nslices "+labeledImage.getNSlices());
+            IJ.log("label image nslices "+labeledImage.getNSlices()+ " with a maximum value of "+new StackStatistics(labeledImage).max);
             RoiManager roiManagerNuclei = (RoiManager) segtmp.get(1);
             roi3Ds = (Objects3DIntPopulation) segtmp.get(2);
-            if(roi3Ds!=null) IJ.log("nucleidetector analyse cellpose roi3D:"+roi3Ds.getNbObjects());
+            if(roi3Ds!=null) IJ.log("nucleidetector analyse nb of roi3D:"+roi3Ds.getNbObjects());
             String analysisType = (String) segtmp.get(3);
 
-            IJ.log("should do exclude on edge "+excludeOnEdges);
+            //IJ.log("should do exclude on edge "+excludeOnEdges);
             if(excludeOnEdges) {
                 if(labeledImage.getNSlices()>1) {
-                    IJ.log("exclude on edge on 3D data");
-                    IJ.log("before nb rois3D "+roi3Ds.getNbObjects());
+                    int previousRoiCount = roi3Ds.getNbObjects();
                     if(Detector.excludeOnEdgesRois(image,roi3Ds)) labeledImage = Detector.labeledImage3D( labeledImage.getWidth(), labeledImage.getHeight(), labeledImage.getNSlices(), roi3Ds,nameExperiment+analysisType+"_Nuclei");
-                    IJ.log("after nb rois3D "+roi3Ds.getNbObjects());
+                    IJ.log("exclude on edge 3D : from "+previousRoiCount+" to "+roi3Ds.getNbObjects()+" ROIs");
 
                 }else if(Detector.excludeOnEdgesRois(image,roiManagerNuclei)){
-                    IJ.log("before nb rois2D "+roiManagerNuclei.getCount());
+                    int previousRoiCount = roiManagerNuclei.getCount();
                     labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
-                    IJ.log("after nb rois2D "+roiManagerNuclei.getCount());
+                    IJ.log("exclude on edge 2D : from "+previousRoiCount+" to "+roiManagerNuclei.getCount()+" ROIs");
                 }
             }
 
-            if (showBinaryImage){
+            if (preview){
                 //IJ.log("show binary image "+labeledImage.getNSlices());
                 labeledImage.show();
                 labeledImage.setDisplayRange(0,roiManagerNuclei.getCount()+5);
@@ -430,7 +432,7 @@ public class NucleiDetector {
             return true;
         }else return false;
     }
-    public ArrayList<Object> runSegmentation(ImagePlus preprocessed ){
+    public ArrayList<Object> runSegmentation(ImagePlus preprocessed , boolean preview){
          /*if no error during preprocessing*/
             if (showPreprocessingImage){
                 preprocessed.show();
@@ -498,14 +500,32 @@ public class NucleiDetector {
                     labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
                 }
             }else {//threshold
-                IJ.log("run threshold");
+                //IJ.log("run threshold");
                 analysisType = "threshold";
-                thresholding(preprocessed);
                 // Analyse particle
-                roiManagerNuclei =detector.analyzeParticles(imageToParticleAnalyze);
-                labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                if(preprocessed.getNSlices()>1) {
+                    IJ.log("run threshold on 3D data");
+                    roi3Ds = thresholding3D(preprocessed,preview);
+                    ImageStack stack = new ImageStack(preprocessed.getWidth(), preprocessed.getHeight());
+                    for (int i = 0; i < preprocessed.getNSlices(); i++) {
+                        if(roi3Ds.getNbObjects()<255) stack.addSlice(new ByteProcessor(preprocessed.getWidth(),preprocessed.getHeight()));
+                        else stack.addSlice(new ShortProcessor(preprocessed.getWidth(),preprocessed.getHeight()));
+                    }
+
+                    labeledImage = new ImagePlus("label threshold 3D",stack);
+                    roi3Ds.drawInImage(ImageHandler.wrap(labeledImage));
+                    roiManagerNuclei = SpotDetector.createThreshold3DRoiManager(roi3Ds.getObjects3DInt(), "Nuclei_");
+
+                }else {
+                    IJ.log("run threshold on 2D data");
+                    thresholding(preprocessed);
+                    roiManagerNuclei = detector.analyzeParticles(imageToParticleAnalyze);
+                    IJ.log("separate objects from binary image " + roiManagerNuclei.getCount() + " Nucleis");
+                    labeledImage = detector.labeledImage(roiManagerNuclei.getRoisAsArray());
+                }
+
             }
-        IJ.log("end seg label image max "+new StackStatistics(labeledImage).max);
+        //IJ.log("end seg label image max "+new StackStatistics(labeledImage).max);
         ArrayList<Object> returnList = new ArrayList<>();
         returnList.add(labeledImage);
         returnList.add(roiManagerNuclei);
@@ -529,15 +549,94 @@ public class NucleiDetector {
 
         if (useWatershed){
             ImagePlus watershed_mask = detector.getWatershed(mask_IP.getProcessor());
-            detector.renameImage(watershed_mask,"watershed");
-            if (showBinaryImage){
-                watershed_mask.show();
+
+            if(watershed_mask == null) {
+                imageToParticleAnalyze = mask_IP;
+            }else {
+                detector.renameImage(watershed_mask, "watershed");
+                if (showBinaryImage) {
+                    watershed_mask.show();
+                }
+                imageToParticleAnalyze = watershed_mask;
             }
-            imageToParticleAnalyze = watershed_mask;
         }else {
             imageToParticleAnalyze = mask_IP;
         }
     }
+
+    public Objects3DIntPopulation thresholding3D(ImagePlus imagePlus, boolean preview){
+        ImagePlus thresholdIP = detector.getThresholdMask(imagePlus);
+        ImagePlus watershed = (useWatershed) ? watershedSplit3D(thresholdIP, preview) : thresholdIP;
+        Objects3DIntPopulation threshold3DObjects = null;
+        if(useWatershed){
+            threshold3DObjects = detector.maskToObjects3D(watershed);
+        }else{
+            Objects3DIntPopulation pop = detector.maskToObjects3D(thresholdIP);
+            threshold3DObjects = detector.fixThreshold3DObjects(pop);
+            IJ.log("Separate object from binary ("+pop.getNbObjects()+" values) gives: " + threshold3DObjects.getNbObjects()+" objects");
+        }
+
+        /*StackStatistics stats = new StackStatistics(watershed);
+        IJ.log("watershed min=" + stats.min);
+        IJ.log("watershed max=" + stats.max);
+        Objects3DIntPopulation pop = detector.maskToObjects3D(watershed);
+        IJ.log("watershed population=" + pop.getNbObjects());
+*/
+
+
+        threshold3DObjects = detector.filterWithSize3D(threshold3DObjects);
+        int numberObjects = threshold3DObjects.getNbObjects();
+        IJ.log("After filtering with size "+ detector.getMinSizeParticle() +" nb objects left =" + numberObjects);
+       /* for(Object3DInt obj : threshold3DObjects.getObjects3DInt()){
+
+            BoundingBox bb = obj.getBoundingBox();
+
+            for(int z = bb.zmin; z <= bb.zmax; z++){
+                IJ.log("z=" + z +"\t bbox["+bb.zmin+", "+bb.zmax+"]");
+                Object3DPlane plane = obj.getObject3DPlanes().get(z);
+
+                if(plane == null){
+                    IJ.log("NULL PLANE");
+                    IJ.log("label=" + obj.getLabel());
+                    IJ.log("z=" + z);
+                    IJ.log("bbox=" + bb);
+                }
+            }
+        }*/
+
+        return threshold3DObjects;
+    }
+
+    public ImagePlus watershedSplit3D(ImagePlus imagePlus, boolean showWatershed){
+        ImageInt imgMask = ImageInt.wrap(imagePlus);
+        Calibration cal = imagePlus.getCalibration();
+
+        IJ.log("Computing EDT");
+        ImageFloat edt = EDT.run(imgMask, 0.0F, (float) cal.pixelWidth, (float)cal.pixelDepth, false, 0);
+        ImageHandler edt16 = edt.convertToShort(true);
+        IJ.log("Smoothing EDT");
+        ImagePlus edt16Plus = edt16.getImagePlus();
+        GaussianBlur3D.blur(edt16Plus, (double)2.0F, (double)2.0F, (double)2.0F);
+        edt16 = ImageInt.wrap(edt16Plus);
+        edt16.intersectMask(imgMask);
+        if(showWatershed) edt16.show("EDT");
+        ImageHandler seedsImg;
+
+        IJ.log("computing seeds as max local of EDT");
+        seedsImg = FastFilters3D.filterImage(edt16, 4, 2, 2, 2, 0, false);
+
+
+        IJ.log("Computing watershed");
+        Watershed3D water = new Watershed3D(edt16, seedsImg, (double)0.0F, 0);
+        water.setLabelSeeds(true);
+        water.setAnim(false);
+        //water.getWatershedImage3D().show("Split");
+        ImagePlus watershedImg = water.getWatershedImage3D().getImagePlus();
+        watershedImg.setTitle("Watershed3D");
+        if(showWatershed) watershedImg.show();
+        return watershedImg;
+    }
+
 
 
 

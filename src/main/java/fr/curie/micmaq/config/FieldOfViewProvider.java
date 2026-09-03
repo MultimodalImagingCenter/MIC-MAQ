@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 
 public class FieldOfViewProvider {
+    boolean debug = false;
     String directory;
     int nucleiChannel = -1;
     int cellChannel = -1;
@@ -131,7 +132,7 @@ public class FieldOfViewProvider {
                     System.out.println("\t"+"nb image (metadata)=" + imd.getImageCount());
                     dateEnd = Instant.now();
                     duration = Duration.between(dateBegin, dateEnd).toMillis();
-                    IJ.log("\t"+"get infos from metadata " + duration / 1000.0 + " seconds");
+                    if(debug) IJ.log("\t"+"get infos from metadata " + duration / 1000.0 + " seconds");
                     for (int i = 0; i < imd.getImageCount(); i++) {
                         System.out.println("\t\t"+"nb channel (metadata)=" + imd.getChannelCount(i));
                     }
@@ -145,7 +146,7 @@ public class FieldOfViewProvider {
                         fields.add(fov);
                         Instant dateEnd2 = Instant.now();
                         long duration2 = Duration.between(dateBegin2, dateEnd2).toMillis();
-                        IJ.log("\t"+"adding field " + i + ":    " + duration2 / 1000.0 + " seconds");
+                        if(debug) IJ.log("\t"+"adding field " + i + ":    " + duration2 / 1000.0 + " seconds");
                     }
 
                 } catch (FormatException e) {
@@ -169,7 +170,7 @@ public class FieldOfViewProvider {
     }
 
     public void checkChannels() {
-        IJ.log("check channels");
+        IJ.log("## check channels ##");
         validIndex=0;
         differentNumberOfChannels = new ArrayList<>();
         for (FieldOfView fov : fields) {
@@ -193,7 +194,7 @@ public class FieldOfViewProvider {
     }
 
     public ArrayList<MeasureCalibration> checkCalibration() {
-        IJ.log("check calibration");
+        IJ.log("## check calibration ##");
         ArrayList<MeasureCalibration> differentNumberOfCalibration = new ArrayList<>();
         for (FieldOfView fov : fields) {
             double calib = fov.getPixelSize(1);
@@ -221,7 +222,7 @@ public class FieldOfViewProvider {
     }
 
     public void reorganiseFiles(final String filePattern, final ArrayList<String> patterns) {
-        IJ.log("reorganise files " + directory);
+        IJ.log("## reorganise files " + directory);
         fields = new ArrayList<>();
         File dir = new File(directory);
         FilenameFilter filter = new FilenameFilter() {
