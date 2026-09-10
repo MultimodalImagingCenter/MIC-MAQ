@@ -51,6 +51,7 @@ public class CellDetector {
     private double cellposeCellproba_threshold; /* threshold for cell probability in cellpose*/
     private String cellposeModel; /*model to be used by cellpose*/
     private boolean excludeOnEdges; /*exclude the cells on the edge*/
+    private String CellposeFlags= "";
 
     //    Cytoplasm parameters
     private NucleiDetector nucleiDetector; /*Object associated to nuclei images */
@@ -177,6 +178,15 @@ public class CellDetector {
         this.finalValidation = finalValidation;
         this.showBinaryImage = showBinaryImage;
     }
+
+    public String getCellposeFlags() {
+        return CellposeFlags;
+    }
+
+    public void setCellposeFlags(String cellposeFlags) {
+        CellposeFlags = cellposeFlags;
+    }
+
     public void setMacroSegmentation(String macro, boolean outputRoiManager, boolean outputImage, boolean excludeOnEdges){
         this.macroSegmentation = true;
         this.segmentationMacro=macro;
@@ -299,6 +309,7 @@ public class CellDetector {
             }
         } else {
             analysisType = "Cellpose segmentation";
+            IJ.log("nslices "+preprocessed.getNSlices());
             ArrayList<Object> data= runCellposeSegmentation(preprocessed);
             labeledImage = (ImagePlus) data.get(0);
             roiManagerCell = (RoiManager) data.get(1);
@@ -474,6 +485,8 @@ public class CellDetector {
         } else {/*No nuclei channel*/
             cellposeLauncher = new CellposeLauncher(imageToReturn, minSizeCell, cellposeCellproba_threshold, cellposeModel, excludeOnEdges);
         }
+        //TODO : set flags
+        cellposeLauncher.setFlags(getCellposeFlags());
 //            Launch Cellpose
         cellposeLauncher.analysis();
 //            Get cellpose mask and roiManager

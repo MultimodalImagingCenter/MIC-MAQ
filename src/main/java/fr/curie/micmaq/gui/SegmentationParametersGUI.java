@@ -80,6 +80,20 @@ public class SegmentationParametersGUI {
     private JCheckBox resultIsInRoiManagerCheckBox;
     private JCheckBox resultIsAnInstanceCheckBox;
     private JCheckBox savePreprocessedImageCheckBox;
+    private JSpinner cellposeBatchSizeSpinner;
+    private JSpinner cellposeNiterSpinner;
+    private JSpinner cellposeMinSizeSpinner;
+    private JSpinner cellposeFlow3DSmoothSpinner;
+    private JSpinner cellposeStitchThrSpinner;
+    private JSpinner cellposeAnisotropySpinner;
+    private JCheckBox stich_thresholdCheckBox;
+    private JCheckBox expertModeCheckBox;
+    private JLabel cellposeAnisotropyLabel;
+    private JLabel cellposeNiterLabel;
+    private JLabel cellposeBatchSizeLabel;
+    private JLabel cellposeMinSizeLabel;
+    private JLabel cellposeCellprobLabel;
+    private JPanel cellpose3DPanel;
 
     private File cellposeModelPath;
     private File stardistModelPath;
@@ -89,6 +103,8 @@ public class SegmentationParametersGUI {
     public static String CELL_CYTO = "cells_cyto";
     protected String type;
     protected MeasureValue measures;
+
+    protected boolean is3Dprocessing = false;
 
 
     public SegmentationParametersGUI(FieldOfViewProvider imageProvider, String type) {
@@ -109,6 +125,8 @@ public class SegmentationParametersGUI {
 
         starDistRadioButton.setVisible(true);
         otherRadioButton.setSelected(false);
+        cellposeExpertMode(false);
+        updateGuiDisplayFor3D();
 
         if (type.equals(NUCLEI)) {
             setMeasurementsButton.setText("set measurements for nuclei");
@@ -297,6 +315,12 @@ public class SegmentationParametersGUI {
                 spinnerExpansionRadius.setEnabled(estimateCellsByNucleiCheckBox.isSelected());
             }
         });
+        expertModeCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cellposeExpertMode(expertModeCheckBox.isSelected());
+            }
+        });
     }
 
     public void setType(String type) {
@@ -450,10 +474,10 @@ public class SegmentationParametersGUI {
                                 cellposeModelPathTextField.setText(tmp);
                                 offset++;
                             }
-                            cellposeDiameterSpinner.setValue(new Integer(params.get(i + offset).split(": ")[1]));
+                            cellposeDiameterSpinner.setValue(Integer.valueOf(params.get(i + offset).split(": ")[1]));
                             //System.out.println("diameter: "+params.get(i+offset).split(": ")[1]);
                             offset++;
-                            cellposeCellproba_thresholdSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            cellposeCellproba_thresholdSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             //System.out.println("cellproba: "+params.get(i+offset).split(": ")[1]);
 
                         } else if (params.get(i).endsWith("StarDist:")) {
@@ -472,15 +496,15 @@ public class SegmentationParametersGUI {
                                 stardistModelPathTextField.setText(tmp);
                                 offset++;
                             }
-                            stardistPercentileLowSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            stardistPercentileLowSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistPercentileHighSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            stardistPercentileHighSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistProbaThrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            stardistProbaThrSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistNMSthrSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            stardistNMSthrSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             offset++;
-                            stardistScaleSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            stardistScaleSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
 
                         } else {
                             thresholdingRadioButton.setSelected(true);
@@ -492,7 +516,7 @@ public class SegmentationParametersGUI {
                             }
                             if (index >= 0) thresholdMethodsCB.setSelectedIndex(index);
                             offset++;
-                            thresholdMinSizeSpinner.setValue(new Double(params.get(i + offset).split(": ")[1]));
+                            thresholdMinSizeSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             offset++;
                             useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
                         }
@@ -516,16 +540,16 @@ public class SegmentationParametersGUI {
                     }
 
                     if (params.get(i).startsWith("min size overlap nucleus/cell:")) {
-                        minOverlapSpinner.setValue(new Double(params.get(i).split(": ")[1]));
+                        minOverlapSpinner.setValue(Double.valueOf(params.get(i).split(": ")[1]));
                     }
                     if (params.get(i).startsWith("min size of cytoplasm:")) {
-                        minCytoSizeSpinner.setValue(new Double(params.get(i).split(": ")[1]));
+                        minCytoSizeSpinner.setValue(Double.valueOf(params.get(i).split(": ")[1]));
                     }
                     if (params.get(i).startsWith("expand nuclei:")) {
                         estimateCellsByNucleiCheckBox.setSelected(params.get(i).endsWith("yes"));
                     }
                     if (params.get(i).startsWith("expand radius:")) {
-                        spinnerExpansionRadius.setValue(new Integer(params.get(i).split(": ")[1]));
+                        spinnerExpansionRadius.setValue(Integer.valueOf(params.get(i).split(": ")[1]));
                     }
                 }
 
@@ -549,7 +573,9 @@ public class SegmentationParametersGUI {
                 params.setPathToModel(cellposeModelPath);
                 params.setCellposeModel(cellposeModelPath.getAbsolutePath());
             }
+            params.setCellposeFlags(createCellposeFlags());
             IJ.log("set cellpose model to " + params.getCellposeModel());
+            IJ.log("set cellpose flags " + params.getCellposeFlags());
         } else if (starDistRadioButton.isSelected()) {//StarDist
             boolean loadModel = (stardistModelComboBox.getSelectedItem() != "Model (.zip) from File");
             params = SegmentationParameters.createStarDist((String) stardistModelComboBox.getSelectedItem(),
@@ -562,7 +588,7 @@ public class SegmentationParametersGUI {
             IJ.log("segmentation via macro");
             params = SegmentationParameters.createMacroSegmentation(textAreaMacroSegment.getText(), resultIsInRoiManagerCheckBox.isSelected(), resultIsAnInstanceCheckBox.isSelected());
         }
-        if (isZStackCheckBox.isSelected()) {
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
             params.setProjection(projectionMethodCB.getSelectedIndex());
             if (chooseSlicesToUseCheckBox.isSelected()) {
                 params.setProjectionSliceMin((Integer) sliceMinSpinner.getValue());
@@ -761,7 +787,9 @@ public class SegmentationParametersGUI {
         Prefs.set("MICMAQ.cellposeMethods" + type, (String) cellposeModelCB.getSelectedItem());
         Prefs.set("MICMAQ.cellposeDiameter" + type, (int) cellposeDiameterSpinner.getValue());
         Prefs.set("MICMAQ.cellposeCellproba_threshold" + type, (double) cellposeCellproba_thresholdSpinner.getValue());
-        Prefs.set("MICMAQ.cellposeModelPath" + type, cellposeModelPath.getAbsolutePath());
+        String modelSelected = (String) cellposeModelCB.getSelectedItem();
+        if (modelSelected.equals("own_model"))
+            Prefs.set("MICMAQ.cellposeModelPath" + type, cellposeModelPath.getAbsolutePath());
 
 //        --> stardist
         Prefs.set("MICMAQ.stardistModel" + type, (String) stardistModelComboBox.getSelectedItem());
@@ -788,6 +816,76 @@ public class SegmentationParametersGUI {
 
     }
 
+    public boolean is3Dprocessing() {
+        return is3Dprocessing;
+    }
+
+    public void setIs3Dprocessing(boolean is3Dprocessing) {
+        if (this.is3Dprocessing == is3Dprocessing) return;
+        this.is3Dprocessing = is3Dprocessing;
+        updateGuiDisplayFor3D();
+    }
+
+
+    protected void updateGuiDisplayFor3D() {
+        if (is3Dprocessing) {
+            isZStackCheckBox.setSelected(true);
+            projectionPanel.setVisible(false);
+            cellpose3DPanel.setVisible(true);
+        } else {
+            if (imageProvider.getFieldOfView(imageProvider.getPreviewImage()).getNSlices(type.equals(NUCLEI) ? imageProvider.getNucleiChannel() : imageProvider.getCellChannel()) > 1) {
+                projectionPanel.setVisible(true);
+                isZStackCheckBox.setSelected(true);
+                cellpose3DPanel.setVisible(false);
+            } else {
+                projectionPanel.setVisible(false);
+                isZStackCheckBox.setSelected(false);
+                cellpose3DPanel.setVisible(false);
+            }
+        }
+    }
+
+    private void cellposeExpertMode(boolean expertMode) {
+        cellposeNiterLabel.setEnabled(expertMode);
+        cellposeNiterSpinner.setEnabled(expertMode);
+        cellposeBatchSizeLabel.setEnabled(expertMode);
+        cellposeBatchSizeSpinner.setEnabled(expertMode);
+        cellposeMinSizeLabel.setEnabled(expertMode);
+        cellposeMinSizeSpinner.setEnabled(expertMode);
+        cellposeCellproba_thresholdSpinner.setEnabled(expertMode);
+        cellposeCellprobLabel.setEnabled(expertMode);
+        /*cellposeFlow3DSmoothXSpinner.setEnabled(expertMode);
+        cellposeFlow3DSmoothYSpinner.setEnabled(expertMode);
+        CellposeFlow3DSmoothZSpinner.setEnabled(expertMode);
+        cellposeAnisotropySpinner.setEnabled(expertMode);
+        stich_thresholdCheckBox.setEnabled(expertMode);*/
+    }
+
+    private String createCellposeFlags() {
+        String flags = "";
+        if ((int) cellposeMinSizeSpinner.getValue() != 0) {
+            flags += ", --min_size, " + (int) cellposeMinSizeSpinner.getValue();
+        }
+        if ((int) cellposeNiterSpinner.getValue() != 0) {
+            flags += ", --niter, " + (int) cellposeNiterSpinner.getValue();
+        }
+        if ((int) cellposeBatchSizeSpinner.getValue() != 8) {
+            flags += ", --batch_size, " + (int) cellposeBatchSizeSpinner.getValue();
+        }
+        if (is3Dprocessing) {
+
+            if (stich_thresholdCheckBox.isSelected()) {
+                flags += ", --stitch_threshold, " + (double) cellposeStitchThrSpinner.getValue();
+            } else flags += ", --do_3D";
+            if ((double) cellposeAnisotropySpinner.getValue() != 1.0) {
+                flags += ", --anisotropy, " + (double) cellposeAnisotropySpinner.getValue();
+            }
+            if ((int) cellposeFlow3DSmoothSpinner.getValue() != 0) {
+                flags += ", --flow3D_smooth, " + (int) cellposeFlow3DSmoothSpinner.getValue();
+            }
+        }
+        return flags;
+    }
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
@@ -795,9 +893,16 @@ public class SegmentationParametersGUI {
         thresholdMethodsCB = new JComboBox<>(AutoThresholder.getMethods());
 
         // minSize spinner
-        thresholdMinSizeSpinner = new JSpinner(new SpinnerNumberModel(1000.0, 0.0, Integer.MAX_VALUE, 10.0));
+        thresholdMinSizeSpinner = new JSpinner(new SpinnerNumberModel(1000.0, 0, Integer.MAX_VALUE, 10.0));
+        //cellpose
         cellposeDiameterSpinner = new JSpinner(new SpinnerNumberModel(200, 0, Integer.MAX_VALUE, 10));
         cellposeCellproba_thresholdSpinner = new JSpinner(new SpinnerNumberModel(0.0, -6.0, 6.0, 0.1));
+        cellposeMinSizeSpinner = new JSpinner(new SpinnerNumberModel(0, -1, Integer.MAX_VALUE, 1));
+        cellposeNiterSpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+        cellposeBatchSizeSpinner = new JSpinner(new SpinnerNumberModel(8, 1, 1024, 1));
+        cellposeStitchThrSpinner = new JSpinner(new SpinnerNumberModel(0.9, 0.0, 1.0, 0.01));
+        cellposeAnisotropySpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.0, 100.0, 0.1));
+        cellposeFlow3DSmoothSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 100, 1));
 
 //  Text field to filter extension
         sliceMinSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 9999, 1));
@@ -858,6 +963,7 @@ public class SegmentationParametersGUI {
         panel3.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
         panel1.add(panel3, new GridConstraints(0, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, new Dimension(-1, 61), null, null, 0, false));
         isZStackCheckBox = new JCheckBox();
+        isZStackCheckBox.setEnabled(false);
         isZStackCheckBox.setText("is Z-stack?");
         panel3.add(isZStackCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTHWEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         projectionPanel = new JPanel();
@@ -926,7 +1032,7 @@ public class SegmentationParametersGUI {
         useWatershedCheckBox.setText("use watershed");
         thresholdParamsPanel.add(useWatershedCheckBox, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposePanel = new JPanel();
-        cellposePanel.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
+        cellposePanel.setLayout(new GridLayoutManager(6, 6, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(cellposePanel, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
         cellposePanel.setBorder(BorderFactory.createTitledBorder(null, "Cellpose parameters", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         final JLabel label4 = new JLabel();
@@ -954,14 +1060,14 @@ public class SegmentationParametersGUI {
         defaultComboBoxModel2.addElement("deepbacs_cp3");
         defaultComboBoxModel2.addElement("own_model");
         cellposeModelCB.setModel(defaultComboBoxModel2);
-        cellposePanel.add(cellposeModelCB, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposePanel.add(cellposeModelCB, new GridConstraints(0, 1, 1, 5, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposeDiameterLabel = new JLabel();
         cellposeDiameterLabel.setText("diameter (pixels)");
         cellposePanel.add(cellposeDiameterLabel, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        cellposePanel.add(cellposeDiameterSpinner, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposePanel.add(cellposeDiameterSpinner, new GridConstraints(2, 1, 1, 5, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         cellposeOwnModelPanel = new JPanel();
         cellposeOwnModelPanel.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
-        cellposePanel.add(cellposeOwnModelPanel, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        cellposePanel.add(cellposeOwnModelPanel, new GridConstraints(1, 0, 1, 6, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, true));
         final JLabel label5 = new JLabel();
         label5.setText("path to own model");
         cellposeOwnModelPanel.add(label5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -970,10 +1076,54 @@ public class SegmentationParametersGUI {
         browseButton = new JButton();
         browseButton.setText("Browse");
         cellposeOwnModelPanel.add(browseButton, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeCellprobLabel = new JLabel();
+        cellposeCellprobLabel.setText("cellprob_threshold");
+        cellposeCellprobLabel.setToolTipText("cellprob threshold, default is 0, decrease to find more and larger masks");
+        cellposePanel.add(cellposeCellprobLabel, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeCellproba_thresholdSpinner.setToolTipText("cellprob threshold, default is 0, decrease to find more and larger masks");
+        cellposePanel.add(cellposeCellproba_thresholdSpinner, new GridConstraints(3, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellpose3DPanel = new JPanel();
+        cellpose3DPanel.setLayout(new GridLayoutManager(2, 4, new Insets(0, 0, 0, 0), -1, -1));
+        cellposePanel.add(cellpose3DPanel, new GridConstraints(5, 0, 1, 6, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        cellposeStitchThrSpinner.setToolTipText("compute masks in 2D then stitch together masks with IoU>0.9 across planes");
+        cellpose3DPanel.add(cellposeStitchThrSpinner, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeAnisotropyLabel = new JLabel();
+        cellposeAnisotropyLabel.setText("anisotropy");
+        cellposeAnisotropyLabel.setToolTipText("anisotropy of volume in 3D");
+        cellpose3DPanel.add(cellposeAnisotropyLabel, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeAnisotropySpinner.setToolTipText("anisotropy of volume in 3D");
+        cellpose3DPanel.add(cellposeAnisotropySpinner, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        stich_thresholdCheckBox = new JCheckBox();
+        stich_thresholdCheckBox.setText("stich_threshold");
+        stich_thresholdCheckBox.setToolTipText("compute masks in 2D then stitch together masks with IoU>0.9 across planes");
+        cellpose3DPanel.add(stich_thresholdCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeFlow3DSmoothSpinner.setToolTipText("stddev of gaussian for smoothing of dP for dynamics in 3D, default of 0 means no smoothing. If you are seeing increased fragmentation along the Z axis, or ring-artifacts, you can specify increased smoothing in the z-axis by providing a list, e.g. –flow3D_smooth 2 1 1. Pass a list of values to allow smoothing of the ZYX axes independently");
+        cellpose3DPanel.add(cellposeFlow3DSmoothSpinner, new GridConstraints(1, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label6 = new JLabel();
-        label6.setText("cellprob_threshold");
-        cellposePanel.add(label6, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        cellposePanel.add(cellposeCellproba_thresholdSpinner, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        label6.setText("flow3D_smooth");
+        label6.setToolTipText("stddev of gaussian for smoothing of dP for dynamics in 3D, default of 0 means no smoothing. If you are seeing increased fragmentation along the Z axis, or ring-artifacts, you can specify increased smoothing in the z-axis by providing a list, e.g. –flow3D_smooth 2 1 1. Pass a list of values to allow smoothing of the ZYX axes independently");
+        cellpose3DPanel.add(label6, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeNiterLabel = new JLabel();
+        cellposeNiterLabel.setText("niter");
+        cellposeNiterLabel.setToolTipText("niter, number of iterations for dynamics for mask creation, default of 0 means it is proportional to diameter, set to a larger number like 2000 for very long ROIs");
+        cellposePanel.add(cellposeNiterLabel, new GridConstraints(4, 2, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeNiterSpinner.setToolTipText("niter, number of iterations for dynamics for mask creation, default of 0 means it is proportional to diameter, set to a larger number like 2000 for very long ROIs");
+        cellposePanel.add(cellposeNiterSpinner, new GridConstraints(4, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeBatchSizeLabel = new JLabel();
+        cellposeBatchSizeLabel.setText("bach_size");
+        cellposeBatchSizeLabel.setToolTipText("inference batch size. Default: 8");
+        cellposePanel.add(cellposeBatchSizeLabel, new GridConstraints(4, 4, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeBatchSizeSpinner.setToolTipText("inference batch size. Default: 8");
+        cellposePanel.add(cellposeBatchSizeSpinner, new GridConstraints(4, 5, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeMinSizeLabel = new JLabel();
+        cellposeMinSizeLabel.setText("min_size");
+        cellposeMinSizeLabel.setToolTipText("minimum number of pixels per mask, can turn off with -1");
+        cellposePanel.add(cellposeMinSizeLabel, new GridConstraints(3, 4, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        cellposeMinSizeSpinner.setToolTipText("minimum number of pixels per mask, can turn off with -1");
+        cellposePanel.add(cellposeMinSizeSpinner, new GridConstraints(3, 5, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        expertModeCheckBox = new JCheckBox();
+        expertModeCheckBox.setText("expert mode");
+        cellposePanel.add(expertModeCheckBox, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new GridLayoutManager(2, 4, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(panel5, new GridConstraints(8, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));

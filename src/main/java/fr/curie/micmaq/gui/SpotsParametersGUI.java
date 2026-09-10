@@ -8,7 +8,6 @@ import fr.curie.micmaq.config.MeasureValue;
 import fr.curie.micmaq.detectors.SpotDetector;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import ij.IJ;
-import ij.ImagePlus;
 import ij.Prefs;
 import ij.measure.Measurements;
 import ij.process.AutoThresholder;
@@ -66,6 +65,12 @@ public class SpotsParametersGUI {
     private JSpinner spotiflowScaleSpinner;
     private JSpinner spotiflowMinDistSpinner1;
     private JSpinner spotiflowSubPixRadiusSpinner1;
+    private JSpinner maxima3DMinThrSpinner;
+    private JSpinner maxima3DRadiusXYSpinner;
+    private JSpinner maxima3DRadiusZSpinner;
+    private JPanel maxima3DPanel;
+    String[] spotiflowModelOptions3D = {"synth_3d", "smfish_3d", "own_model"};
+    String[] spotiflowModelOptions2D = {"general", "hybiss", "synth_complex", "fluo_live", "own_model"};
 
     protected int channel = -1;
     FieldOfViewProvider imageProvider;
@@ -73,19 +78,23 @@ public class SpotsParametersGUI {
     protected String[] thresholdMethods = null;
 
     SpotDetector spotDetectorLive;
+    boolean is3Dprocessing = false;
 
     public SpotsParametersGUI(FieldOfViewProvider imageProvider, int channel) {
         this.channel = channel;
         this.imageProvider = imageProvider;
         $$$setupUI$$$();
         mainPanel.setBorder(BorderFactory.createTitledBorder("Spot detection parameters for channel " + channel));
-        getPreferences();
 
         projectionPanel.setVisible(isZStackCheckBox.isSelected());
         macroPanel.setVisible(useMacroCodeCheckBox.isSelected());
         //maximaPanel.setVisible(false);
         //thresholdPanel.setVisible(false);
         ((SpinnerNumberModel) minSizeSpinner.getModel()).setMinimum(0);
+
+        updateGuiDisplayFor3D();
+        getPreferences();
+
 
         isZStackCheckBox.addActionListener(new ActionListener() {
             @Override
@@ -333,12 +342,12 @@ public class SpotsParametersGUI {
     public boolean isSpotiflowModelValid() {
         if (!spotiflowCheckBox.isSelected()) return true;
         if (spotiflowModelComboBox.getSelectedIndex() < spotiflowModelComboBox.getItemCount() - 1) {
-            IJ.log("spotiflow model is " + (spotiflowModelComboBox.getSelectedItem().toString()) + " is 3D processing " + is3DProcessing());
+            IJ.log("spotiflow model is " + (spotiflowModelComboBox.getSelectedItem().toString()) + " is 3D processing " + is3Dprocessing());
             if (spotiflowModelComboBox.getSelectedItem().toString().endsWith("3d")) {
-                if (is3DProcessing()) return true;
+                if (is3Dprocessing()) return true;
                 else return false;
             } else {
-                if (is3DProcessing()) return false;
+                if (is3Dprocessing()) return false;
                 else return true;
             }
         }
@@ -390,7 +399,7 @@ public class SpotsParametersGUI {
     public MeasureValue getMeasure() {
         MeasureValue measureValue = new MeasureValue(false);
         measureValue.setMeasure(Measurements.MEAN + Measurements.INTEGRATED_DENSITY);
-        if (isZStackCheckBox.isSelected()) {
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
             measureValue.setProjection(projectionMethodCB.getSelectedIndex());
             if (chooseSlicesToUseCheckBox.isSelected()) {
                 measureValue.setProjectionSliceMin((Integer) sliceMinSpinner.getValue());
@@ -408,9 +417,11 @@ public class SpotsParametersGUI {
             measureValue.setSpotThreshold((String) (thresholdMethodCB.getSelectedItem()), minTh, maxTh, (Integer) minSizeSpinner.getValue(), useWatershedCheckBox.isSelected(), darkBGCheckBox.isSelected());
         }
         if (findMaximaCheckBox.isSelected()) {
-            if (is3DProcessing()) {
+            if (is3Dprocessing()) {
                 //IJ.log("3D processing, maxima detection will be done on each slice");
-                measureValue.setSpotFindMaxima3D(0, 1.5, 1.5, (double) prominenceSpinner.getValue());
+                measureValue.setSpotFindMaxima3D((double) maxima3DMinThrSpinner.getValue(),
+                        (double) maxima3DRadiusXYSpinner.getValue(), (double) maxima3DRadiusZSpinner.getValue(),
+                        (double) prominenceSpinner.getValue());
             } else {
                 measureValue.setSpotFindMaxima((Double) prominenceSpinner.getValue());
             }
@@ -468,6 +479,9 @@ public class SpotsParametersGUI {
         findMaximaCheckBox.setSelected(maximaEnable);
         setEnablingOfMaximaPanel(maximaEnable);
         prominenceSpinner.setValue(Prefs.get("MICMAQ.prominence_" + id, 500));
+        maxima3DMinThrSpinner.setValue(Prefs.get("MICMAQ.maxima3DMinThreshold_" + id, 0));
+        maxima3DRadiusXYSpinner.setValue(Prefs.get("MICMAQ.maxima3DRadiusXY_" + id, 1.5));
+        maxima3DRadiusZSpinner.setValue(Prefs.get("MICMAQ.maxima3DRadiusZ_" + id, 1.5));
 
 //       Threshold
         boolean thresholdEnable = Prefs.get("MICMAQ.thresholdSelectedSpot_" + id, false);
@@ -508,8 +522,16 @@ public class SpotsParametersGUI {
             result += "\n\tSubtract Background: radius " + sbgSpinner.getValue();
 
         if (findMaximaCheckBox.isSelected()) {
-            result += "\nFind Spots by Local Maxima:";
-            result += "\n\tProminence: " + prominenceSpinner.getValue();
+            if (is3Dprocessing) {
+                result += "\nFind Spots by Local Maxima (3D):";
+                result += "\n\tProminence: " + prominenceSpinner.getValue();
+                result += "\n\tminThreshold: " + maxima3DMinThrSpinner.getValue();
+                result += "\n\tradiusXY: " + maxima3DRadiusXYSpinner.getValue();
+                result += "\n\tradiusZ: " + maxima3DRadiusZSpinner.getValue();
+            } else {
+                result += "\nFind Spots by Local Maxima (2D):";
+                result += "\n\tProminence: " + prominenceSpinner.getValue();
+            }
         }
         if (thresholdCheckBox.isSelected()) {
             result += "\nFind Spots by thresholding:";
@@ -667,6 +689,9 @@ public class SpotsParametersGUI {
 //        Find maxima
         Prefs.set("MICMAQ.findMaximaSelectedSpot_" + id, findMaximaCheckBox.isSelected());
         Prefs.set("MICMAQ.prominence_" + id, (double) prominenceSpinner.getValue());
+        Prefs.set("MICMAQ.maxima3DMinThreshold_" + id, (double) maxima3DMinThrSpinner.getValue());
+        Prefs.set("MICMAQ.maxima3DRadiusXY_" + id, (double) maxima3DRadiusXYSpinner.getValue());
+        Prefs.set("MICMAQ.maxima3DRadiusZ_" + id, (double) maxima3DRadiusZSpinner.getValue());
 
 //        Threshold
         Prefs.set("MICMAQ.thresholdSelectedSpot_" + id, thresholdCheckBox.isSelected());
@@ -685,11 +710,41 @@ public class SpotsParametersGUI {
 
     }
 
-    public boolean is3DProcessing() {
+    /*public boolean is3DProcessing() {
         ImagePlus imptmp = imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel);
         if (imptmp.getNSlices() == 1) return false;
         if (isZStackCheckBox.isSelected()) return false;
         return true;
+    }*/
+
+    public boolean is3Dprocessing() {
+        return is3Dprocessing;
+    }
+
+    public void setIs3Dprocessing(boolean is3Dprocessing) {
+        if (this.is3Dprocessing == is3Dprocessing) return;
+        this.is3Dprocessing = is3Dprocessing;
+        updateGuiDisplayFor3D();
+    }
+
+    protected void updateGuiDisplayFor3D() {
+        maxima3DPanel.setVisible(is3Dprocessing);
+        if (is3Dprocessing) {
+            isZStackCheckBox.setSelected(true);
+            projectionPanel.setVisible(false);
+            JComboBox cb = new JComboBox(spotiflowModelOptions3D);
+            spotiflowModelComboBox.setModel(cb.getModel());
+        } else {
+            if (imageProvider.getFieldOfView(imageProvider.getPreviewImage()).getNSlices(channel) > 1) {
+                projectionPanel.setVisible(true);
+                isZStackCheckBox.setSelected(true);
+            } else {
+                projectionPanel.setVisible(false);
+                isZStackCheckBox.setSelected(false);
+            }
+            JComboBox cb = new JComboBox(spotiflowModelOptions2D);
+            spotiflowModelComboBox.setModel(cb.getModel());
+        }
     }
 
     /**
@@ -715,6 +770,7 @@ public class SpotsParametersGUI {
         panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
         preprocessingPanel.add(panel2, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, new Dimension(-1, 61), null, null, 0, false));
         isZStackCheckBox = new JCheckBox();
+        isZStackCheckBox.setEnabled(false);
         isZStackCheckBox.setText("is Z-stack?");
         panel2.add(isZStackCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTHWEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         projectionPanel = new JPanel();
@@ -783,7 +839,7 @@ public class SpotsParametersGUI {
         thresholdCheckBox.setText("threshold");
         spotDetectionPanel.add(thresholdCheckBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         maximaPanel = new JPanel();
-        maximaPanel.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        maximaPanel.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 0), -1, -1));
         spotDetectionPanel.add(maximaPanel, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         maximaPanel.setBorder(BorderFactory.createTitledBorder(null, "Find maxima method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         prominenceLabel = new JLabel();
@@ -792,11 +848,26 @@ public class SpotsParametersGUI {
         maximaPanel.add(prominenceSpinner, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         liveMaximaButton = new JToggleButton();
         liveMaximaButton.setText("live testing");
-        maximaPanel.add(liveMaximaButton, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        maximaPanel.add(liveMaximaButton, new GridConstraints(2, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         showHideCheckBox = new JCheckBox();
         showHideCheckBox.setSelected(true);
         showHideCheckBox.setText("show/hide");
         maximaPanel.add(showHideCheckBox, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        maxima3DPanel = new JPanel();
+        maxima3DPanel.setLayout(new GridLayoutManager(3, 2, new Insets(0, 0, 0, 0), -1, -1));
+        maximaPanel.add(maxima3DPanel, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label3 = new JLabel();
+        label3.setText("min Threshold");
+        maxima3DPanel.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label4 = new JLabel();
+        label4.setText("radiusXY");
+        maxima3DPanel.add(label4, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label5 = new JLabel();
+        label5.setText("radiusZ");
+        maxima3DPanel.add(label5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        maxima3DPanel.add(maxima3DMinThrSpinner, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        maxima3DPanel.add(maxima3DRadiusXYSpinner, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        maxima3DPanel.add(maxima3DRadiusZSpinner, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         thresholdPanel = new JPanel();
         thresholdPanel.setLayout(new GridLayoutManager(3, 4, new Insets(0, 0, 0, 0), -1, -1));
         spotDetectionPanel.add(thresholdPanel, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
@@ -829,9 +900,9 @@ public class SpotsParametersGUI {
         spotiflowPanel.setEnabled(false);
         spotDetectionPanel.add(spotiflowPanel, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         spotiflowPanel.setBorder(BorderFactory.createTitledBorder(null, "Spotiflow method", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
-        final JLabel label3 = new JLabel();
-        label3.setText("model");
-        spotiflowPanel.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setText("model");
+        spotiflowPanel.add(label6, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowModelComboBox = new JComboBox();
         final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
         defaultComboBoxModel2.addElement("general");
@@ -843,14 +914,14 @@ public class SpotsParametersGUI {
         defaultComboBoxModel2.addElement("own_model");
         spotiflowModelComboBox.setModel(defaultComboBoxModel2);
         spotiflowPanel.add(spotiflowModelComboBox, new GridConstraints(0, 1, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label4 = new JLabel();
-        label4.setText("path to own model");
-        spotiflowPanel.add(label4, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label7 = new JLabel();
+        label7.setText("path to own model");
+        spotiflowPanel.add(label7, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowPathTextField = new JTextField();
         spotiflowPanel.add(spotiflowPathTextField, new GridConstraints(1, 1, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        final JLabel label5 = new JLabel();
-        label5.setText("probability threshold");
-        spotiflowPanel.add(label5, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label8 = new JLabel();
+        label8.setText("probability threshold");
+        spotiflowPanel.add(label8, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowPanel.add(spotiflowThresholdSpinner1, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         showHideCheckBox1 = new JCheckBox();
         showHideCheckBox1.setSelected(true);
@@ -859,23 +930,27 @@ public class SpotsParametersGUI {
         liveSpotiflowButton = new JToggleButton();
         liveSpotiflowButton.setText("live testing");
         spotiflowPanel.add(liveSpotiflowButton, new GridConstraints(3, 2, 3, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label6 = new JLabel();
-        label6.setText("scale factor");
-        spotiflowPanel.add(label6, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label9 = new JLabel();
+        label9.setText("scale factor");
+        spotiflowPanel.add(label9, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowPanel.add(spotiflowScaleSpinner, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label7 = new JLabel();
-        label7.setText("min dist");
-        spotiflowPanel.add(label7, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label10 = new JLabel();
+        label10.setText("min dist");
+        spotiflowPanel.add(label10, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowPanel.add(spotiflowMinDistSpinner1, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JLabel label8 = new JLabel();
-        label8.setText("subPixel radius");
-        spotiflowPanel.add(label8, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label11 = new JLabel();
+        label11.setText("subPixel radius");
+        spotiflowPanel.add(label11, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         spotiflowPanel.add(spotiflowSubPixRadiusSpinner1, new GridConstraints(5, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
         prominenceSpinner = new JSpinner(new SpinnerNumberModel(100.0, 0.0, Integer.MAX_VALUE, 1));
+        maxima3DMinThrSpinner = new JSpinner(new SpinnerNumberModel(0.0, Integer.MIN_VALUE, Integer.MAX_VALUE, 1));
+        maxima3DRadiusXYSpinner = new JSpinner(new SpinnerNumberModel(1.5, 0.0, Integer.MAX_VALUE, 1));
+        maxima3DRadiusZSpinner = new JSpinner(new SpinnerNumberModel(1.5, 0.0, Integer.MAX_VALUE, 1));
+
         sbgSpinner = new JSpinner(new SpinnerNumberModel(100.0, 0.0, Integer.MAX_VALUE, 1));
         String[] tmp = AutoThresholder.getMethods();
         thresholdMethods = new String[tmp.length + 1];

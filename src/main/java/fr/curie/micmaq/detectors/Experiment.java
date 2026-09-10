@@ -258,8 +258,8 @@ public class Experiment {
         if (cell!=null && nuclei!=null && !interrupt){
              /*I have cell AND Nuclei : prepare cytoplasm et get validated cellRois*/
             cytoDetector = cell.getCytoDetector();
-            cytoDetector.setNucleiRois(nuclei.getRoiArray());
             if(nuclei.getRoi3D()!=null) cytoDetector.setNucleiRois3D(nuclei.getRoi3D().getObjects3DInt().toArray(new Object3DInt[0]));
+            else cytoDetector.setNucleiRois(nuclei.getRoiArray());
             cytoDetector.setMeasureCalibration(measureCalibration);
             cytoDetector.prepare();
             if(cytoDetector.is3D()){

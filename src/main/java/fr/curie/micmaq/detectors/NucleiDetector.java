@@ -47,6 +47,7 @@ public class NucleiDetector {
     private int cellposeDiameter;
     private String cellposeModel;
     private double cellposeCellproba_threshold;
+    private String cellposeFlags="";
     private boolean stardist; /*use Stardist, if false use thresholding*/
     String stardistModel;
     double stardistPercentileBottom;
@@ -256,6 +257,14 @@ public class NucleiDetector {
         this.cellposeCellproba_threshold=cellproba_threshold;
     }
 
+    public String getCellposeFlags() {
+        return cellposeFlags;
+    }
+
+    public void setCellposeFlags(String cellposeFlags) {
+        this.cellposeFlags = cellposeFlags;
+    }
+
     public void setStarDistMethod(String model,
                                   double stardistPercentileBottom,
                                   double stardistPercentileTop,
@@ -446,6 +455,7 @@ public class NucleiDetector {
                 IJ.log("run Cellpose");
                 analysisType = "cellpose";
                 CellposeLauncher cellposeLauncher = new CellposeLauncher(preprocessed, cellposeDiameter, cellposeCellproba_threshold,cellposeModel, excludeOnEdges);
+                cellposeLauncher.setFlags(cellposeFlags);
                 cellposeLauncher.analysis();
                 ImagePlus tmp = cellposeLauncher.getCellposeMask();
                 IJ.log("seg label image max "+new StackStatistics(tmp).max);

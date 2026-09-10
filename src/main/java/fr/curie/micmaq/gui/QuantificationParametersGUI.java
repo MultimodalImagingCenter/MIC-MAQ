@@ -62,6 +62,8 @@ public class QuantificationParametersGUI {
     ComboCheckBox preprocComboCheck;
     ComboCheckBox measureComboCheck;
 
+    boolean is3Dprocessing = false;
+
 
     public QuantificationParametersGUI(FieldOfViewProvider imageProvider) {
         provider = imageProvider;
@@ -159,7 +161,7 @@ public class QuantificationParametersGUI {
 
         MeasureValue measure = (measureComboCheck.isSelected(channel)) ? measuresQuantif : new MeasureValue(false);
         if (preprocComboCheck.isSelected(channel)) {
-            if (isZStackCheckBox.isSelected()) {
+            if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
                 measure.setProjection(projectionMethodCB.getSelectedIndex());
                 if (chooseSlicesToUseCheckBox.isSelected()) {
                     measure.setProjectionSliceMin((Integer) sliceMinSpinner.getValue());
@@ -179,7 +181,7 @@ public class QuantificationParametersGUI {
         setPreferences();
         MeasureValue measure = (measureComboCheck.isSelected(channel)) ? measuresSegmentation : new MeasureValue(true);
         if (preprocComboCheck.isSelected(channel)) {
-            if (isZStackCheckBox.isSelected()) {
+            if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
                 measure.setProjection(projectionMethodCB.getSelectedIndex());
                 if (chooseSlicesToUseCheckBox.isSelected()) {
                     measure.setProjectionSliceMin((Integer) sliceMinSpinner.getValue());
@@ -197,7 +199,7 @@ public class QuantificationParametersGUI {
     }
 
     public boolean isZproject() {
-        return isZStackCheckBox.isSelected();
+        return isZStackCheckBox.isSelected() && !is3Dprocessing;
     }
 
     public boolean isSavePreprocessedImage() {
@@ -517,6 +519,27 @@ public class QuantificationParametersGUI {
         measureComboCheck.updateTexts(provider);
     }
 
+    public boolean is3Dprocessing() {
+        return is3Dprocessing;
+    }
+
+    public void setIs3Dprocessing(boolean is3Dprocessing) {
+        if (this.is3Dprocessing == is3Dprocessing) return;
+        this.is3Dprocessing = is3Dprocessing;
+        if (is3Dprocessing) {
+            isZStackCheckBox.setSelected(true);
+            projectionPanel.setVisible(false);
+        } else {
+            if (provider.getFieldOfView(provider.getPreviewImage()).getNSlices(1) > 1) {
+                projectionPanel.setVisible(true);
+                isZStackCheckBox.setSelected(true);
+            } else {
+                projectionPanel.setVisible(false);
+                isZStackCheckBox.setSelected(false);
+            }
+        }
+    }
+
     private void createUIComponents() {
 
 //  Text field to filter extension
@@ -643,6 +666,7 @@ public class QuantificationParametersGUI {
         panel7.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
         panel5.add(panel7, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, new Dimension(-1, 61), null, null, 0, false));
         isZStackCheckBox = new JCheckBox();
+        isZStackCheckBox.setEnabled(false);
         isZStackCheckBox.setText("is Z-stack?");
         panel7.add(isZStackCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTHWEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         projectionPanel = new JPanel();

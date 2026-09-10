@@ -1367,6 +1367,10 @@ public class SpotDetector {
 
     private void findThresholdPerRegion3D(int regionID,Object3DInt regionROI,ResultsTable resultsTableToAdd,String type,ResultsTable spotMeasuresTable){
         ArrayList<Object3DInt> nucleusObjects = new ArrayList<>();
+        if(threshold3DObjects==null) {
+            resultsTableToAdd.addValue(type + spotName + " Spot(threshold3D) nr. spots",Double.NaN);
+            return;
+        }
         for(Object3DInt spot : threshold3DObjects.getObjects3DInt()){
             Point3D center = new MeasureCentroid(spot).getCentroidAsPoint();
             VoxelInt voxel = new VoxelInt((int)Math.round(center.getX()),(int)Math.round(center.getY()),(int)Math.round(center.getZ()),1);

@@ -92,6 +92,7 @@ public class SpotiflowLauncher {
         if(workingImage.getImageStackSize()>1) {
             this.scale=1.0;
             System.err.println("Image stack size > 1, scale is not compatible with 3D, scale set to 1");
+            IJ.log("Image stack size > 1, scale is not compatible with 3D, scale set to 1");
         }
         if(this.scale!=1) subpix="False";
     }

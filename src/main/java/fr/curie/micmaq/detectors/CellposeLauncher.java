@@ -50,6 +50,7 @@ public class CellposeLauncher {
     private final boolean excludeOnEdges;
     private ImagePlus cellposeMask;
     private RoiManager cellposeRoiManager;
+    private String flags="";
 
     public static int tileSize = -1;
     public static int tileOverlap = -1;
@@ -91,6 +92,13 @@ public class CellposeLauncher {
         this(imagePlus, minSizeNucleus, cellproba_threshold, model, 0, 0, excludeOnEdges);
     }
 
+    public String getFlags() {
+        return flags;
+    }
+
+    public void setFlags(String flags) {
+        this.flags = flags;
+    }
 
     /**
      * @return binary mask
@@ -344,8 +352,8 @@ public class CellposeLauncher {
         settings.setDatasetDir(cellposeTempDir.toString());
         settings.setDiameter(minSizeNucleus);
         //String additionalFlags=" --diameter, "+minSizeNucleus;
-        String additionalFlags=", --cellprob_threshold, "+cellproba_threshold;
-        if(imagePlus.getNSlices()>1){ additionalFlags+= ", --do_3D";}
+        String additionalFlags= this.flags + ", --cellprob_threshold, "+cellproba_threshold;
+        if(imagePlus.getNSlices()>1 && !additionalFlags.contains("--do_3D") && !additionalFlags.contains("--stitch_threshold")){ additionalFlags+= ", --do_3D";}
         if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.useGpu",false)) additionalFlags += ", --use_gpu";
 
         settings.setAdditionalFlags(additionalFlags);

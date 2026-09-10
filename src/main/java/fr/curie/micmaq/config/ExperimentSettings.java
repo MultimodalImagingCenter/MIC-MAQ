@@ -27,6 +27,7 @@ public class ExperimentSettings {
     ArrayList<MeasureValue> quantificationChannels;
     MeasureCalibration calibration;
     String resultsDir;
+    boolean is3DProcessing = false;
 
 
     public ExperimentSettings(FieldOfView images){
@@ -117,13 +118,15 @@ public class ExperimentSettings {
         nucleiDetector.setMeasurements(nucleiSegmentationParams.getMeasurements().measure);
         nucleiDetector.setNameChannel(nucleiSegmentationParams.getMeasurements().name);
         //IJ.log("nuclei detector : "+nucleiDetector.getNameChannel()+" should be "+nucleiSegmentationParams.getMeasurements().name);
-        if(nucleiSegmentationParams.isZproject()){
-            if(nucleiSegmentationParams.getProjectionSliceMin()>=0){
-                //IJ.log("experiments setings nuclei is zproject");
-                nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString(),nucleiSegmentationParams.getProjectionSliceMin(), nucleiSegmentationParams.getProjectionSliceMax());
-            }else {
-                //IJ.log("experiments setings nuclei is zproject");
-                nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString());
+        if(!is3DProcessing) {
+            if (nucleiSegmentationParams.isZproject()) {
+                if (nucleiSegmentationParams.getProjectionSliceMin() >= 0) {
+                    //IJ.log("experiments setings nuclei is zproject");
+                    nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString(), nucleiSegmentationParams.getProjectionSliceMin(), nucleiSegmentationParams.getProjectionSliceMax());
+                } else {
+                    //IJ.log("experiments setings nuclei is zproject");
+                    nucleiDetector.setzStackParameters(nucleiSegmentationParams.getProjectionMethodAsString());
+                }
             }
         }
         if(nucleiSegmentationParams.getPreprocessMacro()!=null && !nucleiSegmentationParams.getPreprocessMacro().equals("")){
@@ -140,6 +143,7 @@ public class ExperimentSettings {
                     nucleiSegmentationParams.getCellposeCellproba_trheshold(),
                     cellposemodel,
                     nucleiSegmentationParams.isExcludeOnEdge());
+            nucleiDetector.setCellposeFlags(nucleiSegmentationParams.getCellposeFlags());
         }else if(nucleiSegmentationParams.getMethod()==SegmentationParameters.STARDIST){
             nucleiDetector.setStarDistMethod(nucleiSegmentationParams.getStardistModel(),
                     nucleiSegmentationParams.getStardistPercentileBottom(),
@@ -178,11 +182,13 @@ public class ExperimentSettings {
 
 
 //        Projection ?
-        if (cellSegmentationParams.isZproject()) {
-            if (cellSegmentationParams.getProjectionSliceMin()>=0) {
-                cellDetector.setZStackParameters(cellSegmentationParams.getProjectionMethodAsString(), cellSegmentationParams.getProjectionSliceMin(), cellSegmentationParams.getProjectionSliceMax());
-            } else {
-                cellDetector.setZStackParameters(cellSegmentationParams.getProjectionMethodAsString());
+        if(!is3DProcessing) {
+            if (cellSegmentationParams.isZproject()) {
+                if (cellSegmentationParams.getProjectionSliceMin() >= 0) {
+                    cellDetector.setZStackParameters(cellSegmentationParams.getProjectionMethodAsString(), cellSegmentationParams.getProjectionSliceMin(), cellSegmentationParams.getProjectionSliceMax());
+                } else {
+                    cellDetector.setZStackParameters(cellSegmentationParams.getProjectionMethodAsString());
+                }
             }
         }
 //        Macro pretreatment?
@@ -209,6 +215,7 @@ public class ExperimentSettings {
                     cellSegmentationParams.getCellposeCellproba_trheshold(),
                     cellposemodel,
                     cellSegmentationParams.isExcludeOnEdge(),cellSegmentationParams.isUserValidation(), preview);
+            cellDetector.setCellposeFlags(cellSegmentationParams.getCellposeFlags());
         }
 
 //        Cytoplasm ?
@@ -316,8 +323,13 @@ public class ExperimentSettings {
         return null;
     }
 
+    public boolean isIs3DProcessing() {
+        return is3DProcessing;
+    }
 
-
+    public void setIs3DProcessing(boolean is3DProcessing) {
+        this.is3DProcessing = is3DProcessing;
+    }
 
     /*
     run experiment

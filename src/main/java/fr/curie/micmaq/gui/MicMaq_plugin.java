@@ -1,19 +1,17 @@
 package fr.curie.micmaq.gui;
 
-import ch.epfl.biop.wrappers.cellpose.ij2commands.Cellpose;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
 import com.jgoodies.common.collect.ArrayListModel;
 import fr.curie.micmaq.config.*;
 import fr.curie.micmaq.detectors.CellposeLauncher;
 import fr.curie.micmaq.detectors.Experiment;
-import fr.curie.micmaq.detectors.SpotiflowLauncher;
 import fr.curie.micmaq.helpers.ImageToAnalyze;
 import fr.curie.micmaq.helpers.MeasureCalibration;
 import fr.curie.micmaq.segment.SegmentationParameters;
 import ij.*;
 import ij.gui.GenericDialog;
-import ij.gui.PointRoi;
 import ij.gui.YesNoCancelDialog;
 import ij.io.OpenDialog;
 import ij.measure.ResultsTable;
@@ -37,7 +35,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.concurrent.*;
 
 public class MicMaq_plugin extends JFrame implements PlugIn {
     private JTabbedPane TabsPanel;
@@ -63,6 +60,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     private JScrollPane TreeJScroll;
     private JScrollPane channelScroll;
     private JButton previewCurrentStepButton;
+    private JCheckBox computeIn3DCheckBox;
+    private JPanel compute3DPanel;
 
 
     FieldOfViewProvider provider;
@@ -237,6 +236,18 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             @Override
             public void stateChanged(ChangeEvent e) {
                 provider.setPreviewImage(((SpinnerNumberModel) PreviewSpinner.getModel()).getNumber().intValue());
+            }
+        });
+        computeIn3DCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (nucleiParam != null) nucleiParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+                if (cellParam != null) cellParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+                quantifPanel.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+                if (spotPanels != null) for (SpotsParametersGUI sp : spotPanels)
+                    if (sp != null) sp.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+
+                pack();
             }
         });
     }
@@ -463,6 +474,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 provider.setNucleiChannel(i + 1);
                 if (nucleiParam == null) {
                     nucleiParam = new SegmentationParametersGUI(provider, SegmentationParametersGUI.NUCLEI);
+                    nucleiParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                     activePanel = i;
                 }
                 count++;
@@ -473,6 +485,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 if (cellParam == null) {
                     cellParam = new SegmentationParametersGUI(provider,
                             (countN > 0) ? SegmentationParametersGUI.CELL_CYTO : SegmentationParametersGUI.CELLS);
+                    cellParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                     activePanel = i;
                 }
                 count++;
@@ -488,6 +501,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 if (spotPanels.get(i) == null) {
                     SpotsParametersGUI tmp = new SpotsParametersGUI(provider, i + 1);
                     tmp.setProteinName(cp.getProteinName());
+                    tmp.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                     spotPanels.set(i, tmp);
                     activePanel = i;
                 }
@@ -514,6 +528,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
         if (quantifPanel == null) {
             quantifPanel = new QuantificationParametersGUI(provider);
+            quantifPanel.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
         } else {
 
             provider.setChannelsUserName(names);
@@ -667,6 +682,20 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         gd.addMessage(" parsing files, please be patient ");
         gd.showDialog();
         provider.parseDirectory(filePattern);
+        FieldOfView fov = provider.getFieldOfView(provider.getFirstValidIndex());
+        if (fov.getNSlices(1) > 1) {
+            computeIn3DCheckBox.setEnabled(true);
+        } else {
+            if (fov.getNbAvailableChannels() > 1) {
+                if (fov.getNSlices(2) > 1) {
+                    computeIn3DCheckBox.setEnabled(true);
+                } else {
+                    computeIn3DCheckBox.setEnabled(false);
+                }
+            } else {
+                computeIn3DCheckBox.setEnabled(false);
+            }
+        }
         gd.dispose();
     }
 
@@ -1021,15 +1050,15 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         IJ.log("create experiment");
         FieldOfView imgs = provider.getFieldOfView(index);
         ExperimentSettings settings = new ExperimentSettings(imgs);
+        settings.setIs3DProcessing(computeIn3DCheckBox.isSelected());
         boolean nucleus = false;
         boolean cell = false;
         for (int i = 0; i < channelPanels.size(); i++) {
             ChannelPanel cp = channelPanels.get(i);
             if (cp.isUsed() && cp.isNuclei()) {
-                IJ.log("channel: " + (i + 1)+" is used for Nuclei segmentation");
+                IJ.log("channel: " + (i + 1) + " is used for Nuclei segmentation");
                 SegmentationParameters params = nucleiParam.getParameters();
                 if (params.getMethod() == SegmentationParameters.CELLPOSE) {
-                    //@TODO
                     if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", null) == null) {
                         IJ.error("Cellpose configuration error", "Error: The path to access Cellpose is not defined. Please specify a valid path in the menu Options.");
                         return null;
@@ -1050,17 +1079,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     } else {
                         IJ.log("compute in 3D or projection in macro");
                     }
-                }else{
-                    String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                } else {
+                    String stackdata = (imgs.getNSlices(i + 1) > 1) ? "(projection)" : "";
                     IJ.log("channel " + (i + 1) + " is 2D " + stackdata);
                 }
                 nucleus = true;
             }
             if (cp.isUsed() && cp.isCell()) {
-                IJ.log("channel: " + (i + 1)+" is used for Cell segmentation");
+                IJ.log("channel: " + (i + 1) + " is used for Cell segmentation");
                 SegmentationParameters params = cellParam.getParameters();
                 if (params.getMethod() == SegmentationParameters.CELLPOSE) {
-                    //@TODO
                     if (Prefs.get("ch.epfl.biop.wrappers.cellpose.Cellpose.envDirPath", null) == null) {
                         IJ.error("Cellpose configuration error", "Error: The path to access Cellpose is not defined. Please specify a valid path in the menu Options.");
                         return null;
@@ -1080,8 +1108,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     } else {
                         IJ.log("computes in 3D or projection in macro");
                     }
-                }else{
-                    String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                } else {
+                    String stackdata = (imgs.getNSlices(i + 1) > 1) ? "(projection)" : "";
                     IJ.log("channel " + (i + 1) + " is 2D " + stackdata);
                 }
                 cell = true;
@@ -1106,8 +1134,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                             } else {
                                 IJ.log("channel " + (i + 1) + " quantification in 3D or projection in macro");
                             }
-                        }else{
-                            String stackdata = (imgs.getNSlices(i+1)>1)? "(projection)":"";
+                        } else {
+                            String stackdata = (imgs.getNSlices(i + 1) > 1) ? "(projection)" : "";
                             IJ.log("channel " + (i + 1) + " is 2D for quantification " + stackdata);
                         }
                     }
@@ -1219,6 +1247,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
     }
 
     private boolean[] checkParameters() {
+        boolean is3D = computeIn3DCheckBox.isSelected();
         boolean warningN = false;
         boolean warningC = false;
         boolean warningS = false;
@@ -1230,14 +1259,19 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             if (cp.isUsed() && cp.isNuclei()) {
                 System.out.println("nuclei channel: " + (i + 1));
                 SegmentationParameters params = nucleiParam.getParameters();
-                warningN = (imgs.getNSlices(i + 1) > 1) && (!params.isZproject());
+                warningN = (imgs.getNSlices(i + 1) > 1) && !(params.isZproject() ^ is3D);
+                //IJ.log("channel " + (i + 1) + " zproject: " + params.isZproject() + ", 3D: " + is3D);
+                //IJ.log("channel " + (i + 1) + " number of slices: " + imgs.getNSlices(i + 1));
+                //IJ.log("channel " + (i + 1) + "  zproject ^ 3D: " + (params.isZproject() ^ is3D));
+                //IJ.log("channel " + (i + 1) + "  warning: " + warningN);
                 if (warningN) {
                     warningMessage += "C" + (i + 1) + " projection for nuclei is not defined, using the one from quantification\n";
                 }
             } else if (cp.isUsed() && cp.isCell()) {
                 SegmentationParameters params = cellParam.getParameters();
                 MeasureValue tmp = quantifPanel.getMeasuresSegmentation(i + 1);
-                warningC = (imgs.getNSlices(i + 1) > 1) && (!params.isZproject());
+                warningC = (imgs.getNSlices(i + 1) > 1) && !(params.isZproject() ^ is3D);
+                //IJ.log("channel " + (i + 1) + " zproject: " + params.isZproject() + ", 3D: " + is3D);
                 if (warningC)
                     warningMessage += "C" + (i + 1) + " projection for cell is not defined, using the one from quantification\n";
             } else if (cp.isUsed()) {
@@ -1246,10 +1280,11 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                     if (sp != null) {
                         MeasureValue measureValue = sp.getMeasure();
                         //MeasureValue tmp = quantifPanel.getMeasuresSegmentation();
-                        warningS = (imgs.getNSlices(i + 1) > 1) && (!measureValue.isZproject());
+                        warningS = (imgs.getNSlices(i + 1) > 1) && !(measureValue.isZproject() ^ is3D);
+                        //IJ.log("channel " + (i + 1) + " zproject: " + measureValue.isZproject() + ", 3D: " + is3D);
                         if (warningN)
                             warningMessage += "C" + (i + 1) + " projection for spot is not defined, using the one from quantification\n";
-                        if (!measureValue.isSpotThreshold() && !measureValue.isSpotFindMaxima()) {
+                        if (!measureValue.isSpotThreshold() && !measureValue.isSpotFindMaxima() && !measureValue.isSpotFindSpotiflow()) {
                             warningS = true;
                             warningMessage += "C" + (i + 1) + " is defined as spot but no spot detection method is selected\n";
                         }
@@ -1257,7 +1292,8 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 }
             }
             MeasureValue tmp = quantifPanel.getMeasuresQuantif(i + 1);
-            if (((imgs.getNSlices(i + 1) > 1) && (!tmp.isZproject()))) {
+            //IJ.log("channel " + (i + 1) + " zproject: " + tmp.isZproject() + ", 3D: " + is3D);
+            if (((imgs.getNSlices(i + 1) > 1) && !(tmp.isZproject() ^ is3D))) {
                 warningQ = true;
                 warningMessage += "C" + (i + 1) + " projection for quantification is not defined while using stacks\n";
             }
@@ -1611,7 +1647,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         TabsPanel.addTab("Configuration", ConfigurationPanel);
         ConfigurationPanel.setBorder(BorderFactory.createTitledBorder(null, "configuration", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         globalPanel = new JPanel();
-        globalPanel.setLayout(new GridLayoutManager(3, 1, new Insets(0, 0, 0, 0), -1, -1));
+        globalPanel.setLayout(new GridLayoutManager(4, 1, new Insets(0, 0, 0, 0), -1, -1));
         ConfigurationPanel.add(globalPanel, new GridConstraints(0, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         globalPanel.setBorder(BorderFactory.createTitledBorder(null, "data", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, null));
         final JPanel panel2 = new JPanel();
@@ -1657,6 +1693,14 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         splitPane1.setRightComponent(channelScroll);
         channelScroll.setViewportView(channelsDisplay);
         channelsDisplay.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLoweredBevelBorder(), "channels", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, new Color(-4473925)));
+        compute3DPanel = new JPanel();
+        compute3DPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        globalPanel.add(compute3DPanel, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        compute3DPanel.add(spacer1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        computeIn3DCheckBox = new JCheckBox();
+        computeIn3DCheckBox.setText("compute in 3D");
+        compute3DPanel.add(computeIn3DCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
         ConfigurationPanel.add(panel5, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));

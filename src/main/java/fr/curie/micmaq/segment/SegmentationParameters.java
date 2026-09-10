@@ -28,6 +28,7 @@ public class SegmentationParameters {
     int cellposeDiameter;
     double cellposeCellproba_trheshold;
     File pathToModel;
+    String cellposeFlags = "";
 
     //Stardist parameters
     String stardistModel="Versatile (fluorescent nuclei)";
@@ -190,6 +191,14 @@ public class SegmentationParameters {
 
     public void setCellposeCellproba_trheshold(double cellposeCellproba_trheshold) {
         this.cellposeCellproba_trheshold = cellposeCellproba_trheshold;
+    }
+
+    public String getCellposeFlags() {
+        return cellposeFlags;
+    }
+
+    public void setCellposeFlags(String cellposeFlags) {
+        this.cellposeFlags = cellposeFlags;
     }
 
     public String getPreprocessMacro() {

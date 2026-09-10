@@ -302,27 +302,31 @@ public class Detector {
     }
 
     private ImagePlus thresholdImage(ImagePlus image) {
-        ImagePlus result = image.duplicate();
+        //ImagePlus result = image.duplicate();
         double threshold = getThresholdValue(image);
 
-        ImageStack stack = result.getStack();
+        ImageStack stack = image.getStack();
+        ImageStack binaryStack = new ImageStack(stack.getWidth(), stack.getHeight());
         for (int z = 1; z <= stack.getSize(); z++) {
             ImageProcessor ip = stack.getProcessor(z);
+            ByteProcessor bin = new ByteProcessor(ip.getWidth(),ip.getHeight());
             if (thresholdMethod.startsWith("user")) {
                 for (int y = 0; y < ip.getHeight(); y++) {
                     for (int x = 0; x < ip.getWidth(); x++) {
                         double v = ip.getPixelValue(x, y);
-                        ip.set(x, y, (v >= minThreshold && v <= maxThreshold) ? 255 : 0);
+                        bin.set(x, y, (v >= minThreshold && v <= maxThreshold) ? 255 : 0);
                     }
                 }
             } else {
                 for (int y = 0; y < ip.getHeight(); y++) {
                     for (int x = 0; x < ip.getWidth(); x++) {
-                        ip.set(x, y, ip.getPixelValue(x, y) >= threshold ? 255 : 0);
+                        bin.set(x, y, ip.getPixelValue(x, y) >= threshold ? 255 : 0);
                     }
                 }
             }
+            binaryStack.addSlice(bin);
         }
+        ImagePlus result = new ImagePlus(image.getTitle(), binaryStack);
         renameImage(result, "binary_mask");
         return result;
     }
