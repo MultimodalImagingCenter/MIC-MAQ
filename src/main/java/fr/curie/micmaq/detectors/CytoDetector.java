@@ -720,10 +720,15 @@ public class CytoDetector {
             ImagePlus cytoplasmLabeledMask = new ImagePlus("labelmask",stack);
             ImageHandler imagehandler = ImageHandler.wrap(cytoplasmLabeledMask.getImageStack());
             for(int r=0;r<cytoplasmRoi3D.length;r++){
-                List<Object3DPlane>planes =cytoplasmRoi3D[r].getObject3DPlanes();
-                for(Object3DPlane plane:planes){
-                    plane.drawObject(imagehandler,r+1);
+                if(cytoplasmRoi3D[r]!=null){
+                    List<Object3DPlane>planes =cytoplasmRoi3D[r].getObject3DPlanes();
+                    for(Object3DPlane plane:planes){
+                        plane.drawObject(imagehandler,r+1);
+                    }
+                }else{
+                    System.err.println("Error : CytoDetector createCytoplasmImage : cytoplasm["+r+"] 3D ROI is null");
                 }
+
             }
             return cytoplasmLabeledMask;
         }

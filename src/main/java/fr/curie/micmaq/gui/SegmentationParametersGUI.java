@@ -365,7 +365,7 @@ public class SegmentationParametersGUI {
     public String getParametersAsString() {
         String result = "\nSEGMENTATION " + type;
         result += "\nPreprocessing:";
-        if (isZStackCheckBox.isSelected()) {
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
             result += "\n\tProjection: " + (String) projectionMethodCB.getSelectedItem();
             if (chooseSlicesToUseCheckBox.isSelected()) {
                 result += "\n\tSlices " + (int) sliceMinSpinner.getValue() + "-" + sliceMaxSpinner.getValue();
@@ -386,6 +386,14 @@ public class SegmentationParametersGUI {
                 result += "\n\tCellpose model path: " + cellposeModelPath;
             result += "\n\tMinimum diameter: " + (int) cellposeDiameterSpinner.getValue();
             result += "\n\tcellproba_threshold: " + cellposeCellproba_thresholdSpinner.getValue();
+            result += "\n\tmin_size: " + cellposeMinSizeSpinner.getValue();
+            result += "\n\tniter: " + cellposeNiterSpinner.getValue();
+            result += "\n\tbatch_size: " + cellposeBatchSizeSpinner.getValue();
+            if (is3Dprocessing) {
+                result += "\n\tstitch_threshold: " + (stich_thresholdCheckBox.isSelected() ? cellposeStitchThrSpinner.getValue() : "no");
+                result += "\n\tanisotropy: " + cellposeAnisotropySpinner.getValue();
+                result += "\n\tflow3D_smooth: " + cellposeFlow3DSmoothSpinner.getValue();
+            }
         } else if (starDistRadioButton.isSelected()) {
             result += "\nUse StarDist:";
             result += "\n\tStarDist model: " + stardistModelComboBox.getSelectedItem();
@@ -479,6 +487,44 @@ public class SegmentationParametersGUI {
                             offset++;
                             cellposeCellproba_thresholdSpinner.setValue(Double.valueOf(params.get(i + offset).split(": ")[1]));
                             //System.out.println("cellproba: "+params.get(i+offset).split(": ")[1]);
+                            String linetmp = params.get(i + offset);
+                            if (linetmp.contains("min_size")) {
+                                offset++;
+                                cellposeMinSizeSpinner.setValue(Integer.valueOf(linetmp.split(": ")[1]));
+                                linetmp = params.get(i + offset);
+                            }
+                            if (linetmp.contains("niter")) {
+                                offset++;
+                                cellposeNiterSpinner.setValue(Integer.valueOf(linetmp.split(": ")[1]));
+                                linetmp = params.get(i + offset);
+                            }
+                            if (linetmp.contains("batch_size")) {
+                                offset++;
+                                cellposeBatchSizeSpinner.setValue(Integer.valueOf(linetmp.split(": ")[1]));
+                                linetmp = params.get(i + offset);
+                            }
+                            if (linetmp.contains("stitch_threshold")) {
+                                offset++;
+                                if (linetmp.split(": ")[1].equals("no")) {
+                                    stich_thresholdCheckBox.setSelected(false);
+                                } else {
+                                    stich_thresholdCheckBox.setSelected(true);
+                                    cellposeStitchThrSpinner.setValue(Double.valueOf(linetmp.split(": ")[1]));
+                                }
+                                linetmp = params.get(i + offset);
+                                if (!is3Dprocessing) setIs3Dprocessing(true);
+                            }
+                            if (linetmp.contains("anisotropy")) {
+                                offset++;
+                                cellposeAnisotropySpinner.setValue(Double.valueOf(linetmp.split(": ")[1]));
+                                linetmp = params.get(i + offset);
+                                if (!is3Dprocessing) setIs3Dprocessing(true);
+                            }
+                            if (linetmp.contains("flow3D_smooth")) {
+                                offset++;
+                                cellposeFlow3DSmoothSpinner.setValue(Integer.valueOf(linetmp.split(": ")[1]));
+                                if (!is3Dprocessing) setIs3Dprocessing(true);
+                            }
 
                         } else if (params.get(i).endsWith("StarDist:")) {
                             starDistRadioButton.setSelected(true);
@@ -710,6 +756,12 @@ public class SegmentationParametersGUI {
                 cellposeModelPathTextField.setText(path);
             }
         }
+        cellposeMinSizeSpinner.setValue((int) Prefs.get("MICMAQ.cellposeMinSize" + type, 0));
+        cellposeNiterSpinner.setValue((int) Prefs.get("MICMAQ.cellposeNiter" + type, 0));
+        cellposeBatchSizeSpinner.setValue((int) Prefs.get("MICMAQ.cellposeBatchSize" + type, 8));
+        cellposeStitchThrSpinner.setValue((double) Prefs.get("MICMAQ.cellposeStitchThr", 0.9));
+        cellposeAnisotropySpinner.setValue((double) Prefs.get("MICMAQ.cellposeAnisotropy", 1.0));
+        cellposeFlow3DSmoothSpinner.setValue((int) Prefs.get("MICMAQ.cellposeFlow3DSmooth", 0.0));
 //        --> stardist
         stardistModelComboBox.setSelectedItem(Prefs.get("MICMAQ.stardistModel" + type, "Versatile (fluorescent nuclei)"));
         if (stardistModelComboBox.getSelectedItem() != "Model (.zip) from File") {
@@ -790,6 +842,15 @@ public class SegmentationParametersGUI {
         String modelSelected = (String) cellposeModelCB.getSelectedItem();
         if (modelSelected.equals("own_model"))
             Prefs.set("MICMAQ.cellposeModelPath" + type, cellposeModelPath.getAbsolutePath());
+        Prefs.set("MICMAQ.cellposeMinSize" + type, (int) cellposeMinSizeSpinner.getValue());
+        Prefs.set("MICMAQ.cellposeNiter" + type, (int) cellposeNiterSpinner.getValue());
+        Prefs.set("MICMAQ.cellposeBatchSize" + type, (int) cellposeBatchSizeSpinner.getValue());
+        if (is3Dprocessing) {
+            Prefs.set("MICMAQ.cellposeStitchThreshold" + type, (double) cellposeStitchThrSpinner.getValue());
+            Prefs.set("MICMAQ.cellposeAnisotropy" + type, (double) cellposeAnisotropySpinner.getValue());
+            Prefs.set("MICMAQ.cellposeFlow3DSmooth" + type, (int) cellposeFlow3DSmoothSpinner.getValue());
+        }
+
 
 //        --> stardist
         Prefs.set("MICMAQ.stardistModel" + type, (String) stardistModelComboBox.getSelectedItem());

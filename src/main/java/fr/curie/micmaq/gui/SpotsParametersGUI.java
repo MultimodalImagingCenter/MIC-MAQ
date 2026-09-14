@@ -150,11 +150,6 @@ public class SpotsParametersGUI {
                 //liveButton.getModel().setPressed(start);
                 if (start) {
                     spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
-                    if (isZStackCheckBox.isSelected())
-                        spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
-                    if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
-                    if (subtractBackgroundCheckBox.isSelected())
-                        spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
                     updateLiveMaxima();
                 } else {
                     if (spotDetectorLive != null) {
@@ -244,7 +239,7 @@ public class SpotsParametersGUI {
                     pm.setMillisToPopup(1);
                     IJ.showStatus("update detection by spotiflow");
                     spotDetectorLive = new SpotDetector(imageProvider.getImagePlus(imageProvider.getPreviewImage(), channel), proteinName);
-                    if (isZStackCheckBox.isSelected())
+                    if (isZStackCheckBox.isSelected() && !is3Dprocessing)
                         spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
                     if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
                     if (subtractBackgroundCheckBox.isSelected())
@@ -305,13 +300,18 @@ public class SpotsParametersGUI {
 
     private void updateLiveMaxima() {
         if (spotDetectorLive == null) return;
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing)
+            spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+        if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
+        if (subtractBackgroundCheckBox.isSelected())
+            spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
         spotDetectorLive.livePreviewFindMaxima((double) prominenceSpinner.getValue(), showHideCheckBox.isSelected());
     }
 
 
     private void updateLiveThreshold() {
         if (spotDetectorLive == null) return;
-        if (isZStackCheckBox.isSelected())
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing)
             spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
         if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
         if (subtractBackgroundCheckBox.isSelected())
@@ -328,6 +328,11 @@ public class SpotsParametersGUI {
 
     public void updateLiveSpotiflow() {
         if (spotDetectorLive != null) {
+            if (isZStackCheckBox.isSelected() && !is3Dprocessing)
+                spotDetectorLive.setzStackParameters((String) projectionMethodCB.getSelectedItem());
+            if (useMacroCodeCheckBox.isSelected()) spotDetectorLive.setPreprocessingMacro(macroArea.getText());
+            if (subtractBackgroundCheckBox.isSelected())
+                spotDetectorLive.setRollingBallSize((double) sbgSpinner.getValue());
             IJ.showStatus("update detection by spotiflow");
             String model = spotiflowModelComboBox.getSelectedItem().toString();
             boolean pretrained = true;
@@ -509,7 +514,7 @@ public class SpotsParametersGUI {
     public String getParametersAsString() {
         String result = "\nSPOT " + channel + " Parameters";
         result += "\nPreprocessing:";
-        if (isZStackCheckBox.isSelected()) {
+        if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
             result += "\n\tProjection: " + (String) projectionMethodCB.getSelectedItem();
             if (chooseSlicesToUseCheckBox.isSelected()) {
                 result += "\n\tSlices " + (int) sliceMinSpinner.getValue() + "-" + sliceMaxSpinner.getValue();
@@ -642,15 +647,29 @@ public class SpotsParametersGUI {
                         offset++;
                         useWatershedCheckBox.setSelected(params.get(i + offset).endsWith("yes"));
                     }
-                    if (params.get(i).startsWith("Spotiflow")) {
+                    if (params.get(i).endsWith("spotiflow:")) {
                         spotiflowCheckBox.setSelected(false);
                         spotiflowCheckBox.doClick();
                         String model = params.get(i + 1).split(": ")[1];
                         spotiflowModelComboBox.setSelectedItem(model);
                         spotiflowThresholdSpinner1.setValue(Double.parseDouble(params.get(i + 2).split(": ")[1]));
-                        spotiflowScaleSpinner.setValue(Double.parseDouble(params.get(i + 3).split(": ")[1]));
-                        spotiflowMinDistSpinner1.setValue(Integer.parseInt(params.get(i + 4).split(": ")[1]));
-                        spotiflowSubPixRadiusSpinner1.setValue(Integer.parseInt(params.get(i + 5).split(": ")[1]));
+                        int offset = 3;
+                        String linetmp = params.get(i + offset);
+                        if (linetmp.contains("scale")) {
+                            spotiflowScaleSpinner.setValue(Double.parseDouble(linetmp.split(": ")[1]));
+                            offset++;
+                            linetmp = params.get(i + offset);
+                        }
+                        if (linetmp.contains("min distance")) {
+                            spotiflowMinDistSpinner1.setValue(Integer.parseInt(linetmp.split(": ")[1]));
+                            offset++;
+                            linetmp = params.get(i + offset);
+                        }
+                        if (linetmp.contains("subpix radius")) {
+                            spotiflowSubPixRadiusSpinner1.setValue(Integer.parseInt(linetmp.split(": ")[1]));
+                            offset++;
+                        }
+
                     }
                 }
 
@@ -729,6 +748,7 @@ public class SpotsParametersGUI {
 
     protected void updateGuiDisplayFor3D() {
         maxima3DPanel.setVisible(is3Dprocessing);
+        IJ.log("spot updateGUI 3D processing: " + is3Dprocessing);
         if (is3Dprocessing) {
             isZStackCheckBox.setSelected(true);
             projectionPanel.setVisible(false);

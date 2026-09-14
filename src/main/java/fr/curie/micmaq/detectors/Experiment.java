@@ -149,18 +149,33 @@ public class Experiment {
         IJ.log("--    start experiment    --");
         Instant dateBegin = Instant.now(); /*get starting time*/
 //        PREPARE NECESSARY IMAGES FOR MEASUREMENTS
+        Instant stepTimeStart = Instant.now();
         if(!preprocess()) return false;
 //        Prepare cytoplasm and get the ROIs for spot detection
+        Instant stepTimeEnd = Instant.now();
+        long durationStep = Duration.between(stepTimeStart,stepTimeEnd).toMillis();
+        IJ.log("segmentation is done in :" +durationStep/1000+" seconds");
+
+        stepTimeStart = Instant.now();
         CytoDetector cytoDetector = null;
         if ((cell!=null && nuclei!=null)||(cell==null && nuclei!=null && nuclei.isExpand4Cells()) && !interrupt){
            /*Prepare cytoplasm et get new cellRois*/
                 cytoDetector = prepareCytoplams();
         }
+        stepTimeEnd = Instant.now();
+        long durationStep2 = Duration.between(stepTimeStart,stepTimeEnd).toMillis();
+        IJ.log("cytoplasm extraction is done in :" +durationStep2/1000+" seconds");
 
+        stepTimeStart = Instant.now();
         IJ.log("# measurements launch");
         MeasureRois measureRois=new MeasureRois(nuclei,cell,cytoDetector,spots);
         measureRois.setSpotsTables(spotsInNucleiTable,spotsInCellsTable, spotsInCytoplasmsTable);
         measureRois.measureAll(finalResultsNuclei,finalResultsCellSpot, experimentName, measureCalibration);
+        stepTimeEnd = Instant.now();
+        long durationStep3 = Duration.between(stepTimeStart,stepTimeEnd).toMillis();
+        IJ.log("measurement is done in :" +durationStep3/1000+" seconds");
+
+        //save results
         if(nuclei!=null) nuclei.saveAll(nuclei.getAnalysisType());
         if(cell!=null) cell.saveAll(cell.getAnalysisType());
         //perform summary

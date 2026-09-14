@@ -32,6 +32,7 @@
                   <enabled value="false"/>
                   <selected value="true"/>
                   <text value="mean gray value"/>
+                  <toolTipText value="mean of all values of the current image/volume  within the object"/>
                 </properties>
               </component>
               <component id="e9503" class="javax.swing.JCheckBox" binding="medianGrayValueCheckBox" default-binding="true">
@@ -40,6 +41,7 @@
                 </constraints>
                 <properties>
                   <text value="median gray value"/>
+                  <toolTipText value="median of all values of the current image/volume  within the object"/>
                 </properties>
               </component>
               <component id="b4512" class="javax.swing.JCheckBox" binding="integratedDensityCheckBox" default-binding="true">
@@ -50,6 +52,7 @@
                   <enabled value="false"/>
                   <selected value="true"/>
                   <text value="integrated density"/>
+                  <toolTipText value="the sum of value of the values of the signal inside the object"/>
                 </properties>
               </component>
               <component id="36f84" class="javax.swing.JCheckBox" binding="minAndMaxGrayCheckBox" default-binding="true">
@@ -58,6 +61,7 @@
                 </constraints>
                 <properties>
                   <text value="min and max gray value"/>
+                  <toolTipText value="minimum and maximum value of all values of the current image/volume  within the object"/>
                 </properties>
               </component>
               <component id="f3a38" class="javax.swing.JCheckBox" binding="modalGrayValueCheckBox" default-binding="true">
@@ -66,6 +70,7 @@
                 </constraints>
                 <properties>
                   <text value="modal gray value"/>
+                  <toolTipText value="the most abundant of all values of the current image/volume  within the object"/>
                 </properties>
               </component>
               <component id="2ea8b" class="javax.swing.JCheckBox" binding="standardDeviationCheckBox" default-binding="true">
@@ -74,6 +79,7 @@
                 </constraints>
                 <properties>
                   <text value="standard deviation"/>
+                  <toolTipText value="santdard deviation of all values of the current image/volume  within the object"/>
                 </properties>
               </component>
               <component id="f8cbd" class="javax.swing.JCheckBox" binding="skewnessCheckBox" default-binding="true">
@@ -82,6 +88,7 @@
                 </constraints>
                 <properties>
                   <text value="skewness"/>
+                  <toolTipText value="symmetry of the distribution  of all values of the current image/volume  within the object (&lt;0 assymmetry to the left - tail extends left of centre of mass- , &gt;0 assymetry to the right)"/>
                 </properties>
               </component>
               <component id="7e3c4" class="javax.swing.JCheckBox" binding="kurtosisCheckBox" default-binding="true">
@@ -90,6 +97,7 @@
                 </constraints>
                 <properties>
                   <text value="kurtosis"/>
+                  <toolTipText value="flatness of the distribution  of all values of the current image/volume  within the object (=0 Gaussian distribution, &lt;0 flatter , &gt;0 more peaked, &lt;-1.2 bimodal"/>
                 </properties>
               </component>
             </children>
@@ -110,6 +118,7 @@
                   <enabled value="false"/>
                   <selected value="true"/>
                   <text value="area"/>
+                  <toolTipText value="volume if 3D"/>
                 </properties>
               </component>
               <component id="34788" class="javax.swing.JCheckBox" binding="perimeterCheckBox" default-binding="true">
@@ -118,6 +127,7 @@
                 </constraints>
                 <properties>
                   <text value="perimeter"/>
+                  <toolTipText value="surface if 3D"/>
                 </properties>
               </component>
               <component id="3d735" class="javax.swing.JCheckBox" binding="boundingRectangleCheckBox" default-binding="true">
@@ -126,6 +136,7 @@
                 </constraints>
                 <properties>
                   <text value="bounding rectangle"/>
+                  <toolTipText value="The smallest rectangle enclosing the selection"/>
                 </properties>
               </component>
               <component id="79fac" class="javax.swing.JCheckBox" binding="centroidCheckBox" default-binding="true">
@@ -134,6 +145,7 @@
                 </constraints>
                 <properties>
                   <text value="centroid"/>
+                  <toolTipText value="geometrical center of the object"/>
                 </properties>
               </component>
               <component id="deb7a" class="javax.swing.JCheckBox" binding="centerOfMassCheckBox" default-binding="true">
@@ -142,6 +154,7 @@
                 </constraints>
                 <properties>
                   <text value="center of mass"/>
+                  <toolTipText value="centre of object weighted by intensities"/>
                 </properties>
               </component>
               <component id="8a66e" class="javax.swing.JCheckBox" binding="areaFractionCheckBox" default-binding="true">
@@ -158,6 +171,7 @@
                 </constraints>
                 <properties>
                   <text value="fit ellipse"/>
+                  <toolTipText value="best fitting of an ellipse/ellipsoid"/>
                 </properties>
               </component>
               <component id="17e5b" class="javax.swing.JCheckBox" binding="shapeDescriptorCheckBox" default-binding="true">
@@ -166,6 +180,7 @@
                 </constraints>
                 <properties>
                   <text value="shape descriptor"/>
+                  <toolTipText value="in 2D: circularity, aspect ratio, roundness and solidity. in 3D: sphericity and compactness"/>
                 </properties>
               </component>
               <component id="96cdc" class="javax.swing.JCheckBox" binding="feretSDiametersCheckBox">
@@ -174,6 +189,7 @@
                 </constraints>
                 <properties>
                   <text value="Ferret's diameters"/>
+                  <toolTipText value="the 2D/3D Feret diameter"/>
                 </properties>
               </component>
             </children>

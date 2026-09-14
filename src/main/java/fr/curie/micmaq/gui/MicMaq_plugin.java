@@ -241,13 +241,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
         computeIn3DCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (nucleiParam != null) nucleiParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
-                if (cellParam != null) cellParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
-                quantifPanel.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
-                if (spotPanels != null) for (SpotsParametersGUI sp : spotPanels)
-                    if (sp != null) sp.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
-
-                pack();
+                updateGUIfor3D();
             }
         });
     }
@@ -501,7 +495,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                 if (spotPanels.get(i) == null) {
                     SpotsParametersGUI tmp = new SpotsParametersGUI(provider, i + 1);
                     tmp.setProteinName(cp.getProteinName());
-                    tmp.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+                    tmp.setIs3Dprocessing(computeIn3DCheckBox.isEnabled() && computeIn3DCheckBox.isSelected());
                     spotPanels.set(i, tmp);
                     activePanel = i;
                 }
@@ -1405,6 +1399,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
             bufferedWriter.append(tmp);
 
             bufferedWriter.append("\n\nCALIBRATION: " + calibrationCombo.getItemAt(calibrationCombo.getSelectedIndex()).toString());
+            bufferedWriter.append("\n\nProcessing in: " + (computeIn3DCheckBox.isSelected() ? "3D" : "2D"));
 
             if (CellposeLauncher.tileSize >= 0)
                 bufferedWriter.append("\n\nCellpose tiling: size=" + CellposeLauncher.tileSize + "\t overlap=" + CellposeLauncher.tileOverlap);
@@ -1482,7 +1477,7 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
 
                             while (line.startsWith(keyArrange) && !line.startsWith(keyStop)) {
                                 System.out.println("search file channels in " + line);
-                                int channelnb = new Integer(line.substring(keyArrange.length(), line.indexOf(": ")));
+                                int channelnb = Integer.parseInt(line.substring(keyArrange.length(), line.indexOf(": ")));
                                 patterns.add(line.substring(line.indexOf(": ") + 2));
                                 line = read.readLine().trim();
                                 System.out.println(channelnb + "\n" + patterns);
@@ -1525,12 +1520,21 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         calibrationCombo.setSelectedIndex(calibrationCombo.getItemCount() - 1);
                     }
                 }// end if calibration
+                if (line.startsWith("Processing in: ")) {
+                    String tmp = line.substring("Processing in: ".length());
+                    if (tmp.equals("3D")) {
+                        computeIn3DCheckBox.setSelected(true);
+                    } else {
+                        computeIn3DCheckBox.setSelected(false);
+                    }
+                    updateGUIfor3D();
+                }
                 if (line.startsWith("CHANNEL ")) {
                     if (!channeldef) {
                         channeldef = true;
                         quantifPanel.resetMeasures();
                     }
-                    int chanNb = new Integer(line.substring("CHANNEL ".length(), line.indexOf("(")).trim());
+                    int chanNb = Integer.parseInt(line.substring("CHANNEL ".length(), line.indexOf("(")).trim());
                     if (line.endsWith("NOT USED")) {
                         System.out.println("channel " + chanNb + " not used");
                         line = read.readLine();
@@ -1562,18 +1566,22 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                                 cp.setNuclei(true);
                                 channelDefinitionChange(true);
                                 nucleiParam.setParameters(channelParameters);
+                                //nucleiParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                             } else {
                                 cp.setCell(true);
                                 channelDefinitionChange(true);
                                 cellParam.setParameters(channelParameters);
+                                //cellParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                             }
                         } else if (channelParameters.get(2).startsWith("SPOT")) {
                             ChannelPanel cp = channelPanels.get(chanNb - 1);
                             cp.setSpot(true);
                             channelDefinitionChange(true);
                             spotPanels.get(chanNb - 1).setParameters(channelParameters);
+                            //spotPanels.get(chanNb - 1).setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                         }
                         quantifPanel.setMeasures(chanNb, channelParameters);
+                        //quantifPanel.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
                         channelPanels.get(chanNb - 1).setProteinName(channelName);
                     }
 
@@ -1601,6 +1609,16 @@ public class MicMaq_plugin extends JFrame implements PlugIn {
                         (hours == 0 && days == 0 ? "" : hours + " h ") +
                         (minutes == 0 && hours == 0 ? "" : minutes + " min ") +
                         (days != 0 || hours != 0 ? "" : seconds + " sec");
+    }
+
+    public void updateGUIfor3D() {
+        if (nucleiParam != null) nucleiParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+        if (cellParam != null) cellParam.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+        quantifPanel.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+        if (spotPanels != null) for (SpotsParametersGUI sp : spotPanels)
+            if (sp != null) sp.setIs3Dprocessing(computeIn3DCheckBox.isSelected());
+
+        pack();
     }
 
     private void createUIComponents() {

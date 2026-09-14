@@ -467,7 +467,7 @@ public class QuantificationParametersGUI {
         String result = "\nQuantification  Parameters";
         result += "\nPreprocessing:";
         if (preprocComboCheck.isSelected(channel)) {
-            if (isZStackCheckBox.isSelected()) {
+            if (isZStackCheckBox.isSelected() && !is3Dprocessing) {
                 result += "\n\tProjection: " + (String) projectionMethodCB.getSelectedItem();
                 if (chooseSlicesToUseCheckBox.isSelected()) {
                     result += "\n\tSlices " + (int) sliceMinSpinner.getValue() + "-" + sliceMaxSpinner.getValue();
@@ -526,16 +526,23 @@ public class QuantificationParametersGUI {
     public void setIs3Dprocessing(boolean is3Dprocessing) {
         if (this.is3Dprocessing == is3Dprocessing) return;
         this.is3Dprocessing = is3Dprocessing;
+        updateDisplay();
+    }
+
+    protected void updateDisplay() {
         if (is3Dprocessing) {
             isZStackCheckBox.setSelected(true);
             projectionPanel.setVisible(false);
+            areaFractionCheckBox.setEnabled(false);
         } else {
             if (provider.getFieldOfView(provider.getPreviewImage()).getNSlices(1) > 1) {
                 projectionPanel.setVisible(true);
                 isZStackCheckBox.setSelected(true);
+                areaFractionCheckBox.setEnabled(true);
             } else {
                 projectionPanel.setVisible(false);
                 isZStackCheckBox.setSelected(false);
+                areaFractionCheckBox.setEnabled(true);
             }
         }
     }
@@ -576,29 +583,37 @@ public class QuantificationParametersGUI {
         meanGrayValueCheckBox.setEnabled(false);
         meanGrayValueCheckBox.setSelected(true);
         meanGrayValueCheckBox.setText("mean gray value");
+        meanGrayValueCheckBox.setToolTipText("mean of all values of the current image/volume  within the object");
         panel2.add(meanGrayValueCheckBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         medianGrayValueCheckBox = new JCheckBox();
         medianGrayValueCheckBox.setText("median gray value");
+        medianGrayValueCheckBox.setToolTipText("median of all values of the current image/volume  within the object");
         panel2.add(medianGrayValueCheckBox, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         integratedDensityCheckBox = new JCheckBox();
         integratedDensityCheckBox.setEnabled(false);
         integratedDensityCheckBox.setSelected(true);
         integratedDensityCheckBox.setText("integrated density");
+        integratedDensityCheckBox.setToolTipText("the sum of value of the values of the signal inside the object");
         panel2.add(integratedDensityCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         minAndMaxGrayCheckBox = new JCheckBox();
         minAndMaxGrayCheckBox.setText("min and max gray value");
+        minAndMaxGrayCheckBox.setToolTipText("minimum and maximum value of all values of the current image/volume  within the object");
         panel2.add(minAndMaxGrayCheckBox, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         modalGrayValueCheckBox = new JCheckBox();
         modalGrayValueCheckBox.setText("modal gray value");
+        modalGrayValueCheckBox.setToolTipText("the most abundant of all values of the current image/volume  within the object");
         panel2.add(modalGrayValueCheckBox, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         standardDeviationCheckBox = new JCheckBox();
         standardDeviationCheckBox.setText("standard deviation");
+        standardDeviationCheckBox.setToolTipText("santdard deviation of all values of the current image/volume  within the object");
         panel2.add(standardDeviationCheckBox, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         skewnessCheckBox = new JCheckBox();
         skewnessCheckBox.setText("skewness");
+        skewnessCheckBox.setToolTipText("symmetry of the distribution  of all values of the current image/volume  within the object (<0 assymmetry to the left - tail extends left of centre of mass- , >0 assymetry to the right)");
         panel2.add(skewnessCheckBox, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         kurtosisCheckBox = new JCheckBox();
         kurtosisCheckBox.setText("kurtosis");
+        kurtosisCheckBox.setToolTipText("flatness of the distribution  of all values of the current image/volume  within the object (=0 Gaussian distribution, <0 flatter , >0 more peaked, <-1.2 bimodal");
         panel2.add(kurtosisCheckBox, new GridConstraints(2, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 0), -1, -1));
@@ -608,30 +623,38 @@ public class QuantificationParametersGUI {
         areaCheckBox.setEnabled(false);
         areaCheckBox.setSelected(true);
         areaCheckBox.setText("area");
+        areaCheckBox.setToolTipText("volume if 3D");
         panel3.add(areaCheckBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         perimeterCheckBox = new JCheckBox();
         perimeterCheckBox.setText("perimeter");
+        perimeterCheckBox.setToolTipText("surface if 3D");
         panel3.add(perimeterCheckBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         boundingRectangleCheckBox = new JCheckBox();
         boundingRectangleCheckBox.setText("bounding rectangle");
+        boundingRectangleCheckBox.setToolTipText("The smallest rectangle enclosing the selection");
         panel3.add(boundingRectangleCheckBox, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         centroidCheckBox = new JCheckBox();
         centroidCheckBox.setText("centroid");
+        centroidCheckBox.setToolTipText("geometrical center of the object");
         panel3.add(centroidCheckBox, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         centerOfMassCheckBox = new JCheckBox();
         centerOfMassCheckBox.setText("center of mass");
+        centerOfMassCheckBox.setToolTipText("centre of object weighted by intensities");
         panel3.add(centerOfMassCheckBox, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         areaFractionCheckBox = new JCheckBox();
         areaFractionCheckBox.setText("area fraction");
         panel3.add(areaFractionCheckBox, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         fitEllipseCheckBox = new JCheckBox();
         fitEllipseCheckBox.setText("fit ellipse");
+        fitEllipseCheckBox.setToolTipText("best fitting of an ellipse/ellipsoid");
         panel3.add(fitEllipseCheckBox, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         shapeDescriptorCheckBox = new JCheckBox();
         shapeDescriptorCheckBox.setText("shape descriptor");
+        shapeDescriptorCheckBox.setToolTipText("in 2D: circularity, aspect ratio, roundness and solidity. in 3D: sphericity and compactness");
         panel3.add(shapeDescriptorCheckBox, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         feretSDiametersCheckBox = new JCheckBox();
         feretSDiametersCheckBox.setText("Ferret's diameters");
+        feretSDiametersCheckBox.setToolTipText("the 2D/3D Feret diameter");
         panel3.add(feretSDiametersCheckBox, new GridConstraints(2, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel4 = new JPanel();
         panel4.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
